@@ -1,0 +1,12 @@
+@model BillingOss.Domain.Affiliates.AffiliateStatus
+@using BillingOss.Domain.Affiliates
+@{
+    var (tone, shape) = Model switch
+    {
+        AffiliateStatus.Pending => ("info", "hollow"),
+        AffiliateStatus.Active => ("ok", "filled"),
+        AffiliateStatus.Suspended => ("warn", "filled"),
+        _ => ("neutral", "filled"),
+    };
+}
+<span class="status bo-status" data-tone="@tone" data-shape="@shape">@L["AffiliateStatus." + Model]</span>

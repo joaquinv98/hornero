@@ -1,0 +1,6 @@
+@page "/admin/dominios/{id:long}/dns"
+@model BillingOss.Web.Pages.Admin.DomainDnsModel
+@{
+    ViewData["Title"] = L["DomainDns.Heading", Model.Domain!.Name];
+}
+<partial name="_DomainDns" model="Model" />

@@ -1,0 +1,121 @@
+@page "/admin/registro-modulos"
+@using BillingOss.Domain.Payments
+@model GatewayLogModel
+@{
+    ViewData["Title"] = L["Menu.ModuleLog"];
+}
+<div class="bo-stack">
+    <div class="bo-head">
+        <h1>@L["Menu.ModuleLog"]</h1>
+        <p class="bo-muted">@L["GatewayLog.Intro"]</p>
+    </div>
+
+    @if (Model.Shown is { } d)
+    {
+        var (text, tone) = GatewayLogModel.StateOf(d.Row.Status);
+        <section class="bo-card" aria-labelledby="aviso">
+            <div class="bo-card__head">
+                <h2 id="aviso">@L["GatewayLog.Notice", d.Row.Id]</h2>
+                <a href="@Model.Link(Model.PageNumber)">@L["GatewayLog.Close"]</a>
+            </div>
+            <p>@d.Row.At · @d.Row.Instance · <span class="bo-status" data-tone="@tone">@L[text]</span></p>
+            @if (d.Row.Status == ReceiptStatus.Invalid)
+            {
+                <div class="bo-alert" data-tone="warn"><p>@L["GatewayLog.InvalidHelp"]</p></div>
+            }
+            <h3>@L["GatewayLog.Events"]</h3>
+            @if (d.Row.Events.Count == 0)
+            {
+                <p class="bo-muted">@L["GatewayLog.NoEvents"]</p>
+            }
+            else
+            {
+                <ul class="bo-list">
+                    @foreach (var e in d.Row.Events)
+                    {
+                        <li><div class="bo-list__main"><span class="bo-data">@e.Type</span><span class="bo-small bo-muted bo-data">@e.EventId @e.PaymentExternalId</span></div></li>
+                    }
+                </ul>
+            }
+            <h3>@L["GatewayLog.Headers"]</h3>
+            <pre class="bo-data bo-raw">@d.Headers</pre>
+            <h3>@L["GatewayLog.Query"]</h3>
+            <pre class="bo-data bo-raw">@d.Query</pre>
+            <h3>@L["GatewayLog.Body", d.Row.Bytes]</h3>
+            @if (d.Cut)
+            {
+                <p class="bo-small bo-muted">@L["GatewayLog.BodyCut", GatewayLogModel.MaxBody / 1024]</p>
+            }
+            <pre class="bo-data bo-raw">@d.Body</pre>
+        </section>
+    }
+
+    <form method="get" action="@GatewayLogModel.Route" class="bo-row">
+        <label for="instancia">@L["GatewayLog.Instance"]</label>
+        <select id="instancia" name="instancia" class="bo-select">
+            <option value="">@L["GatewayLog.AllInstances"]</option>
+            @foreach (var (id, name) in Model.Instances)
+            {
+                <option value="@id" selected="@(id == Model.Instance)">@name</option>
+            }
+        </select>
+        <label for="estado">@L["Field.Status"]</label>
+        <select id="estado" name="estado" class="bo-select">
+            @foreach (var f in GatewayLogModel.Filters)
+            {
+                <option value="@f.Value" selected="@(f.Value == Model.Filter)">@L[f.Text]</option>
+            }
+        </select>
+        <button type="submit" class="bo-btn bo-btn--secondary">@L["AutoCharges.Filter"]</button>
+    </form>
+
+    @if (Model.Rows.Count == 0)
+    {
+        <p class="bo-muted">@L["GatewayLog.Empty"]</p>
+    }
+    else
+    {
+        <div class="bo-table-wrap">
+            <table class="bo-table">
+                <thead>
+                    <tr>
+                        <th scope="col">@L["GatewayLog.ReceivedAt"]</th>
+                        <th scope="col">@L["GatewayLog.Instance"]</th>
+                        <th scope="col">@L["Field.Status"]</th>
+                        <th scope="col">@L["GatewayLog.Events"]</th>
+                        <th scope="col" class="bo-num">@L["GatewayLog.Size"]</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var r in Model.Rows)
+                    {
+                        var (text, tone) = GatewayLogModel.StateOf(r.Status);
+                        <tr>
+                            <td><a href="@Model.Link(Model.PageNumber, r.Id)">@r.At</a></td>
+                            <td>@r.Instance</td>
+                            <td><span class="bo-status" data-tone="@tone">@L[text]</span></td>
+                            <td>
+                                @foreach (var e in r.Events)
+                                {
+                                    <span class="bo-small bo-data">@e.Type</span>
+                                }
+                            </td>
+                            <td class="bo-num">@r.Bytes.ToString("N0", CultureInfo.CurrentCulture)</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+        <nav class="bo-row" aria-label="@L["AutoCharges.Pages"]">
+            @if (Model.PageNumber > 1)
+            {
+                <a href="@Model.Link(Model.PageNumber - 1)">@L["AutoCharges.Previous"]</a>
+            }
+            <span class="bo-small bo-muted">@L["AutoCharges.Page", Model.PageNumber]</span>
+            @if (Model.HasMore)
+            {
+                <a href="@Model.Link(Model.PageNumber + 1)">@L["AutoCharges.Next"]</a>
+            }
+        </nav>
+    }
+</div>

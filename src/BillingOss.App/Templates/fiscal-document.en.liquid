@@ -1,0 +1,5 @@
+{% if credit_note %}Credit note{% elsif debit_note %}Debit note{% else %}Tax document{% endif %} {{ fiscal_number }} from {{ company }}
+<p>Hi {{ account_name }},</p>
+<p>The tax document {{ fiscal_number }} for {% if credit_note %}credit note{% elsif debit_note %}debit note{% else %}invoice{% endif %} #{{ number }}, for <strong>{{ total }}</strong>, is now available.</p>
+<p>Authorization code: {{ cae }}.</p>
+{% if portal_url %}<p>You can find it in <a href="{{ portal_url }}">your account</a>.</p>{% endif %}

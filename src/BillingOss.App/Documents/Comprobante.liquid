@@ -1,0 +1,113 @@
+<!doctype html>
+<html lang="es-AR">
+<head>
+<meta charset="utf-8">
+<title>{{ title }} {{ number }}</title>
+<style>
+  @page { size: A4; margin: 12mm 12mm 14mm 12mm; }
+  * { box-sizing: border-box; }
+  body { font-family: "Liberation Sans", "DejaVu Sans", Arial, sans-serif; font-size: 9.5pt; color: #111; margin: 0; }
+  .banner { border: 2px solid #b00; color: #b00; font-weight: bold; text-align: center; padding: 6px; margin-bottom: 8px; }
+  .copy { text-align: center; font-weight: bold; letter-spacing: 2px; border: 1px solid #000; border-bottom: 0; padding: 3px; }
+  .head { display: grid; grid-template-columns: 1fr 64px 1fr; border: 1px solid #000; }
+  .head > div { padding: 8px; }
+  .issuer h1 { font-size: 13pt; margin: 0 0 6px 0; }
+  .letter { border-left: 1px solid #000; border-right: 1px solid #000; text-align: center; }
+  .letter b { display: block; font-size: 26pt; line-height: 1.1; }
+  .letter small { font-size: 7.5pt; }
+  .doc h2 { font-size: 13pt; margin: 0 0 6px 0; }
+  p { margin: 2px 0; }
+  .box { border: 1px solid #000; border-top: 0; padding: 6px 8px; }
+  .row { display: flex; flex-wrap: wrap; gap: 4px 24px; }
+  table { width: 100%; border-collapse: collapse; margin-top: 8px; }
+  th { background: #e6e6e6; border: 1px solid #000; padding: 4px; text-align: left; font-size: 8.5pt; }
+  td { border-bottom: 1px solid #ccc; padding: 4px; vertical-align: top; }
+  .num { text-align: right; white-space: nowrap; }
+  .bottom { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 10px; break-inside: avoid; }
+  .totals td { border: 0; padding: 2px 4px; }
+  .totals .grand td { border-top: 1px solid #000; font-weight: bold; font-size: 11pt; }
+  .transparency { border: 1px solid #000; padding: 6px 8px; align-self: start; }
+  .transparency h3 { font-size: 9pt; margin: 0 0 4px 0; }
+  .fiscal { display: flex; gap: 12px; align-items: center; margin-top: 12px; border-top: 1px solid #000; padding-top: 8px; break-inside: avoid; }
+  .fiscal img { width: 30mm; height: 30mm; }
+  .legends { margin-top: 10px; font-size: 7.5pt; color: #333; }
+  .legends p { margin: 4px 0; }
+</style>
+</head>
+<body>
+{% if not_valid_as_invoice %}<div class="banner">DOCUMENTO NO VÁLIDO COMO FACTURA: el comprobante fiscal todavía no está autorizado.</div>{% endif %}
+{% if fiscal %}<div class="copy">ORIGINAL</div>{% endif %}
+<div class="head">
+  <div class="issuer">
+    <h1>{{ issuer.name }}</h1>
+    {% if issuer.address %}<p>{{ issuer.address }}</p>{% endif %}
+    {% if issuer.vat_condition %}<p><b>{{ issuer.vat_condition }}</b></p>{% endif %}
+  </div>
+  <div class="letter">
+    {% if letter %}<b>{{ letter }}</b><small>COD. {{ type_code }}</small>{% endif %}
+  </div>
+  <div class="doc">
+    <h2>{{ title }}</h2>
+    <p>{% if fiscal %}Punto de venta y número: {% else %}Número: {% endif %}<b>{{ number }}</b></p>
+    <p>Fecha de emisión: <b>{{ date }}</b></p>
+    {% if issuer.tax_id %}<p>CUIT: {{ issuer.tax_id }}</p>{% endif %}
+    {% if issuer.gross_income %}<p>Ingresos brutos: {{ issuer.gross_income }}</p>{% endif %}
+    {% if issuer.activity_start %}<p>Inicio de actividades: {{ issuer.activity_start }}</p>{% endif %}
+  </div>
+</div>
+<div class="box row">
+  {% if period_from %}<p>Período facturado desde: <b>{{ period_from }}</b> hasta: <b>{{ period_to }}</b></p>{% endif %}
+  {% if due_date %}<p>Fecha de vencimiento para el pago: <b>{{ due_date }}</b></p>{% endif %}
+</div>
+<div class="box">
+  <p><b>{{ receiver.name }}</b>{% if receiver.tax_id %} · {{ receiver.tax_id }}{% endif %}</p>
+  {% if receiver.vat_condition %}<p>Condición frente al IVA: <b>{{ receiver.vat_condition }}</b></p>{% endif %}
+  {% if receiver.address %}<p>Domicilio: {{ receiver.address }}</p>{% endif %}
+  {% if payment_terms %}<p>Forma de pago: {{ payment_terms }}</p>{% endif %}
+  {% if associated %}<p>Comprobante asociado: {{ associated }}</p>{% endif %}
+</div>
+{% if exchange_rate %}
+<div class="box">
+  <p>Moneda: <b>{{ currency }}</b> · Tipo de cambio: <b>{{ exchange_rate }}</b>{% if same_currency_payment %} · Se cancela en la misma moneda{% endif %}</p>
+</div>
+{% endif %}
+<table>
+  <thead>
+    <tr><th>Descripción</th><th class="num">Cantidad</th><th class="num">Precio unitario</th>{% if line_tax %}<th class="num">Alícuota IVA</th>{% endif %}<th class="num">Importe</th></tr>
+  </thead>
+  <tbody>
+  {% for line in lines %}
+    <tr><td>{{ line.description }}</td><td class="num">{{ line.quantity }}</td><td class="num">{{ line.unit_price }}</td>{% if line_tax %}<td class="num">{{ line.rate }}</td>{% endif %}<td class="num">{{ line.amount }}</td></tr>
+  {% endfor %}
+  </tbody>
+</table>
+<div class="bottom">
+  <div>
+    {% if transparency %}
+    <div class="transparency">
+      <h3>Régimen de Transparencia Fiscal al Consumidor (Ley 27.743)</h3>
+      <p>IVA Contenido: <b>{{ transparency.contained_vat }}</b></p>
+      <p>Otros Impuestos Nacionales Indirectos: <b>{{ transparency.other_taxes }}</b></p>
+    </div>
+    {% endif %}
+  </div>
+  <table class="totals">
+    {% for t in totals %}<tr><td>{{ t.label }}</td><td class="num">{{ t.amount }}</td></tr>{% endfor %}
+    <tr class="grand"><td>Total</td><td class="num">{{ total }}</td></tr>
+  </table>
+</div>
+{% if fiscal %}
+<div class="fiscal">
+  <img src="{{ fiscal.qr_image }}" alt="Código QR del comprobante">
+  <div>
+    <p>CAE N°: <b>{{ fiscal.authorization_code }}</b></p>
+    {% if fiscal.authorization_due %}<p>Fecha de Vto. de CAE: <b>{{ fiscal.authorization_due }}</b></p>{% endif %}
+    <p>Comprobante autorizado por ARCA.</p>
+  </div>
+</div>
+{% endif %}
+<div class="legends">
+  {% for legend in legends %}<p>{{ legend }}</p>{% endfor %}
+</div>
+</body>
+</html>

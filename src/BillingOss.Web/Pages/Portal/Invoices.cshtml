@@ -1,0 +1,54 @@
+@page "/facturas"
+@model InvoicesModel
+@{
+    ViewData["Title"] = L["Nav.Invoices"];
+}
+<h1>@L["Nav.Invoices"]</h1>
+@foreach (var due in Model.Due)
+{
+    <section class="bo-hero" aria-label="@L["Invoices.DueSummary"]">
+        <p class="strong">@L["Invoices.Owed", Ui.Money(due.Amount, due.Currency)]</p>
+        <a class="button" href="/pagar?moneda=@due.Currency.Code&amp;cuenta=@due.AccountId">@L["Invoices.PayAll", due.Currency.Code]</a>
+    </section>
+}
+@if (Model.Documents.Count == 0)
+{
+    <p>@L["Invoices.None"]</p>
+}
+else
+{
+    <div class="table">
+        <table>
+            <thead>
+                <tr>
+                    <th scope="col">@L["Invoices.Document"]</th>
+                    <th scope="col">@L["Invoices.Date"]</th>
+                    <th scope="col">@L["Invoices.Due"]</th>
+                    <th scope="col" class="num">@L["Invoices.Total"]</th>
+                    <th scope="col" class="num">@L["Invoices.Pending"]</th>
+                    <th scope="col">@L["Field.Status"]</th>
+                    <th scope="col"><span class="bo-sr">@L["Invoices.Actions"]</span></th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var d in Model.Documents)
+                {
+                    <tr>
+                        <td><a href="/facturas/@d.Id">@L["DocumentKind." + d.Kind] @(d.Number ?? d.Id)</a></td>
+                        <td>@Ui.Date(d.IssueDate)</td>
+                        <td>@Ui.Date(d.DueDate)</td>
+                        <td class="num">@Ui.Money(d.Total, d.Currency)</td>
+                        <td class="num">@Ui.Money(d.Pending, d.Currency)</td>
+                        <td><span class="status i-@d.Status.ToString().ToLowerInvariant()">@L["InvoiceStatus." + d.Status]</span></td>
+                        <td>
+                            @if (d.Kind != BillingOss.Domain.Billing.DocumentKind.CreditNote && d.Pending > 0m && d.Status != BillingOss.Domain.Billing.InvoiceStatus.Cancelled)
+                            {
+                                <a href="/pagar?factura=@d.Id">@L["Invoices.PayOne"]</a>
+                            }
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+}

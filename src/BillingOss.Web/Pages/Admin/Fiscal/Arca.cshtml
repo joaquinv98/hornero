@@ -1,0 +1,319 @@
+@page "/admin/fiscal/arca/{paso:int?}"
+@model ArcaWizardModel
+@using BillingOss.Domain.Accounts
+@using BillingOss.Domain.Fiscal
+@using BillingOss.App.UseCases
+@{
+    ViewData["Title"] = L["Arca.Title"];
+    var issuer = Model.Issuer;
+    var env = Model.Environment;
+    var production = env == FiscalEnvironments.Production;
+}
+<h1>@L["Arca.Title"]</h1>
+<p class="muted">@L["Arca.Intro"] <a href="/admin/fiscal">@L["Fiscal.Title"]</a></p>
+<ol class="wizard" aria-label="@L["Arca.Steps"]">
+    @for (var n = 1; n <= ArcaWizardModel.Steps; n++)
+    {
+        <li class="@(n <= issuer.SetupStep ? "done" : null)" aria-current="@(n == Model.Step ? "step" : null)"><a href="/admin/fiscal/arca/@n">@L["Arca.Step." + n]</a></li>
+    }
+</ol>
+@if (Model.Error is not null)
+{
+    <p class="alert" role="alert">@Model.Error</p>
+}
+@if (Model.Done is { Length: > 0 } && Model.Error is null)
+{
+    <p class="notice" role="status">@L["Arca.Done." + Model.Done]</p>
+}
+
+@switch (Model.Step)
+{
+    case 1:
+        <h2>@L["Arca.Step.1"]</h2>
+        <p>@L["Arca.Step1Help"]</p>
+        <form method="post" asp-page-handler="Start" class="stack narrow">
+            <fieldset class="field">
+                <legend>@L["Arca.Environment"]</legend>
+                <label class="check"><input type="radio" name="environment" value="homologation" checked="@(!production)" disabled="@Model.HasInstance"> @L["Environment.homologation"]</label>
+                <label class="check"><input type="radio" name="environment" value="production" checked="@production" disabled="@Model.HasInstance"> @L["Environment.production"]</label>
+                @if (Model.HasInstance)
+                {
+                    <input type="hidden" name="environment" value="@env">
+                    <span class="help">@L["Arca.EnvironmentFixed"]</span>
+                }
+                else
+                {
+                    <span class="help">@L["Arca.EnvironmentHelp"]</span>
+                }
+            </fieldset>
+            <label class="check"><input type="checkbox" name="exports" value="true" checked="@issuer.Exports"> @L["Arca.Exports"]</label>
+            <label class="check"><input type="checkbox" name="usesRegistry" value="true" checked="@issuer.UsesRegistry"> @L["Arca.UsesRegistry"]</label>
+            <div class="field">
+                <label for="instance">@L["Arca.Instance"]</label>
+                <select id="instance" name="instance">
+                    @if (!Model.HasInstance)
+                    {
+                        <option value="">@L["Arca.InstanceLater"]</option>
+                    }
+                    @foreach (var (instance, instanceEnv) in Model.Instances)
+                    {
+                        <option value="i:@instance.Id" selected="@(instance.Id == issuer.ModuleInstanceId)">@instance.Name (@L["Environment." + instanceEnv])</option>
+                    }
+                    @foreach (var installation in Model.Installations)
+                    {
+                        <option value="n:@installation.Id">@L["Arca.NewInstanceIn", installation.Name]</option>
+                    }
+                </select>
+                <span class="help">@(Model.Installations.Count == 0 ? L["Arca.NoInstallation"] : L["Arca.InstanceHelp"])</span>
+            </div>
+            <p class="warn">@L["Arca.Requirement." + env]</p>
+            <div><button type="submit">@L["Arca.Continue"]</button></div>
+        </form>
+        break;
+
+    case 2:
+        <h2>@L["Arca.Step.2"]</h2>
+        <p>@L["Arca.Step2Help"]</p>
+        @if (issuer.UsesRegistry && Model.HasInstance)
+        {
+            <form method="post" asp-page-handler="FillIssuer" class="actions"><button type="submit" class="secondary">@L["Fiscal.FillFromArca"]</button> <span class="muted">@L["Arca.FillHelp"]</span></form>
+        }
+        <form method="post" asp-page-handler="Issuer" class="stack narrow">
+            <div class="field"><label for="taxId">@L["TaxDocumentType.Cuit"]</label><input id="taxId" name="taxId" value="@issuer.TaxId" inputmode="numeric" autocomplete="off" required><span class="help">@L["Arca.CuitHelp"]</span></div>
+            <div class="field"><label for="legalName">@L["Fiscal.LegalName"]</label><input id="legalName" name="legalName" value="@issuer.LegalName" required></div>
+            <div class="field"><label for="vatCondition">@L["Fiscal.VatCondition"]</label>
+                <select id="vatCondition" name="vatCondition">
+                    @foreach (var code in VatConditions.IssuerConditions)
+                    {
+                        <option value="@code" selected="@(code == issuer.VatCondition)">@VatConditions.Describe(code)</option>
+                    }
+                </select>
+                <span class="help">@L["Arca.ConditionHelp"]</span></div>
+            <label class="check"><input type="checkbox" name="classAWithLegend" value="true" checked="@issuer.ClassAWithLegend"> @L["Arca.ClassAWithLegend"]</label>
+            <div class="field"><label for="address">@L["Fiscal.Address"]</label><input id="address" name="address" value="@issuer.Address" autocomplete="street-address"></div>
+            <div class="field"><label for="grossIncomeNumber">@L["Fiscal.GrossIncome"]</label><input id="grossIncomeNumber" name="grossIncomeNumber" value="@issuer.GrossIncomeNumber"><span class="help">@L["Arca.GrossIncomeHelp"]</span></div>
+            <div class="field"><label for="activityStart">@L["Fiscal.ActivityStart"]</label><input id="activityStart" name="activityStart" type="date" value="@issuer.ActivityStart?.ToString("yyyy-MM-dd")"></div>
+            <div><button type="submit">@L["Arca.Continue"]</button></div>
+        </form>
+        break;
+
+    case 3:
+        <h2>@L["Arca.Step.3"]</h2>
+        @if (Model.Selected is { } selected)
+        {
+            <section class="card">
+                <h3>@L["Arca.RequestTitle"]</h3>
+                <p>@L["Fiscal.Alias"]: <code>@selected.Alias</code> · CUIT @selected.SubjectTaxId · <span class="status" data-tone="@(selected.Status == CredentialStatus.Ready ? "ok" : "info")" data-shape="@(selected.Status == CredentialStatus.Ready ? null : "hollow")">@L["CredentialStatus." + selected.Status]</span></p>
+                <label for="csr">@L["Arca.Csr"]</label>
+                <textarea id="csr" class="pre" readonly rows="8">@selected.Csr</textarea>
+                <div class="actions">
+                    <a class="button secondary" href="/admin/fiscal/arca/3?handler=Csr&amp;id=@selected.Id">@L["Arca.DownloadCsr"]</a>
+                    <a class="button" href="/admin/fiscal/arca/4">@L["Arca.Continue"]</a>
+                </div>
+                <p class="muted">@L["Arca.KeyStays"]</p>
+            </section>
+        }
+        <details open="@(Model.Selected is null)">
+            <summary>@L["Arca.NewRequest"]</summary>
+            <form method="post" asp-page-handler="Credential" class="stack narrow">
+                <div class="field"><label for="alias">@L["Fiscal.Alias"]</label><input id="alias" name="alias" value="@(Model.Active?.Alias ?? CsrBuilder.DefaultAlias)" pattern="[a-z0-9]+" required><span class="help">@L["Arca.AliasHelp"]</span></div>
+                <div class="field"><label for="subject">@L["Arca.SubjectCuit"]</label><input id="subject" name="subjectTaxId" value="@issuer.TaxId" inputmode="numeric" required><span class="help">@L["Arca.SubjectCuitHelp." + env]</span></div>
+                <div class="field"><label for="organization">@L["Arca.Organization"]</label><input id="organization" name="organization" value="@ArcaWizardModel.Ascii(issuer.LegalName)" required><span class="help">@L["Arca.OrganizationHelp"]</span></div>
+                <div><button type="submit">@L["Arca.Generate"]</button></div>
+            </form>
+        </details>
+        <details>
+            <summary>@L["Arca.ImportOwn"]</summary>
+            <p class="muted">@L["Arca.ImportHelp"]</p>
+            <form method="post" asp-page-handler="Import" enctype="multipart/form-data" class="stack narrow">
+                <div class="field"><label for="certificate">@L["Fiscal.Certificate"]</label><input id="certificate" name="certificate" type="file" required></div>
+                <div class="field"><label for="key">@L["Arca.PrivateKey"]</label><input id="key" name="key" type="file"></div>
+                <div class="field"><label for="password">@L["Arca.KeyPassword"]</label><input id="password" name="password" type="password" autocomplete="off"></div>
+                <div><button type="submit" class="secondary">@L["Arca.Import"]</button></div>
+            </form>
+        </details>
+        break;
+
+    case 4:
+        <h2>@L["Arca.Step.4"]</h2>
+        <p>@L["Arca.Step4Help." + env]</p>
+        <p class="warn">@L["Arca.PointNotice"]</p>
+        <div class="table">
+            <table>
+                <caption>@L["Arca.GuideCaption." + env]</caption>
+                <thead><tr><th scope="col">#</th><th scope="col">@L["Arca.Where"]</th><th scope="col">@L["Arca.What"]</th><th scope="col">@L["Arca.Paste"]</th></tr></thead>
+                <tbody>
+                    @for (var n = 1; n <= ArcaWizardModel.GuideRows[env]; n++)
+                    {
+                        var prefix = "Guide." + env + "." + n;
+                        <tr>
+                            <td>@n</td>
+                            <td>@L[prefix + ".Where"]</td>
+                            <td>@L[prefix + ".What"]</td>
+                            <td>
+                                @L[prefix + ".Paste"]
+                                @if (n == 3 && Model.Selected is { } s)
+                                {
+                                    <div>@L["Fiscal.Alias"]: <code>@s.Alias</code> · <a href="/admin/fiscal/arca/3?handler=Csr&amp;id=@s.Id">@L["Arca.DownloadCsr"]</a></div>
+                                }
+                                @if (n == 4)
+                                {
+                                    <div>@foreach (var service in Model.Services) { <code>@service</code><text> </text> }</div>
+                                }
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+        <p class="muted">@L["Arca.GuideNotes." + env]</p>
+        @if (Model.Active is not null)
+        {
+            <p class="muted">@L["Arca.RenewalGuide." + env]</p>
+        }
+        <form method="post" asp-page-handler="GuideDone" class="actions"><button type="submit">@L["Arca.GuideDone"]</button></form>
+        break;
+
+    case 5:
+        <h2>@L["Arca.Step.5"]</h2>
+        <p>@L["Arca.Step5Help"]</p>
+        @if (Model.Credentials.Count == 0)
+        {
+            <p class="warn">@L["Arca.NoCredential"] <a href="/admin/fiscal/arca/3">@L["Arca.Step.3"]</a></p>
+        }
+        else
+        {
+            <form method="post" asp-page-handler="Certificate" enctype="multipart/form-data" class="stack narrow">
+                <div class="field"><label for="credentialId">@L["Arca.ForRequest"]</label>
+                    <select id="credentialId" name="credentialId">
+                        @foreach (var c in Model.Credentials)
+                        {
+                            <option value="@c.Id" selected="@(c.Id == Model.Selected?.Id)">@c.Alias · @Ui.Date(DateOnly.FromDateTime(c.CreatedAt.UtcDateTime)) · @L["CredentialStatus." + c.Status]</option>
+                        }
+                    </select></div>
+                <div class="field"><label for="file">@L["Arca.CertificateFile"]</label><input id="file" name="file" type="file"></div>
+                <div class="field"><label for="pem">@L["Arca.CertificatePaste"]</label><textarea id="pem" name="pem" rows="6" class="pre"></textarea></div>
+                <div class="field"><label for="p12password">@L["Arca.KeyPassword"]</label><input id="p12password" name="password" type="password" autocomplete="off"><span class="help">@L["Arca.P12Help"]</span></div>
+                <div><button type="submit">@L["Arca.Validate"]</button></div>
+            </form>
+        }
+        @if (Model.Checks is { } checks)
+        {
+            <h3>@L["Arca.Checks"]</h3>
+            <ul class="checks" aria-live="polite">
+                @foreach (var check in checks)
+                {
+                    <li><span class="status" data-tone="@(check.Level switch { CheckLevel.Error => "danger", CheckLevel.Warning => "warn", _ => "ok" })" data-shape="@(check.Level == CheckLevel.Error ? "ring" : null)">@L["CheckLevel." + check.Level]</span> @check.Message</li>
+                }
+            </ul>
+        }
+        @if (Model.Selected is { Status: CredentialStatus.Ready } ready)
+        {
+            <section class="card">
+                <h3>@L["Arca.ActivateTitle"]</h3>
+                <p>@(Model.Active is null ? L["Arca.ActivateHelp"] : L["Arca.ActivateRenewalHelp"])</p>
+                <p class="muted">@L["Fiscal.Alias"]: <code>@ready.CertificateAlias</code> · CUIT @ready.CertificateTaxId · @L["Fiscal.ExpiresOn"] @Ui.Date(ready.NotAfter is { } until ? DateOnly.FromDateTime(until.UtcDateTime) : null)</p>
+                <form method="post" asp-page-handler="Activate" class="stack narrow">
+                    <input type="hidden" name="credentialId" value="@ready.Id">
+                    <div class="field"><label for="code">@L["Field.Code"]</label><input id="code" name="code" inputmode="numeric" autocomplete="one-time-code" required><span class="help">@L["Arca.ReauthHelp"]</span></div>
+                    <div><button type="submit">@L["Arca.Activate"]</button></div>
+                </form>
+            </section>
+        }
+        break;
+
+    case 6:
+        <h2>@L["Arca.Step.6"]</h2>
+        <p>@L["Arca.Step6Help"]</p>
+        @if (!Model.HasInstance)
+        {
+            <p class="warn">@L["Arca.NoInstanceYet"] <a href="/admin/fiscal/arca/1">@L["Arca.Step.1"]</a></p>
+        }
+        else
+        {
+            <form method="post" asp-page-handler="Test" class="actions"><button type="submit">@L["Arca.RunTest"]</button></form>
+        }
+        @if (Model.Report is { } report)
+        {
+            <p class="muted">@L["Fiscal.LastTest", report.At.ToLocalTime().ToString("g", CultureInfo.CurrentCulture)]</p>
+            <ul class="checks" aria-live="polite">
+                @foreach (var item in report.Items)
+                {
+                    <li><span class="status" data-tone="@(item.Ok ? "ok" : "danger")" data-shape="@(item.Ok ? null : "ring")">@L["Fiscal.Test." + item.Step]</span> @item.Message @if (item.Remedy is { } remedy) { <span class="muted">@remedy</span> }</li>
+                }
+            </ul>
+            @if (report.Ok)
+            {
+                <p class="notice" role="status">@L["Arca.TestPassed"] <a class="button" href="/admin/fiscal/arca/7">@L["Arca.Continue"]</a></p>
+            }
+        }
+        <section class="card">
+            <h3>@L["Fiscal.PointsOfSale"]</h3>
+            <p class="muted">@L["Arca.PointsHelp"]</p>
+            <form method="post" asp-page-handler="Points" class="stack narrow">
+                <div class="field"><label for="pointOfSale">@L["Fiscal.PointLocal"]</label>
+                    @if (Model.KnownPoints.Count > 0)
+                    {
+                        <select id="pointOfSale" name="pointOfSale">
+                            @foreach (var p in Model.KnownPoints)
+                            {
+                                <option value="@p.Id" selected="@(p.Id == issuer.PointOfSale)">@p.Id · @p.Type@(p.Blocked ? " · " + L["Fiscal.Point.blocked"].Value : "")</option>
+                            }
+                        </select>
+                    }
+                    else
+                    {
+                        <input id="pointOfSale" name="pointOfSale" type="number" min="1" value="@(issuer.PointOfSale > 0 ? issuer.PointOfSale : null)" required>
+                    }
+                </div>
+                @if (issuer.Exports)
+                {
+                    <div class="field"><label for="exportPointOfSale">@L["Fiscal.PointExport"]</label><input id="exportPointOfSale" name="exportPointOfSale" type="number" min="1" value="@issuer.ExportPointOfSale"></div>
+                }
+                <div><button type="submit" class="secondary">@L["Taxes.Save"]</button></div>
+            </form>
+        </section>
+        break;
+
+    default:
+        <h2>@L["Arca.Step.7"]</h2>
+        @if (Model.Summary is { } summary)
+        {
+            <p class="notice" role="status">@L["Arca.Activated", L["Environment." + summary.Environment].Value]</p>
+            <h3>@L["Fiscal.Series"]</h3>
+            <ul class="plain">
+                @foreach (var s in summary.SeriesCreated)
+                {
+                    <li><code>@s</code></li>
+                }
+            </ul>
+            @foreach (var warning in summary.Warnings)
+            {
+                <p class="warn">@warning</p>
+            }
+        }
+        else
+        {
+            <p>@L["Arca.Step7Help"]</p>
+            <dl class="facts">
+                <dt>@L["Arca.Environment"]</dt><dd>@L["Environment." + env]</dd>
+                <dt>@L["Fiscal.Certificate"]</dt><dd>@(Model.Active is { } a ? a.CertificateAlias + " · " + L["Fiscal.DaysLeft", a.DaysLeft(DateOnly.FromDateTime(DateTime.UtcNow)) ?? 0].Value : L["Fiscal.NotSet"].Value)</dd>
+                <dt>@L["Fiscal.PointLocal"]</dt><dd>@issuer.PointOfSale</dd>
+                <dt>@L["Arca.LastTestState"]</dt><dd><span class="status" data-tone="@(Model.Report?.Ok == true ? "ok" : "danger")">@(Model.Report?.Ok == true ? L["Fiscal.TestOk"] : L["Fiscal.TestFailed"])</span></dd>
+            </dl>
+            <form method="post" asp-page-handler="Finish" class="actions"><button type="submit">@L["Arca.Finish"]</button></form>
+        }
+        <section class="card">
+            <h3>@L["Fiscal.Locks"]</h3>
+            <dl class="facts">
+                <dt>Fiscal:ProductionEnabled</dt><dd><span class="status" data-tone="@(Model.CoreProductionEnabled ? "ok" : "neutral")">@(Model.CoreProductionEnabled ? L["Fiscal.LockOn"] : L["Fiscal.LockOff"])</span></dd>
+                <dt>Arca:Production</dt><dd><span class="status" data-tone="@(Model.Report?.AuthorizeEnabled == true ? "ok" : "neutral")">@(Model.Report?.AuthorizeEnabled switch { true => L["Fiscal.LockOn"], false => L["Fiscal.LockOff"], _ => L["Fiscal.LockUnknown"] })</span></dd>
+            </dl>
+            <p>@L["Arca.LocksExplained"]</p>
+            <pre class="pre">Fiscal__ProductionEnabled=true
+Arca__Production=on</pre>
+            <p class="muted">@L["Arca.LocksWhoDecides"]</p>
+            <p><a class="button secondary" href="/admin/fiscal">@L["Fiscal.Title"]</a></p>
+        </section>
+        break;
+}

@@ -1,0 +1,181 @@
+@page "/admin/cobros/transferencias"
+@model TransfersModel
+@{
+    ViewData["Title"] = L["Menu.Unallocated"];
+}
+<div class="bo-stack">
+    <div class="bo-head">
+        <h1>@L["Menu.Unallocated"]</h1>
+        <p class="bo-muted">@L["Transfers.Intro"]</p>
+    </div>
+
+    @if (Model.Done is not null)
+    {
+        <div class="bo-alert" data-tone="ok" role="status"><p>@L[Model.Done]</p></div>
+    }
+    @if (Model.Error is not null)
+    {
+        <div class="bo-error-summary" role="alert"><h2>@L["Pay.ErrorTitle"]</h2><p>@L[Model.Error]</p></div>
+    }
+    @if (Model.Imported is { } r)
+    {
+        <div class="bo-alert" data-tone="@(r.Errors.Count > 0 ? "warn" : "ok")" role="status">
+            <p class="bo-alert__title">@L["Transfers.ImportResult", r.Rows, r.Created, r.Applied, r.Unmatched, r.Existing]</p>
+            @foreach (var line in r.Errors)
+            {
+                <p class="bo-small">@line</p>
+            }
+        </div>
+    }
+
+    <section class="bo-card" aria-labelledby="bandeja">
+        <div class="bo-card__head">
+            <h2 id="bandeja">@L["Transfers.Tray"]</h2>
+            <span class="bo-small bo-muted">@L["Transfers.TrayHelp"]</span>
+        </div>
+        @if (Model.Tray.Count == 0)
+        {
+            <p class="bo-muted">@L["Transfers.TrayEmpty"]</p>
+        }
+        else
+        {
+            <div class="bo-table-wrap">
+                <table class="bo-table">
+                    <thead>
+                        <tr>
+                            <th scope="col">@L["Transfers.Date"]</th>
+                            <th scope="col" class="bo-num">@L["Invoice.Amount"]</th>
+                            <th scope="col">@L["Transfers.Payer"]</th>
+                            <th scope="col">@L["Transfers.Suggestion"]</th>
+                            <th scope="col" class="bo-act">@L["Transfers.Actions"]</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var row in Model.Tray)
+                        {
+                            var m = row.Movement;
+                            <tr id="movimiento-@m.Id">
+                                <td>@Ui.Date(m.Date)<span class="bo-small bo-muted"> · @row.Bank · <span class="bo-data">@m.Reference</span></span></td>
+                                <td class="bo-num">@Ui.Money(m.Amount, m.Currency)</td>
+                                <td>
+                                    @(m.PayerName ?? "")
+                                    @if (m.PayerCuit is { } cuit)
+                                    {
+                                        <span class="bo-data">@BillingOss.Web.Pages.Portal.PayTransferModel.Cuit(cuit)</span>
+                                    }
+                                    @if (m.Concept is { Length: > 0 } concept)
+                                    {
+                                        <span class="bo-small bo-muted">@concept</span>
+                                    }
+                                </td>
+                                <td>
+                                    @if (m.AccountId is { } account)
+                                    {
+                                        <a href="/admin/cuentas/@account">@(row.AccountName ?? "#" + account)</a>
+                                        @if (row.Suggested.Count > 0)
+                                        {
+                                            <span class="bo-small">@L["Transfers.SuggestedInvoices", string.Join(", ", row.Suggested.Select(s => s.Number ?? s.Id))]</span>
+                                        }
+                                        else
+                                        {
+                                            <span class="bo-small bo-muted">@L["Transfers.NoInvoiceMatch"]</span>
+                                        }
+                                    }
+                                    else
+                                    {
+                                        <span class="bo-small bo-muted">@L["Transfers.NoAccountMatch"]</span>
+                                    }
+                                </td>
+                                <td class="bo-act">
+                                    <form method="post" asp-page-handler="Apply" class="bo-row">
+                                        <input type="hidden" name="movement" value="@m.Id">
+                                        <label class="bo-sr" for="cuenta-@m.Id">@L["Field.Account"]</label>
+                                        <input id="cuenta-@m.Id" name="account" class="bo-input" inputmode="numeric" size="6" placeholder="@L["Field.Account"]" value="@m.AccountId">
+                                        <label class="bo-sr" for="modo-@m.Id">@L["Transfers.Mode"]</label>
+                                        <select id="modo-@m.Id" name="mode" class="bo-select">
+                                            @if (row.Suggested.Count > 0)
+                                            {
+                                                <option value="sugerido">@L["Transfers.ModeSuggested"]</option>
+                                            }
+                                            <option value="viejas">@L["Transfers.ModeOldest"]</option>
+                                            <option value="saldo">@L["Transfers.ModeCredit"]</option>
+                                        </select>
+                                        <button type="submit" class="bo-btn">@L["Transfers.Apply"]</button>
+                                    </form>
+                                    <form method="post" asp-page-handler="Ignore">
+                                        <input type="hidden" name="movement" value="@m.Id">
+                                        <button type="submit" class="bo-btn bo-btn--quiet">@L["Transfers.Ignore"]</button>
+                                    </form>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
+    </section>
+
+    <section class="bo-card" aria-labelledby="avisos">
+        <h2 id="avisos">@L["Transfers.Notices"]</h2>
+        @if (Model.Notices.Count == 0)
+        {
+            <p class="bo-muted">@L["Transfers.NoticesEmpty"]</p>
+        }
+        else
+        {
+            <ul class="bo-list">
+                @foreach (var n in Model.Notices)
+                {
+                    <li>
+                        <div class="bo-list__main">
+                            <a href="/admin/cuentas/@n.AccountId">@n.AccountName</a>
+                            <span class="bo-small bo-muted">@L["Transfers.NoticeDetail", Ui.Money(n.Amount, n.Currency), Ui.Date(n.TransferredOn), string.Join(", ", n.DocumentIds)]</span>
+                            @if (n.Reference is { Length: > 0 } reference)
+                            {
+                                <span class="bo-small">@reference</span>
+                            }
+                        </div>
+                        <div class="bo-list__side">
+                            @if (n.ReceiptName is { } receipt)
+                            {
+                                <a href="/admin/cobros/transferencias?handler=Receipt&notice=@n.Id">@L["Transfers.Receipt", receipt]</a>
+                            }
+                            <form method="post" asp-page-handler="Resolve">
+                                <input type="hidden" name="notice" value="@n.Id">
+                                <button type="submit" class="bo-btn bo-btn--secondary">@L["Transfers.CloseNotice"]</button>
+                            </form>
+                        </div>
+                    </li>
+                }
+            </ul>
+        }
+    </section>
+
+    @if (Model.BankAccounts.Count == 0)
+    {
+        <p class="bo-muted">@L["Transfers.NoAccounts"] <a href="/admin/cobros/cuentas-para-transferir">@L["Transfers.Accounts"]</a></p>
+    }
+    else
+    {
+        <section class="bo-card" aria-labelledby="extracto">
+            <h2 id="extracto">@L["Transfers.Import"]</h2>
+            <p class="bo-help">@L["Transfers.ImportHelp"]</p>
+            <form method="post" asp-page-handler="Import" enctype="multipart/form-data" class="bo-form">
+                <div class="bo-field">
+                    <label for="cuenta-extracto">@L["Transfers.BankAccount"]</label>
+                    <select id="cuenta-extracto" name="account" class="bo-select">
+                        @foreach (var a in Model.BankAccounts.Where(a => a.Active))
+                        {
+                            <option value="@a.Id">@a.Bank · @a.Currency.Code · @a.Cbu</option>
+                        }
+                    </select>
+                </div>
+                <div class="bo-field">
+                    <label for="archivo">@L["Transfers.File"]</label>
+                    <input id="archivo" name="statement" type="file" accept=".csv,text/csv,text/plain" required>
+                </div>
+                <button type="submit" class="bo-btn">@L["Transfers.ImportSubmit"]</button>
+            </form>
+        </section>
+    }
+</div>

@@ -1,0 +1,170 @@
+@page "/admin/afiliados/{id:long}"
+@model BillingOss.Web.Pages.Admin.Affiliates.AffiliateDetailModel
+@using BillingOss.Domain.Affiliates
+@{
+    var a = Model.Affiliate!;
+    ViewData["Title"] = L["Affiliates.Affiliate", a.Id];
+}
+<h1>@L["Affiliates.Affiliate", a.Id] <span class="muted bo-muted">@Model.Account</span></h1>
+<partial name="_AffiliatesNav" />
+@if (Model.Error is { } error)
+{
+    <div class="alert bo-alert" data-tone="danger" role="alert"><p>@error</p></div>
+}
+<dl class="facts bo-facts">
+    <dt>@L["Field.Account"]</dt>
+    <dd><a href="/admin/cuentas/@a.AccountId">@Model.Account</a></dd>
+    <dt>@L["Field.Status"]</dt>
+    <dd><partial name="_AffiliateStatus" model="a.Status" /></dd>
+    <dt>@L["Affiliates.Link"]</dt>
+    <dd><code class="bo-data">@Model.Link</code></dd>
+    <dt>@L["Affiliates.Clicks"]</dt>
+    <dd>@Model.Clicks</dd>
+    <dt>@L["Affiliates.Balance"]</dt>
+    <dd>
+        @if (Model.Balances.Count == 0)
+        {
+            @L["Affiliates.NoBalance"]
+        }
+        @foreach (var b in Model.Balances)
+        {
+            <div><span class="bo-money">@Ui.Money(b.Available, b.Currency)</span> @L["Affiliates.Available"] <span class="muted bo-muted">@L["Affiliates.HeldAmount", Ui.Money(b.Held, b.Currency)] @L["Affiliates.WithdrawnAmount", Ui.Money(b.Withdrawn, b.Currency)]</span></div>
+        }
+    </dd>
+</dl>
+
+@if (Model.CanManage)
+{
+    <div class="bo-row">
+        @foreach (var to in new[] { AffiliateStatus.Active, AffiliateStatus.Rejected, AffiliateStatus.Suspended })
+        {
+            @if (to != a.Status && AffiliateStates.Machine.CanMove(a.Status, to))
+            {
+                <form method="post" asp-page-handler="Status" asp-route-id="@a.Id" asp-route-to="@to" class="inline">
+                    <button type="submit" class="@(to == AffiliateStatus.Active ? "bo-btn" : "secondary bo-btn bo-btn--secondary")">@L["AffiliateMoveTo." + to]</button>
+                </form>
+            }
+        }
+    </div>
+}
+
+@if (Model.CanManage && a.Status == AffiliateStatus.Active && Model.Balances.Any(b => b.Available > 0m))
+{
+    <section aria-labelledby="credit">
+        <h2 id="credit">@L["Affiliates.ToCredit"]</h2>
+        <p class="muted bo-muted">@L["Affiliates.ToCreditStaffHelp"]</p>
+        <form method="post" asp-page-handler="Credit" asp-route-id="@a.Id" class="stack narrow bo-form">
+            <label for="credit-amount">@L["Affiliates.Amount"]</label>
+            <input id="credit-amount" name="Amount" type="text" inputmode="decimal" autocomplete="off" required class="bo-input" value="@Model.Amount" aria-describedby="credit-amount-help">
+            <p id="credit-amount-help" class="muted bo-help">@L["Affiliates.AmountHelp"]</p>
+            <label for="credit-currency">@L["Admin.Currency"]</label>
+            <select id="credit-currency" name="Currency" class="bo-select">
+                @foreach (var b in Model.Balances.Where(b => b.Available > 0m))
+                {
+                    <option value="@b.Currency.Code" selected="@(b.Currency.Code == Model.Currency)">@b.Currency.Code (@Ui.Money(b.Available, b.Currency))</option>
+                }
+            </select>
+            <button type="submit" class="bo-btn">@L["Affiliates.ToCreditButton"]</button>
+        </form>
+    </section>
+}
+
+<section aria-labelledby="rules">
+    <h2 id="rules">@L["Affiliates.OwnRules"]</h2>
+    <p class="muted bo-muted">@L["Affiliates.OwnRulesHelp"]</p>
+    @if (Model.Rules.Count > 0)
+    {
+        <ul class="plain">
+            @foreach (var r in Model.Rules)
+            {
+                <li>
+                    @(r.Product ?? L["Affiliates.AllProducts"].Value): <partial name="_CommissionRule" model="r.Rule" />
+                    @if (Model.CanManage)
+                    {
+                        <form method="post" asp-page-handler="DeleteRule" asp-route-id="@a.Id" asp-route-ruleId="@r.Rule.Id" class="inline"><button type="submit" class="link">@L["Affiliates.Delete"]</button></form>
+                    }
+                </li>
+            }
+        </ul>
+    }
+    @if (Model.CanManage)
+    {
+        <form method="post" asp-page-handler="Rule" asp-route-id="@a.Id" class="stack narrow bo-form">
+            <partial name="_RuleFields" model="Model.Rule" view-data='new ViewDataDictionary(ViewData) { ["Products"] = Model.Products, ["Prefix"] = "own" }' />
+            <button type="submit" class="bo-btn">@L["Affiliates.SaveRule"]</button>
+        </form>
+    }
+</section>
+
+<section aria-labelledby="referrals">
+    <h2 id="referrals">@L["Affiliates.Signups"]</h2>
+    @if (Model.CanManage)
+    {
+        <form method="post" asp-page-handler="Assign" asp-route-id="@a.Id" class="search">
+            <label for="service">@L["Affiliates.AssignService"]</label>
+            <input id="service" name="ServiceId" type="text" inputmode="numeric" autocomplete="off" class="bo-input">
+            <button type="submit" class="secondary bo-btn bo-btn--secondary">@L["Affiliates.Assign"]</button>
+        </form>
+    }
+    @if (Model.Referrals.Count == 0)
+    {
+        <p>@L["Affiliates.NoSignups"]</p>
+    }
+    else
+    {
+        <div class="table bo-table-wrap">
+            <table class="bo-table">
+                <thead><tr><th scope="col">@L["Admin.Date"]</th><th scope="col">@L["Services.Service"]</th><th scope="col">@L["Field.Account"]</th><th scope="col">@L["Affiliates.Source"]</th></tr></thead>
+                <tbody>
+                    @foreach (var r in Model.Referrals)
+                    {
+                        <tr>
+                            <td>@r.Referral.CreatedAt.ToString("d", CultureInfo.CurrentCulture)</td>
+                            <td>#@r.Referral.ServiceId @r.Product</td>
+                            <td><a href="/admin/cuentas/@r.Referral.AccountId">@r.Account</a></td>
+                            <td>@L["ReferralSource." + r.Referral.Source]</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
+</section>
+
+<section aria-labelledby="commissions">
+    <h2 id="commissions">@L["Affiliates.Commissions"]</h2>
+    @if (Model.Commissions.Count == 0)
+    {
+        <p>@L["Affiliates.NoCommissions"]</p>
+    }
+    else
+    {
+        <div class="table bo-table-wrap">
+            <table class="bo-table">
+                <thead><tr><th scope="col">@L["Admin.Date"]</th><th scope="col">@L["Invoices.Document"]</th><th scope="col">@L["Services.Service"]</th><th scope="col" class="num">@L["Affiliates.Base"]</th><th scope="col" class="num">@L["Affiliates.Amount"]</th><th scope="col">@L["Field.Status"]</th></tr></thead>
+                <tbody>
+                    @foreach (var row in Model.Commissions)
+                    {
+                        var c = row.Commission;
+                        <tr>
+                            <td>@c.CreatedAt.ToString("d", CultureInfo.CurrentCulture)</td>
+                            <td>@(row.InvoiceNumber is { } n ? L["Invoice.Number", n].Value : string.Empty)</td>
+                            <td>#@c.ServiceId @row.Product</td>
+                            <td class="num"><span class="bo-money">@Ui.Money(c.Base, c.Currency)</span></td>
+                            <td class="num"><span class="bo-money">@Ui.Money(c.Amount, c.Currency)</span></td>
+                            <td><partial name="_CommissionStatus" model="c" /></td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
+</section>
+
+@if (Model.Payouts.Count > 0)
+{
+    <section aria-labelledby="payouts">
+        <h2 id="payouts">@L["Affiliates.Payouts"]</h2>
+        <partial name="_PayoutTable" model="Model.Payouts" />
+    </section>
+}

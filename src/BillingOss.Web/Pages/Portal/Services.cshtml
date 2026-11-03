@@ -1,0 +1,72 @@
+@page "/servicios"
+@model ServicesModel
+@{
+    ViewData["Title"] = L["Nav.Services"];
+}
+<h1>@L["Nav.Services"]</h1>
+@if (Model.Placed is { } placed)
+{
+    <div class="notice" role="status"><p>@(Model.PlacedPending ? L["Shop.PlacedPending", placed] : L["Shop.Placed", placed])</p></div>
+}
+<partial name="_KnownIssues" model="Model.Issues" />
+<p class="actions"><a class="button secondary" href="/contratar">@L["Shop.Title"]</a></p>
+@if (Model.Rows.Count == 0)
+{
+    <p>@L["Services.None"]</p>
+}
+else
+{
+    <div class="table">
+        <table>
+            <thead>
+                <tr>
+                    <th scope="col">@L["Services.Service"]</th>
+                    @if (Model.ManyAccounts)
+                    {
+                        <th scope="col">@L["Field.Account"]</th>
+                    }
+                    <th scope="col">@L["Field.Status"]</th>
+                    <th scope="col">@L["Services.NextDue"]</th>
+                    <th scope="col" class="num">@L["Services.Price"]</th>
+                    <th scope="col"><span class="bo-sr">@L["Support.Title"]</span></th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var r in Model.Rows)
+                {
+                    <tr>
+                        <td>
+                            @r.Product
+                            @if (r.Service.Label is { Length: > 0 } label)
+                            {
+                                <span class="muted">@label</span>
+                            }
+                            @if (Model.Metered.Contains(r.Service.ProductId))
+                            {
+                                <br><a href="/servicios/@r.Service.Id/uso">@L["Usage.Link"]</a>
+                            }
+                            @if (r.CanChange)
+                            {
+                                <a href="/servicios/@r.Service.Id/cambio">@L["Change.Link"]</a>
+                            }
+                        </td>
+                        @if (Model.ManyAccounts)
+                        {
+                            <td>@r.Account</td>
+                        }
+                        <td><span class="status s-@r.Service.Status.ToString().ToLowerInvariant()">@L["ServiceStatus." + r.Service.Status]</span></td>
+                        <td>@Ui.Date(r.Service.NextDueDate)</td>
+                        <td class="num">
+                            @Ui.Money(r.Service.UnitPrice * r.Service.Quantity, r.Service.Currency)
+                            @if (r.Service.IndexCurrency is { } index)
+                            {
+                                <span class="muted">@L["Services.Indexed", Ui.Money(r.Service.IndexedUnitPrice!.Value * r.Service.Quantity, index)]</span>
+                            }
+                        </td>
+                        <td>@if (Model.SupportAccounts.Contains(r.Service.AccountId)) { <a href="/soporte/nuevo?servicio=@r.Service.Id">@L["Services.AskSupport"]</a> }</td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+}

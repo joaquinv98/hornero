@@ -1,0 +1,85 @@
+@page "/soporte/{id:long}"
+@model BillingOss.Web.Pages.Portal.Tickets.TicketModel
+@using BillingOss.App.Support
+@{
+    var t = Model.Ticket!;
+    var (tone, shape) = SupportUi.Status(t.Status, staff: false);
+    ViewData["Title"] = (Model.Problems.Count > 0 ? L["Support.ErrorPrefix"] + " " : string.Empty) + t.Subject;
+}
+<p><a href="/soporte">@L["Support.Back"]</a></p>
+<h1>@t.Subject</h1>
+@if (Request.Query["creada"] == "1")
+{
+    <p class="notice" role="status">@L["Support.Created", t.Number]</p>
+}
+@if (Model.SurveyToken is { } survey && Model.CanWrite)
+{
+    <p class="notice">@L["Survey.Invite"] <a href="/soporte/encuesta/@survey">@L["Survey.Rate"]</a></p>
+}
+<dl class="facts">
+    <dt>@L["Support.Request"]</dt>
+    <dd>@L["Support.Number", t.Number]</dd>
+    <dt>@L["Field.Status"]</dt>
+    <dd><span class="bo-status" data-tone="@tone" data-shape="@shape">@L["SupportStatus." + t.Status]</span></dd>
+    <dt>@L["Support.Department"]</dt>
+    <dd>@Model.Department</dd>
+    @if (Model.Service is { } service)
+    {
+        <dt>@L["Support.Service"]</dt>
+        <dd>@service</dd>
+    }
+    <dt>@L["Support.Opened"]</dt>
+    <dd><time datetime="@SupportUi.Iso(t.CreatedAt)">@SupportUi.When(t.CreatedAt, Model.Billing)</time></dd>
+</dl>
+
+<h2 class="bo-sr">@L["Support.Messages"]</h2>
+@{
+    var thread = new SupportUi.ThreadView(Model.Thread, false, $"/soporte/{t.Id}?handler=File&file=", Model.Billing);
+}
+<partial name="_TicketThread" model="thread" />
+
+@if (Model.CanWrite)
+{
+    <section aria-labelledby="respuesta">
+        <h2 id="respuesta">@L["Support.Reply"]</h2>
+        @if (Model.Problems.Count > 0)
+        {
+            <div class="alert" role="alert">
+                <p class="strong">@L["Support.FixBelow"]</p>
+                <ul>
+                    @foreach (var problem in Model.Problems)
+                    {
+                        <li>@problem</li>
+                    }
+                </ul>
+            </div>
+        }
+        @if (t.Status == TicketStatus.Closed)
+        {
+            <p class="muted">@L["Support.ReopenHelp"]</p>
+        }
+        <form method="post" asp-page-handler="Reply" asp-route-id="@t.Id" enctype="multipart/form-data" class="bo-form" novalidate>
+            <div class="bo-field">
+                <label for="Message">@L["Support.Message"]</label>
+                <textarea id="Message" name="Message" rows="6">@Model.Message</textarea>
+            </div>
+            <div class="bo-field">
+                <label for="Files">@L["Support.Files"] <span class="muted">@L["Support.Optional"]</span></label>
+                <input id="Files" name="Files" type="file" multiple accept="@SupportUi.Accept(Model.Options)" aria-describedby="adjuntos">
+                <p class="bo-help" id="adjuntos">@L["Support.FilesHelp", Model.Options.MaxAttachments, SupportUi.Megabytes(Model.Options.MaxAttachmentBytes), SupportUi.Extensions(Model.Options)]</p>
+            </div>
+            <div><button type="submit">@L["Support.SendReply"]</button></div>
+        </form>
+        @if (t.Status != TicketStatus.Closed)
+        {
+            <form method="post" asp-page-handler="Close" asp-route-id="@t.Id" class="pay">
+                <button type="submit" class="secondary">@L["Support.Close"]</button>
+                <span class="muted">@L["Support.CloseHelp"]</span>
+            </form>
+        }
+    </section>
+}
+else
+{
+    <p class="muted">@L["Support.ReadOnly"]</p>
+}

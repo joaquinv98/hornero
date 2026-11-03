@@ -1,0 +1,14 @@
+# Respaldo de pgBackRest de billing-oss (%i es full o diff). Está instalado en los tres nodos de base, pero solo
+# corre donde Patroni dice que está la primaria: en los demás, ExecCondition lo saltea sin marcar falla.
+[Unit]
+Description=Respaldo pgBackRest %i de billing-oss
+After=network-online.target patroni-billing.service
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+User=postgres
+EnvironmentFile=/etc/billing-ha/secretos.env
+ExecCondition=/usr/bin/curl -fsS -o /dev/null --cacert /etc/billing-ha/tls/ca.crt https://127.0.0.1:8008/primary
+ExecStart=/usr/bin/pgbackrest --stanza=billing --repo=1 backup --type=%i
+ExecStart=/usr/bin/pgbackrest --stanza=billing --repo=2 backup --type=%i

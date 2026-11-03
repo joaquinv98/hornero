@@ -1,0 +1,19 @@
+@model IReadOnlyList<BillingOss.Domain.Affiliates.AffiliatePayout>
+<div class="table bo-table-wrap">
+    <table class="bo-table">
+        <thead><tr><th scope="col">#</th><th scope="col">@L["Admin.Date"]</th><th scope="col">@L["Affiliates.Method"]</th><th scope="col" class="num">@L["Affiliates.Amount"]</th><th scope="col">@L["Field.Status"]</th><th scope="col">@L["Affiliates.Reference"]</th></tr></thead>
+        <tbody>
+            @foreach (var p in Model)
+            {
+                <tr>
+                    <td>@p.Id</td>
+                    <td>@p.RequestedAt.ToString("d", CultureInfo.CurrentCulture)</td>
+                    <td>@L["PayoutMethod." + p.Method]</td>
+                    <td class="num"><span class="bo-money">@Ui.Money(p.Amount, p.Currency)</span></td>
+                    <td>@L["PayoutStatus." + p.Status]</td>
+                    <td>@(p.Reference ?? p.Reason)</td>
+                </tr>
+            }
+        </tbody>
+    </table>
+</div>

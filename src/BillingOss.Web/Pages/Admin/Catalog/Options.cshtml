@@ -1,0 +1,123 @@
+@page "/admin/catalogo/opciones/{id}"
+@model BillingOss.Web.Pages.Admin.Catalog.OptionsModel
+@using BillingOss.Domain.Catalog
+@using BillingOss.Web.Pages.Admin.Catalog
+@{
+    var title = Model.GroupId is null ? L["Catalog.NewOptionGroup"].Value : Model.Input.Name ?? "";
+    ViewData["Title"] = title;
+    var products = new ProductPicker("Input.ProductIds", L["Catalog.OfferedBy"], Model.Products, Model.Input.ProductIds);
+}
+<nav aria-label="@L["Catalog.Breadcrumb"]"><a href="/admin/catalogo">@L["Catalog.Title"]</a></nav>
+<h1>@title @if (Model.GroupId is { } shown) { <span class="muted">#@shown</span> }</h1>
+@if (Model.Error is { } error)
+{
+    <div class="alert" role="alert" tabindex="-1" autofocus><p><strong>@L["Catalog.ErrorTitle"]</strong> @error</p></div>
+}
+@if (Model.Saved)
+{
+    <p class="notice" role="status">@L["Catalog.Saved"]</p>
+}
+<datalist id="currencies">
+    @foreach (var c in Model.Currencies)
+    {
+        <option value="@c"></option>
+    }
+</datalist>
+<form method="post" class="stack">
+    <fieldset class="card">
+        <legend>@L["Catalog.General"]</legend>
+        <div class="grid">
+            <div class="field">
+                <label asp-for="Input.Name">@L["Catalog.Name"]</label>
+                <input asp-for="Input.Name" required maxlength="200">
+            </div>
+            <div class="field">
+                <label asp-for="Input.Description">@L["Catalog.Description"]</label>
+                <input asp-for="Input.Description" maxlength="1000">
+            </div>
+        </div>
+        <partial name="_Products" model="products" />
+    </fieldset>
+
+    <p class="muted">@L["Catalog.OptionsHelp"]</p>
+    @for (var i = 0; i < Model.Input.Options.Count; i++)
+    {
+        var option = Model.Input.Options[i];
+        <fieldset class="card">
+            <legend>@(option.Id is null ? L["Catalog.NewOption"].Value : option.Name)</legend>
+            <input type="hidden" asp-for="Input.Options[i].Id">
+            <div class="grid">
+                <div class="field">
+                    <label asp-for="Input.Options[i].Name">@L["Catalog.Name"]</label>
+                    <input asp-for="Input.Options[i].Name" maxlength="200">
+                </div>
+                <div class="field">
+                    <label asp-for="Input.Options[i].Kind">@L["Catalog.OptionKind"]</label>
+                    <select asp-for="Input.Options[i].Kind">
+                        @foreach (var kind in Enum.GetValues<OptionKind>())
+                        {
+                            <option value="@kind" selected="@(option.Kind == kind)">@L["OptionKind." + kind]</option>
+                        }
+                    </select>
+                </div>
+                <div class="field">
+                    <label asp-for="Input.Options[i].ModuleKey">@L["Catalog.ModuleKey"]</label>
+                    <input asp-for="Input.Options[i].ModuleKey" maxlength="200" class="code" spellcheck="false" aria-describedby="key-help-@i">
+                    <small id="key-help-@i" class="muted">@L["Catalog.ModuleKeyHelp"]</small>
+                </div>
+                <div class="field">
+                    <label asp-for="Input.Options[i].MinQuantity">@L["Catalog.MinQuantity"]</label>
+                    <input asp-for="Input.Options[i].MinQuantity" min="0">
+                </div>
+                <div class="field">
+                    <label asp-for="Input.Options[i].MaxQuantity">@L["Catalog.MaxQuantity"]</label>
+                    <input asp-for="Input.Options[i].MaxQuantity" min="0" aria-describedby="max-help-@i">
+                    <small id="max-help-@i" class="muted">@L["Catalog.MaxQuantityHelp"]</small>
+                </div>
+                <div class="field">
+                    <label asp-for="Input.Options[i].SortOrder">@L["Catalog.SortOrder"]</label>
+                    <input asp-for="Input.Options[i].SortOrder">
+                </div>
+            </div>
+            <label class="check"><input asp-for="Input.Options[i].Hidden"> @L["Catalog.HiddenOption"]</label>
+
+            @for (var j = 0; j < option.Values.Count; j++)
+            {
+                var value = option.Values[j];
+                var prices = new PriceTable($"Input.Options[{i}].Values[{j}].Prices", value.Prices, L["Catalog.ValuePrices", value.Name ?? L["Catalog.NewValue"].Value]);
+                <fieldset class="value">
+                    <legend>@(value.Id is null ? L["Catalog.NewValue"].Value : value.Name)</legend>
+                    <input type="hidden" asp-for="Input.Options[i].Values[j].Id">
+                    <div class="grid">
+                        <div class="field">
+                            <label asp-for="Input.Options[i].Values[j].Name">@L["Catalog.ValueName"]</label>
+                            <input asp-for="Input.Options[i].Values[j].Name" maxlength="200">
+                        </div>
+                        <div class="field">
+                            <label asp-for="Input.Options[i].Values[j].ModuleValue">@L["Catalog.ModuleValue"]</label>
+                            <input asp-for="Input.Options[i].Values[j].ModuleValue" maxlength="200" class="code" spellcheck="false">
+                        </div>
+                        <div class="field">
+                            <label asp-for="Input.Options[i].Values[j].SortOrder">@L["Catalog.SortOrder"]</label>
+                            <input asp-for="Input.Options[i].Values[j].SortOrder">
+                        </div>
+                    </div>
+                    <label class="check"><input asp-for="Input.Options[i].Values[j].Hidden"> @L["Catalog.HiddenValue"]</label>
+                    <partial name="_Prices" model="prices" />
+                </fieldset>
+            }
+        </fieldset>
+    }
+
+    @if (Model.CanWrite)
+    {
+        <p><button type="submit">@L["Catalog.SaveOptionGroup"]</button></p>
+    }
+</form>
+@if (Model.CanWrite && Model.GroupId is not null)
+{
+    <form method="post" asp-page-handler="Copy" class="actions">
+        <button type="submit" class="secondary" aria-describedby="copy-help">@L["Catalog.CopyOptionGroup"]</button>
+        <small id="copy-help" class="muted">@L["Catalog.CopyOptionGroupHelp"]</small>
+    </form>
+}

@@ -1,0 +1,151 @@
+@page "/contratar"
+@model BillingOss.Web.Pages.Portal.ShopModel
+@using BillingOss.App.UseCases
+@using BillingOss.Domain.Shared
+@{
+    ViewData["Title"] = L["Shop.Title"];
+    string CycleName(string code) => L["Cycle." + code] is { ResourceNotFound: false } text ? text.Value : code;
+    string Link(long id) => Model.Accounts.Count > 1 ? $"/contratar/{id}?cuenta={Model.Account!.Id}" : $"/contratar/{id}";
+    string BundleLink(long id) => Model.Accounts.Count > 1 ? $"/contratar/paquete/{id}?cuenta={Model.Account!.Id}" : $"/contratar/paquete/{id}";
+}
+<nav aria-label="@L["Catalog.Breadcrumb"]"><a href="/servicios">@L["Nav.Services"]</a></nav>
+<h1>@L["Shop.Title"]</h1>
+@if (Model.Account is not { } account)
+{
+    <p>@L["Shop.NoAccount"]</p>
+}
+else
+{
+    var currency = account.Currency;
+    @if (Model.Accounts.Count > 1)
+    {
+        <form method="get" class="search">
+            <label for="cuenta">@L["Field.Account"]</label>
+            <select id="cuenta" name="cuenta">
+                @foreach (var a in Model.Accounts)
+                {
+                    <option value="@a.Id" selected="@(a.Id == account.Id)">@a.Name (@a.Currency.Code)</option>
+                }
+            </select>
+            <button type="submit" class="secondary">@L["Shop.ChangeAccount"]</button>
+        </form>
+    }
+    <p class="muted">@L["Shop.Help", currency.Code]</p>
+    @if (Model.Groups.Count == 0 && Model.Bundles.Count == 0)
+    {
+        <p>@L["Shop.Empty"]</p>
+    }
+    @foreach (var (group, products) in Model.Groups)
+    {
+        <section class="shop-group" aria-labelledby="g-@(group?.Id ?? 0)">
+            <h2 id="g-@(group?.Id ?? 0)">@(group?.Name ?? L["Shop.Other"].Value)</h2>
+            @if (group?.Headline is { Length: > 0 } headline)
+            {
+                <p class="muted">@headline</p>
+            }
+            <div class="table">
+                <table>
+                    <thead>
+                        <tr><th scope="col">@L["Catalog.Product"]</th><th scope="col" class="num">@L["Shop.From"]</th><th scope="col"><span class="visually-hidden">@L["Shop.Order"]</span></th></tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var p in products)
+                        {
+                            var first = Model.From[p.Id];
+                            <tr>
+                                <td>
+                                    <strong>@p.Name</strong>
+                                    @if (p.Description is { Length: > 0 } description)
+                                    {
+                                        <div class="muted multiline">@description</div>
+                                    }
+                                    @if (p.TrialDays is > 0)
+                                    {
+                                        <div>@L["Shop.Trial", p.TrialDays]</div>
+                                    }
+                                </td>
+                                <td class="num">@Ui.Money(first.Amount, currency) @CycleName(first.Cycle)</td>
+                                <td>
+                                    @if (p.Stock is <= 0)
+                                    {
+                                        <span class="status">@L["Shop.OutOfStock"]</span>
+                                    }
+                                    else
+                                    {
+                                        <a class="button" href="@Link(p.Id)">@L["Shop.Order"]<span class="visually-hidden"> @p.Name</span></a>
+                                    }
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </section>
+    }
+    @if (Model.Bundles.Count > 0)
+    {
+        <section aria-labelledby="t-paquetes">
+            <h2 id="t-paquetes">@L["Catalog.Bundles"]</h2>
+            <div class="table">
+                <table>
+                    <thead>
+                        <tr><th scope="col">@L["Shop.Bundle"]</th><th scope="col" class="num">@L["Shop.FirstPeriod"]</th><th scope="col"><span class="visually-hidden">@L["Shop.Order"]</span></th></tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var b in Model.Bundles)
+                        {
+                            var price = b.Prices.First(x => x.Currency == currency.Code);
+                            <tr>
+                                <td>
+                                    <strong>@b.Name</strong>
+                                    <div class="muted">@string.Join(", ", b.Items.Select(i => i.Quantity > 1 ? $"{i.Product} x{i.Quantity}" : i.Product))</div>
+                                    @if (b.Description is { Length: > 0 } description)
+                                    {
+                                        <div class="muted multiline">@description</div>
+                                    }
+                                </td>
+                                <td class="num">
+                                    @if (price.Amount < price.FullAmount)
+                                    {
+                                        <s>@Ui.Money(price.FullAmount, currency)</s>
+                                    }
+                                    @Ui.Money(price.Amount, currency)
+                                    @if (b.DiscountPercent > 0m)
+                                    {
+                                        <div class="muted">@L["Shop.BundleDiscount", b.DiscountPercent.ToString("0.##", CultureInfo.CurrentCulture)]</div>
+                                    }
+                                </td>
+                                <td><a class="button" href="@BundleLink(b.Id)">@L["Shop.Order"]<span class="visually-hidden"> @b.Name</span></a></td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </section>
+    }
+    @if (Model.Addons.Count > 0)
+    {
+        <section aria-labelledby="t-complementos">
+            <h2 id="t-complementos">@L["Catalog.Addons"]</h2>
+            <p class="muted">@L["Shop.AddonsHelp"]</p>
+            <div class="table">
+                <table>
+                    <thead>
+                        <tr><th scope="col">@L["Catalog.Product"]</th><th scope="col" class="num">@L["Shop.From"]</th><th scope="col"><span class="visually-hidden">@L["Shop.Order"]</span></th></tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var p in Model.Addons)
+                        {
+                            var first = Model.From[p.Id];
+                            <tr>
+                                <td><strong>@p.Name</strong> @if (p.Description is { Length: > 0 } description) { <div class="muted multiline">@description</div> }</td>
+                                <td class="num">@Ui.Money(first.Amount, currency) @CycleName(first.Cycle)</td>
+                                <td><a class="button secondary" href="@Link(p.Id)">@L["Shop.Order"]<span class="visually-hidden"> @p.Name</span></a></td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </section>
+    }
+}

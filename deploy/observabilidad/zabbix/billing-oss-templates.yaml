@@ -1,0 +1,587 @@
+zabbix_export:
+  version: '7.0'
+  template_groups:
+    - uuid: db71d3667b5d4e69bd4b76299af844af
+      name: Templates/Applications
+  templates:
+    - uuid: a594addf1fa247e3aa1f3016dcdb6a42
+      template: 'billing-oss negocio'
+      name: 'billing-oss negocio'
+      description: |
+        Métricas de negocio de billing-oss leídas de la base con platform.metrics() (D-15). Se asigna a UN
+        solo host, el que tiene el UserParameter billing.metrics. Guía: docs/observabilidad/README.md.
+      groups:
+        - name: Templates/Applications
+      items:
+        - uuid: d2cc4eed36a24aba8e34e1ff5fd3805d
+          name: 'Métricas de negocio (JSON)'
+          key: billing.metrics
+          history: 1h
+          value_type: TEXT
+          trends: '0'
+          description: 'Salida de platform.metrics() como JSON, por el UserParameter de deploy/observabilidad/zabbix/billing-oss.conf.'
+          tags:
+            - tag: component
+              value: billing
+          triggers:
+            - uuid: 7bccbd24f4e543ae9aa13e5e8f575c72
+              expression: 'nodata(/billing-oss negocio/billing.metrics,10m)=1'
+              name: 'billing-oss: no se pueden leer las métricas de negocio'
+              priority: HIGH
+              description: 'Sin datos hace 10 minutos: la base no responde, el rol billing_metrics no entra o falta el UserParameter.'
+        - uuid: c4e8431e4eb5491c947c81afac9ab2a9
+          name: 'Cola: trabajos vencidos sin tomar'
+          type: DEPENDENT
+          key: billing.jobs.due
+          delay: '0'
+          value_type: FLOAT
+          description: 'Trabajos pendientes con run_at vencido, de todos los tipos.'
+          preprocessing:
+            - type: JSONPATH
+              parameters:
+                - '$[?(@.name == ''jobs_due'')].value.sum()'
+              error_handler: CUSTOM_VALUE
+              error_handler_params: '0'
+          master_item:
+            key: billing.metrics
+          tags:
+            - tag: component
+              value: billing
+        - uuid: 3fea488e707c4d61bb72fb65946fc1a0
+          name: 'Cola: trabajos pendientes'
+          type: DEPENDENT
+          key: billing.jobs.pending
+          delay: '0'
+          value_type: FLOAT
+          description: 'Pendientes, incluidos los programados para más adelante.'
+          preprocessing:
+            - type: JSONPATH
+              parameters:
+                - '$[?(@.name == ''jobs_pending'')].value.sum()'
+              error_handler: CUSTOM_VALUE
+              error_handler_params: '0'
+          master_item:
+            key: billing.metrics
+          tags:
+            - tag: component
+              value: billing
+        - uuid: 34bde9859d9f4dccb36edb7c3dedcb32
+          name: 'Cola: trabajos reintentando'
+          type: DEPENDENT
+          key: billing.jobs.retrying
+          delay: '0'
+          value_type: FLOAT
+          description: 'Pendientes que ya fallaron al menos una vez.'
+          preprocessing:
+            - type: JSONPATH
+              parameters:
+                - '$[?(@.name == ''jobs_retrying'')].value.sum()'
+              error_handler: CUSTOM_VALUE
+              error_handler_params: '0'
+          master_item:
+            key: billing.metrics
+          tags:
+            - tag: component
+              value: billing
+        - uuid: 818a5906fb78423eaec4abdfaf6214a3
+          name: 'Cola: trabajos en curso'
+          type: DEPENDENT
+          key: billing.jobs.running
+          delay: '0'
+          value_type: FLOAT
+          description: 'En curso con el lease vigente.'
+          preprocessing:
+            - type: JSONPATH
+              parameters:
+                - '$[?(@.name == ''jobs_running'')].value.sum()'
+              error_handler: CUSTOM_VALUE
+              error_handler_params: '0'
+          master_item:
+            key: billing.metrics
+          tags:
+            - tag: component
+              value: billing
+        - uuid: 464263f5fbeb44a78debcd8e27f63df9
+          name: 'Cola: trabajos con lease vencido'
+          type: DEPENDENT
+          key: billing.jobs.stuck
+          delay: '0'
+          value_type: FLOAT
+          description: 'En curso con el lease vencido: el nodo que los tenía se cayó y nadie los retomó.'
+          preprocessing:
+            - type: JSONPATH
+              parameters:
+                - '$[?(@.name == ''jobs_stuck'')].value.sum()'
+              error_handler: CUSTOM_VALUE
+              error_handler_params: '0'
+          master_item:
+            key: billing.metrics
+          tags:
+            - tag: component
+              value: billing
+          triggers:
+            - uuid: ab0e4fb9468044fd8ae5f8a8671d1bbd
+              expression: 'min(/billing-oss negocio/billing.jobs.stuck,10m)>0'
+              name: 'billing-oss: trabajos con lease vencido hace 10 minutos'
+              priority: WARNING
+              description: 'Ningún trabajador retoma lo que dejó un nodo caído. Revisar que haya trabajadores vivos.'
+        - uuid: b7fda4e58acc45669685e70f72154679
+          name: 'Cola: trabajos muertos'
+          type: DEPENDENT
+          key: billing.jobs.dead
+          delay: '0'
+          value_type: FLOAT
+          description: 'Agotaron los intentos y esperan al staff.'
+          preprocessing:
+            - type: JSONPATH
+              parameters:
+                - '$[?(@.name == ''jobs_dead'')].value.sum()'
+              error_handler: CUSTOM_VALUE
+              error_handler_params: '0'
+          master_item:
+            key: billing.metrics
+          tags:
+            - tag: component
+              value: billing
+          triggers:
+            - uuid: ce5bbfa5dc524726bcbfa990240c2269
+              expression: 'last(/billing-oss negocio/billing.jobs.dead)>0'
+              name: 'billing-oss: hay trabajos muertos'
+              priority: HIGH
+              description: 'Ver en docs/observabilidad qué tipo de trabajo es y su last_error.'
+        - uuid: eaf683b932ea4290b2c6b58737003850
+          name: 'Cola: espera del trabajo más viejo'
+          type: DEPENDENT
+          key: billing.jobs.oldest_due
+          delay: '0'
+          value_type: FLOAT
+          units: s
+          description: 'Cuánto hace que el trabajo vencido más viejo espera que lo tomen.'
+          preprocessing:
+            - type: JSONPATH
+              parameters:
+                - '$[?(@.name == ''jobs_oldest_due_seconds'')].value.max()'
+              error_handler: CUSTOM_VALUE
+              error_handler_params: '0'
+          master_item:
+            key: billing.metrics
+          tags:
+            - tag: component
+              value: billing
+          triggers:
+            - uuid: a8e08cf7731d4c27b2be8dac0f63155f
+              expression: 'last(/billing-oss negocio/billing.jobs.oldest_due)>{$BILLING.QUEUE.MAX_AGE}'
+              name: 'billing-oss: la cola está trabada'
+              priority: HIGH
+              description: 'Un trabajo vencido espera más de {$BILLING.QUEUE.MAX_AGE} segundos. Sin trabajadores o con uno trabado no se factura ni se emite.'
+        - uuid: abc7b155ccb2496bb7da3ab80e464b20
+          name: 'Fiscal: emisiones pendientes'
+          type: DEPENDENT
+          key: billing.fiscal.pending
+          delay: '0'
+          value_type: FLOAT
+          description: 'Comprobantes esperando su turno con el fisco.'
+          preprocessing:
+            - type: JSONPATH
+              parameters:
+                - '$[?(@.name == ''fiscal_emissions'' && @.label == ''Pending'')].value.sum()'
+              error_handler: CUSTOM_VALUE
+              error_handler_params: '0'
+          master_item:
+            key: billing.metrics
+          tags:
+            - tag: component
+              value: billing
+        - uuid: 42f38df85318442cb2add5a86db75b59
+          name: 'Fiscal: emisiones con resultado incierto'
+          type: DEPENDENT
+          key: billing.fiscal.unknown
+          delay: '0'
+          value_type: FLOAT
+          description: 'El fisco no respondió y todavía no se consultó qué pasó.'
+          preprocessing:
+            - type: JSONPATH
+              parameters:
+                - '$[?(@.name == ''fiscal_emissions'' && @.label == ''Unknown'')].value.sum()'
+              error_handler: CUSTOM_VALUE
+              error_handler_params: '0'
+          master_item:
+            key: billing.metrics
+          tags:
+            - tag: component
+              value: billing
+          triggers:
+            - uuid: 536739c5e00e4540bb4eb988e53c0779
+              expression: 'min(/billing-oss negocio/billing.fiscal.unknown,15m)>0'
+              name: 'billing-oss: emisión fiscal incierta hace 15 minutos'
+              priority: HIGH
+              description: 'La consulta al fisco no la resolvió. No reemitir a mano: ver docs/observabilidad.'
+        - uuid: 35ce4ee6d0344e9c9c9b46d15e5c7ab4
+          name: 'Fiscal: emisiones en conflicto'
+          type: DEPENDENT
+          key: billing.fiscal.conflict
+          delay: '0'
+          value_type: FLOAT
+          description: 'El fisco tiene un número que no coincide con el núcleo.'
+          preprocessing:
+            - type: JSONPATH
+              parameters:
+                - '$[?(@.name == ''fiscal_emissions'' && @.label == ''Conflict'')].value.sum()'
+              error_handler: CUSTOM_VALUE
+              error_handler_params: '0'
+          master_item:
+            key: billing.metrics
+          tags:
+            - tag: component
+              value: billing
+          triggers:
+            - uuid: ba7c52df5a8340e096cb3388b8f4055e
+              expression: 'last(/billing-oss negocio/billing.fiscal.conflict)>0'
+              name: 'billing-oss: emisión fiscal en conflicto'
+              priority: HIGH
+              description: 'La serie quedó frenada hasta que el staff concilie. Ver docs/observabilidad.'
+        - uuid: 84165491f6ff4daca334c1bf08bae0ca
+          name: 'Fiscal: emisiones rechazadas'
+          type: DEPENDENT
+          key: billing.fiscal.rejected
+          delay: '0'
+          value_type: FLOAT
+          description: 'Total acumulado de rechazos del fisco.'
+          preprocessing:
+            - type: JSONPATH
+              parameters:
+                - '$[?(@.name == ''fiscal_emissions'' && @.label == ''Rejected'')].value.sum()'
+              error_handler: CUSTOM_VALUE
+              error_handler_params: '0'
+          master_item:
+            key: billing.metrics
+          tags:
+            - tag: component
+              value: billing
+        - uuid: e3ec70af8b0a4d888b9eccb6bbf1b3c3
+          name: 'Pasarelas: avisos sin verificar'
+          type: DEPENDENT
+          key: billing.webhooks.unprocessed
+          delay: '0'
+          value_type: FLOAT
+          description: 'Avisos recibidos que todavía no verificó el módulo.'
+          preprocessing:
+            - type: JSONPATH
+              parameters:
+                - '$[?(@.name == ''webhooks_unprocessed'')].value.sum()'
+              error_handler: CUSTOM_VALUE
+              error_handler_params: '0'
+          master_item:
+            key: billing.metrics
+          tags:
+            - tag: component
+              value: billing
+        - uuid: 225c26b6ce0d45d890095698edc50917
+          name: 'Pasarelas: espera del aviso más viejo'
+          type: DEPENDENT
+          key: billing.webhooks.oldest
+          delay: '0'
+          value_type: FLOAT
+          units: s
+          description: 'Cuánto hace que llegó el aviso sin verificar más viejo.'
+          preprocessing:
+            - type: JSONPATH
+              parameters:
+                - '$[?(@.name == ''webhooks_oldest_seconds'')].value.max()'
+              error_handler: CUSTOM_VALUE
+              error_handler_params: '0'
+          master_item:
+            key: billing.metrics
+          tags:
+            - tag: component
+              value: billing
+          triggers:
+            - uuid: 1237e7722c7e4eaa8c89ed103e50f067
+              expression: 'last(/billing-oss negocio/billing.webhooks.oldest)>{$BILLING.WEBHOOK.MAX_AGE}'
+              name: 'billing-oss: avisos de pasarela sin procesar'
+              priority: HIGH
+              description: 'Los pagos no se acreditan. Revisar la cola (payments.webhook) y el módulo de la pasarela.'
+        - uuid: 7a33c75a04d042f0ac42edbbc8d9c382
+          name: 'Pagos: pendientes en la pasarela'
+          type: DEPENDENT
+          key: billing.payments.pending
+          delay: '0'
+          value_type: FLOAT
+          description: 'Pagos que la pasarela informó como pendientes, por ejemplo un cupón sin pagar.'
+          preprocessing:
+            - type: JSONPATH
+              parameters:
+                - '$[?(@.name == ''payments_pending'' && @.label == ''Pending'')].value.sum()'
+              error_handler: CUSTOM_VALUE
+              error_handler_params: '0'
+          master_item:
+            key: billing.metrics
+          tags:
+            - tag: component
+              value: billing
+        - uuid: bea604e3b6144123ae1ba66156cdc83e
+          name: 'Pagos: en disputa'
+          type: DEPENDENT
+          key: billing.payments.disputed
+          delay: '0'
+          value_type: FLOAT
+          description: 'Pagos con un reclamo abierto en la pasarela.'
+          preprocessing:
+            - type: JSONPATH
+              parameters:
+                - '$[?(@.name == ''payments_pending'' && @.label == ''Disputed'')].value.sum()'
+              error_handler: CUSTOM_VALUE
+              error_handler_params: '0'
+          master_item:
+            key: billing.metrics
+          tags:
+            - tag: component
+              value: billing
+          triggers:
+            - uuid: 46695ccff27a40c2942a5e31798adab4
+              expression: 'last(/billing-oss negocio/billing.payments.disputed)>0'
+              name: 'billing-oss: hay pagos en disputa'
+              priority: WARNING
+              description: 'Responder el reclamo en la pasarela antes de su plazo.'
+        - uuid: d1b65f127a274af7a88a074f759eb8ed
+          name: 'Pagos: sin casar con un intento propio'
+          type: DEPENDENT
+          key: billing.payments.unmatched
+          delay: '0'
+          value_type: FLOAT
+          description: 'Pagos que la pasarela informó y no corresponden a ningún intento propio: de otro sistema que usa la misma cuenta, o cobrados después del punto al que se restauró la base. Están en payments.unmatched.'
+          preprocessing:
+            - type: JSONPATH
+              parameters:
+                - '$[?(@.name == ''payments_unmatched'')].value.sum()'
+              error_handler: CUSTOM_VALUE
+              error_handler_params: '0'
+          master_item:
+            key: billing.metrics
+          tags:
+            - tag: component
+              value: billing
+          triggers:
+            - uuid: 9b17085fe64a4d4693adf12ba14d9e90
+              expression: 'last(/billing-oss negocio/billing.payments.unmatched)>0'
+              name: 'billing-oss: hay pagos sin casar'
+              priority: HIGH
+              description: 'Plata cobrada que ninguna factura explica. Revisar payments.unmatched y resolver cada fila (docs/despliegue/backups.md, después de restaurar).'
+        - uuid: 02dd7d3ab980436dbdc06fe73e85fe9e
+          name: 'Conciliación: hallazgos abiertos'
+          type: DEPENDENT
+          key: billing.reconcile.findings
+          delay: '0'
+          value_type: FLOAT
+          description: 'Hallazgos abiertos de la conciliación con el fisco, las pasarelas y los módulos: comprobantes huérfanos o ambiguos, saltos de numeración y recursos con marca sin servicio. Están en platform.reconcile_findings.'
+          preprocessing:
+            - type: JSONPATH
+              parameters:
+                - '$[?(@.name == ''reconcile_findings'')].value.sum()'
+              error_handler: CUSTOM_VALUE
+              error_handler_params: '0'
+          master_item:
+            key: billing.metrics
+          tags:
+            - tag: component
+              value: billing
+          triggers:
+            - uuid: 7043a9b5a1c8498e82b41ace19d22b30
+              expression: 'last(/billing-oss negocio/billing.reconcile.findings)>0'
+              name: 'billing-oss: hay hallazgos de conciliación sin resolver'
+              priority: HIGH
+              description: 'Hubo una promoción o una restauración y algo del fisco, la pasarela o un módulo no cierra con la base. Qué hacer con cada hallazgo: docs/despliegue/backups.md, después de restaurar.'
+        - uuid: 56ef38c321f44e62a657b98d36b97eda
+          name: 'Facturación: duración de la última corrida'
+          type: DEPENDENT
+          key: billing.run.duration
+          delay: '0'
+          value_type: FLOAT
+          units: s
+          description: 'Duración de la última corrida de facturación.'
+          preprocessing:
+            - type: JSONPATH
+              parameters:
+                - '$[?(@.name == ''billing_run_seconds'')].value.max()'
+              error_handler: CUSTOM_VALUE
+              error_handler_params: '0'
+          master_item:
+            key: billing.metrics
+          tags:
+            - tag: component
+              value: billing
+        - uuid: 9bc947f6bd86401b9da30fc9d4b4d1d5
+          name: 'Facturación: tiempo desde la última corrida'
+          type: DEPENDENT
+          key: billing.run.age
+          delay: '0'
+          value_type: FLOAT
+          units: s
+          description: 'Tiempo desde que terminó la última corrida de facturación. Sin valor si nunca corrió: el disparador de sin datos cubre una instalación nueva donde el planificador nunca encoló billing.run.'
+          preprocessing:
+            - type: JSONPATH
+              parameters:
+                - '$[?(@.name == ''billing_run_age_seconds'')].value.max()'
+              error_handler: DISCARD_VALUE
+          master_item:
+            key: billing.metrics
+          tags:
+            - tag: component
+              value: billing
+          triggers:
+            - uuid: ad2a173268d24c38a4194fc6c2fcb0df
+              expression: 'last(/billing-oss negocio/billing.run.age)>{$BILLING.RUN.MAX_AGE}'
+              name: 'billing-oss: la facturación no corre'
+              priority: HIGH
+              description: 'La corrida diaria no terminó en {$BILLING.RUN.MAX_AGE} segundos. Revisar el planificador y el trabajo billing.run.'
+            - uuid: df5eba1eba1746eb95f429f15ee758a0
+              expression: 'nodata(/billing-oss negocio/billing.run.age,{$BILLING.RUN.MAX_AGE}s)=1'
+              name: 'billing-oss: la facturación nunca corrió'
+              priority: HIGH
+              description: 'En {$BILLING.RUN.MAX_AGE} segundos no hubo ninguna corrida de facturación terminada. Revisar que haya trabajadores y que el planificador encole billing.run.'
+      macros:
+        - macro: '{$BILLING.QUEUE.MAX_AGE}'
+          value: '900'
+          description: 'Segundos que puede esperar el trabajo vencido más viejo: 15 minutos.'
+        - macro: '{$BILLING.RUN.MAX_AGE}'
+          value: '93600'
+          description: 'Segundos sin corrida de facturación antes de avisar: 26 horas.'
+        - macro: '{$BILLING.WEBHOOK.MAX_AGE}'
+          value: '600'
+          description: 'Segundos que puede esperar un aviso de pasarela sin verificar.'
+    - uuid: f424d4a20c454f3c860a61d9098105f3
+      template: 'billing-oss salud'
+      name: 'billing-oss salud'
+      description: |
+        Salud de un nodo de billing-oss por HTTP: /health/live y /health/ready. Se asigna a cada nodo web y
+        trabajador, con {$BILLING.URL} apuntando a ese nodo. Guía: docs/observabilidad/README.md.
+      groups:
+        - name: Templates/Applications
+      items:
+        - uuid: e71047439bc542a8b75f41cd989bc023
+          name: 'Salud: vivo'
+          type: HTTP_AGENT
+          key: billing.health.live
+          delay: 1m
+          history: 7d
+          value_type: CHAR
+          trends: '0'
+          description: 'El proceso responde. Si falla, el nodo está caído.'
+          timeout: 10s
+          url: '{$BILLING.URL}/health/live'
+          status_codes: '200'
+          tags:
+            - tag: component
+              value: billing
+          triggers:
+            - uuid: 2b75224c7a4341f983ce841055c171f1
+              expression: 'nodata(/billing-oss salud/billing.health.live,5m)=1'
+              name: 'billing-oss: el nodo no responde'
+              priority: HIGH
+              description: 'El proceso no contesta /health/live hace 5 minutos.'
+        - uuid: 82b6b491ec484bb2aa0cacd6f9903d79
+          name: 'Salud: listo'
+          type: HTTP_AGENT
+          key: billing.health.ready
+          delay: 1m
+          history: 7d
+          value_type: CHAR
+          trends: '0'
+          description: 'El nodo llega a la base. Healthy o Unhealthy.'
+          timeout: 10s
+          url: '{$BILLING.URL}/health/ready'
+          status_codes: '200,503'
+          tags:
+            - tag: component
+              value: billing
+          triggers:
+            - uuid: 4127aae95a864dea8c4abb4b569779ce
+              expression: 'count(/billing-oss salud/billing.health.ready,#3,"ne","Healthy")=3'
+              name: 'billing-oss: el nodo no está listo'
+              priority: HIGH
+              description: 'Tres lecturas seguidas sin Healthy: el nodo no llega a la base.'
+      macros:
+        - macro: '{$BILLING.URL}'
+          value: 'http://{HOST.CONN}:8080'
+          description: 'URL base del nodo, sin barra final. Por defecto la interfaz del host: los ítems HTTP corren en el servidor o proxy de Zabbix.'
+  graphs:
+    - uuid: a0415b099cea49cca3fb94beaf37d98e
+      name: 'billing-oss: cola de trabajos'
+      graph_items:
+        - color: 1A7C11
+          item:
+            host: 'billing-oss negocio'
+            key: billing.jobs.due
+        - sortorder: '1'
+          color: F63100
+          item:
+            host: 'billing-oss negocio'
+            key: billing.jobs.running
+        - sortorder: '2'
+          color: 2774A4
+          item:
+            host: 'billing-oss negocio'
+            key: billing.jobs.retrying
+        - sortorder: '3'
+          color: A54F10
+          item:
+            host: 'billing-oss negocio'
+            key: billing.jobs.stuck
+        - sortorder: '4'
+          color: FC6EA3
+          item:
+            host: 'billing-oss negocio'
+            key: billing.jobs.dead
+    - uuid: 606fffcc02fd4945ba0a3deb7c12afee
+      name: 'billing-oss: esperas'
+      graph_items:
+        - color: 1A7C11
+          item:
+            host: 'billing-oss negocio'
+            key: billing.jobs.oldest_due
+        - sortorder: '1'
+          color: F63100
+          item:
+            host: 'billing-oss negocio'
+            key: billing.webhooks.oldest
+    - uuid: 638f6acbab14438bb4cbc3f63f50f825
+      name: 'billing-oss: emisiones fiscales'
+      graph_items:
+        - color: 1A7C11
+          item:
+            host: 'billing-oss negocio'
+            key: billing.fiscal.pending
+        - sortorder: '1'
+          color: F63100
+          item:
+            host: 'billing-oss negocio'
+            key: billing.fiscal.unknown
+        - sortorder: '2'
+          color: 2774A4
+          item:
+            host: 'billing-oss negocio'
+            key: billing.fiscal.conflict
+    - uuid: c99fe148847f490f8d5df849d785f16d
+      name: 'billing-oss: avisos y pagos'
+      graph_items:
+        - color: 1A7C11
+          item:
+            host: 'billing-oss negocio'
+            key: billing.webhooks.unprocessed
+        - sortorder: '1'
+          color: F63100
+          item:
+            host: 'billing-oss negocio'
+            key: billing.payments.pending
+        - sortorder: '2'
+          color: 2774A4
+          item:
+            host: 'billing-oss negocio'
+            key: billing.payments.disputed
+    - uuid: a044f76d892249e3830dc9140fea63fa
+      name: 'billing-oss: corrida de facturación'
+      graph_items:
+        - color: 1A7C11
+          item:
+            host: 'billing-oss negocio'
+            key: billing.run.duration

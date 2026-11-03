@@ -1,0 +1,139 @@
+@page "/admin/seguridad/ajustes"
+@model SecuritySettingsModel
+@{
+    ViewData["Title"] = S["Settings.Title"];
+    var s = Model.Settings;
+    string? Checked(string role) => s.TwoFactorRoles.Contains(role) ? "checked" : null;
+    string? Asked(string form) => s.ChallengeForms.Contains(form) ? "checked" : null;
+}
+<h1>@S["Settings.Title"]</h1>
+<p><a href="/admin/seguridad">@S["Admin.SecurityTitle"]</a></p>
+@if (Model.Saved)
+{
+    <p class="notice" role="status">@S["Settings.Saved"]</p>
+}
+@if (Model.Error is not null || Model.Problems.Count > 0)
+{
+    <div class="alert" role="alert">
+        @if (Model.Error is not null)
+        {
+            <p>@S[Model.Error]</p>
+        }
+        <ul>
+            @foreach (var problem in Model.Problems)
+            {
+                <li>@S[problem]</li>
+            }
+        </ul>
+    </div>
+}
+<form method="post" class="stack">
+    <input type="hidden" name="Version" value="@Model.Version">
+
+    <fieldset class="stack narrow">
+        <legend>@S["Settings.Passwords"]</legend>
+        <label for="min">@S["Settings.MinLength"]</label>
+        <input id="min" type="number" min="8" max="128" name="Settings.MinLength" value="@s.MinLength" required>
+        <label for="staff-min">@S["Settings.StaffMinLength"]</label>
+        <input id="staff-min" type="number" min="8" max="128" name="Settings.StaffMinLength" value="@s.StaffMinLength" required>
+        <label class="check"><input type="checkbox" asp-for="Settings.RequireUpper"> @S["Settings.RequireUpper"]</label>
+        <label class="check"><input type="checkbox" asp-for="Settings.RequireLower"> @S["Settings.RequireLower"]</label>
+        <label class="check"><input type="checkbox" asp-for="Settings.RequireDigit"> @S["Settings.RequireDigit"]</label>
+        <label class="check"><input type="checkbox" asp-for="Settings.RequireSymbol"> @S["Settings.RequireSymbol"]</label>
+        <label class="check"><input type="checkbox" asp-for="Settings.RejectCommon"> @S["Settings.RejectCommon"]</label>
+        <p class="muted">@S["Settings.PasswordsHelp"]</p>
+    </fieldset>
+
+    <fieldset class="stack narrow">
+        <legend>@S["Settings.Attempts"]</legend>
+        <label for="account-attempts">@S["Settings.AccountAttempts"]</label>
+        <input id="account-attempts" type="number" min="3" max="50" name="Settings.AccountAttempts" value="@s.AccountAttempts" required>
+        <label for="account-minutes">@S["Settings.AccountMinutes"]</label>
+        <input id="account-minutes" type="number" min="1" max="1440" name="Settings.AccountMinutes" value="@s.AccountMinutes" required>
+        <label for="staff-attempts">@S["Settings.StaffAccountAttempts"]</label>
+        <input id="staff-attempts" type="number" min="3" max="50" name="Settings.StaffAccountAttempts" value="@s.StaffAccountAttempts" required>
+        <label for="staff-minutes">@S["Settings.StaffAccountMinutes"]</label>
+        <input id="staff-minutes" type="number" min="1" max="1440" name="Settings.StaffAccountMinutes" value="@s.StaffAccountMinutes" required>
+        <label for="ip-attempts">@S["Settings.IpAttempts"]</label>
+        <input id="ip-attempts" type="number" min="5" max="1000" name="Settings.IpAttempts" value="@s.IpAttempts" required>
+        <label for="ip-window">@S["Settings.IpWindowMinutes"]</label>
+        <input id="ip-window" type="number" min="1" max="1440" name="Settings.IpWindowMinutes" value="@s.IpWindowMinutes" required>
+        <label for="ip-minutes">@S["Settings.IpMinutes"]</label>
+        <input id="ip-minutes" type="number" min="1" max="10080" name="Settings.IpMinutes" value="@s.IpMinutes" required>
+        <label for="trusted">@S["Settings.TrustedNetworks"]</label>
+        <textarea id="trusted" name="Trusted" rows="3" spellcheck="false" aria-describedby="trusted-help">@Model.Trusted</textarea>
+        <p class="muted" id="trusted-help">@S["Settings.TrustedNetworksHelp"]</p>
+    </fieldset>
+
+    <fieldset class="stack narrow">
+        <legend>@S["Settings.TwoFactor"]</legend>
+        <p class="muted">@S["Settings.TwoFactorHelp"]</p>
+        <label class="check"><input type="checkbox" name="Settings.TwoFactorRoles" value="owner" checked="@Checked("owner")"> @S["Role.Owner"]</label>
+        <label class="check"><input type="checkbox" name="Settings.TwoFactorRoles" value="billing" checked="@Checked("billing")"> @S["Role.Billing"]</label>
+        <label class="check"><input type="checkbox" name="Settings.TwoFactorRoles" value="technical" checked="@Checked("technical")"> @S["Role.Technical"]</label>
+    </fieldset>
+
+    <fieldset class="stack narrow">
+        <legend>@S["Settings.EmailAndLogins"]</legend>
+        <label class="check"><input type="checkbox" asp-for="Settings.RequireVerifiedEmail"> @S["Settings.RequireVerifiedEmail"]</label>
+        <label class="check"><input type="checkbox" asp-for="Settings.AlertNewLocation"> @S["Settings.AlertNewLocation"]</label>
+        <label for="keep">@S["Settings.KeepLoginDays"]</label>
+        <input id="keep" type="number" min="30" max="3650" name="Settings.KeepLoginDays" value="@s.KeepLoginDays" required>
+    </fieldset>
+
+    <fieldset class="stack narrow" id="registro">
+        <legend>@S["Settings.Registration"]</legend>
+        <label class="check"><input type="checkbox" asp-for="Settings.RegistrationEnabled"> @S["Settings.RegistrationEnabled"]</label>
+        <label for="registration-limit">@S["Settings.RegistrationIpLimit"]</label>
+        <input id="registration-limit" type="number" min="1" max="1000" name="Settings.RegistrationIpLimit" value="@s.RegistrationIpLimit" required>
+        <label for="registration-hours">@S["Settings.RegistrationIpHours"]</label>
+        <input id="registration-hours" type="number" min="1" max="720" name="Settings.RegistrationIpHours" value="@s.RegistrationIpHours" required>
+        <label for="registration-currency">@S["Settings.RegistrationCurrency"]</label>
+        <input id="registration-currency" name="Settings.RegistrationCurrency" value="@s.RegistrationCurrency" maxlength="3" pattern="[A-Z]{3}" required>
+        <p class="muted">@S["Settings.RegistrationHelp"]</p>
+        <p><a href="/admin/seguridad/proveedores">@S["Providers.Title"]</a></p>
+    </fieldset>
+
+    <fieldset class="stack narrow" id="desafio">
+        <legend>@S["Settings.Challenge"]</legend>
+        <label for="challenge-provider">@S["Settings.ChallengeProvider"]</label>
+        <select id="challenge-provider" name="Settings.ChallengeProvider">
+            @foreach (var provider in BillingOss.App.Identity.SecuritySettings.ChallengeProviders)
+            {
+                <option value="@provider" selected="@(s.ChallengeProvider == provider ? "selected" : null)">@S["Challenge.Provider." + provider]</option>
+            }
+        </select>
+        <p class="muted">@S["Settings.ChallengeForms"]</p>
+        @foreach (var form in BillingOss.App.Identity.SecuritySettings.ChallengeFormNames)
+        {
+            <label class="check"><input type="checkbox" name="Settings.ChallengeForms" value="@form" checked="@Asked(form)"> @S["Challenge.Form." + form]</label>
+        }
+        <label for="challenge-bits">@S["Settings.ChallengeBits"]</label>
+        <input id="challenge-bits" type="number" min="8" max="24" name="Settings.ChallengeBits" value="@s.ChallengeBits" required>
+        <label for="challenge-site">@S["Settings.ChallengeSiteKey"]</label>
+        <input id="challenge-site" name="Settings.ChallengeSiteKey" maxlength="200" autocomplete="off" spellcheck="false" value="@s.ChallengeSiteKey">
+        <label for="challenge-secret">@S["Settings.ChallengeSecret"]</label>
+        <input id="challenge-secret" name="ChallengeSecretText" type="password" maxlength="200" autocomplete="new-password" aria-describedby="challenge-secret-help">
+        <p class="muted" id="challenge-secret-help">@(s.ChallengeSecret is null ? S["Providers.SecretMissing"] : S["Providers.SecretStored"])</p>
+        <p class="muted">@S["Settings.ChallengeHelp"]</p>
+    </fieldset>
+
+    <fieldset class="stack narrow">
+        <legend>@S["Settings.Fraud"]</legend>
+        <label class="check"><input type="checkbox" asp-for="Settings.FraudEnabled"> @S["Settings.FraudEnabled"]</label>
+        <label for="instance">@S["Settings.FraudInstance"]</label>
+        <select id="instance" name="Settings.FraudInstanceId">
+            <option value="">@S["Settings.NoInstance"]</option>
+            @foreach (var (id, name) in Model.Instances)
+            {
+                <option value="@id" selected="@(s.FraudInstanceId == id ? "selected" : null)">@name</option>
+            }
+        </select>
+        <label for="score">@S["Settings.FraudReviewScore"]</label>
+        <input id="score" name="ReviewScore" inputmode="decimal" value="@Model.ReviewScore" required>
+        <label class="check"><input type="checkbox" asp-for="Settings.FraudReviewOnError"> @S["Settings.FraudReviewOnError"]</label>
+        <label class="check"><input type="checkbox" asp-for="Settings.FraudSkipExisting"> @S["Settings.FraudSkipExisting"]</label>
+    </fieldset>
+
+    <div><button type="submit">@S["Settings.Save"]</button></div>
+</form>

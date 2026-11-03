@@ -1,0 +1,17 @@
+@model IReadOnlyList<ArticleCard>
+<ul class="ct-list">
+    @foreach (var a in Model)
+    {
+        <li>
+            <a href="/conocimiento/@a.Slug" lang="@a.Language">@a.Title</a>
+            @if (a.Fallback)
+            {
+                <span class="muted">(@(a.Language == "en" ? "English" : "español"))</span>
+            }
+            @if (!string.IsNullOrWhiteSpace(a.Summary))
+            {
+                <p class="muted" lang="@a.Language">@a.Summary</p>
+            }
+        </li>
+    }
+</ul>

@@ -1,0 +1,65 @@
+@model BillingOss.Web.ChartView
+@{
+    var chart = Model;
+    var title = L["ReportChart." + chart.Id].Value;
+    static string N(double value) => value.ToString("0.#", CultureInfo.InvariantCulture);
+}
+@* Columnas en el tiempo o barras horizontales, sin JavaScript: el cartel de cada columna es su title, y la tabla de
+   abajo tiene todos los valores para quien no ve el gráfico. *@
+<figure class="chart@(chart.OverTime ? " chart-wide" : null)">
+    <figcaption>
+        @title
+        @if (chart.Currency is { } currency)
+        {
+            <span class="muted">· @currency</span>
+        }
+    </figcaption>
+    @if (chart.OverTime)
+    {
+        var layout = ReportCharts.Columns(chart, L);
+        <div class="chart-scroll">
+            <svg class="chart-cols" width="@N(layout.Width)" height="@N(layout.Height)" viewBox="0 0 @N(layout.Width) @N(layout.Height)" role="img" aria-label="@title">
+                @* Un g alrededor de cada text: suelto en un bloque de código, Razor toma text como su propia etiqueta. *@
+                @foreach (var tick in layout.Ticks)
+                {
+                    <g>
+                        <line class="grid" x1="@N(layout.Left)" x2="@N(layout.Right)" y1="@N(tick.Y)" y2="@N(tick.Y)" />
+                        <text x="@N(layout.Left - 6)" y="@N(tick.Y + 4)" text-anchor="end">@tick.Label</text>
+                    </g>
+                }
+                @foreach (var column in layout.Columns)
+                {
+                    var middle = column.SlotX + (layout.Slot / 2);
+                    <g class="col">
+                        <title>@column.Title</title>
+                        <rect class="hit" x="@N(column.SlotX)" y="@N(layout.Top)" width="@N(layout.Slot)" height="@N(layout.Plot)" />
+                        @if (column.Path.Length > 0)
+                        {
+                            <path class="bar" d="@column.Path" />
+                        }
+                        <text x="@N(middle)" y="@N(layout.Top + layout.Plot + 15)" text-anchor="middle">@column.Month</text>
+                        <text x="@N(middle)" y="@N(layout.Top + layout.Plot + 29)" text-anchor="middle">@column.Year</text>
+                    </g>
+                }
+                <line class="zero" x1="@N(layout.Left)" x2="@N(layout.Right)" y1="@N(layout.Zero)" y2="@N(layout.Zero)" />
+            </svg>
+        </div>
+    }
+    else
+    {
+        <ol class="hbars">
+            @foreach (var row in ReportCharts.Rows(chart, L))
+            {
+                <li>
+                    <span class="hbars-label">@row.Label</span>
+                    <svg class="hbars-track" aria-hidden="true" focusable="false"><rect class="bar" width="@row.Percent.ToString("0.##", CultureInfo.InvariantCulture)%" height="100%" rx="3" /></svg>
+                    <data class="hbars-value" value="@row.Machine">@row.Value</data>
+                </li>
+            }
+        </ol>
+        @if (chart.Hidden > 0)
+        {
+            <p class="muted chart-note">@L["Reports.ChartHidden", chart.Hidden]</p>
+        }
+    }
+</figure>

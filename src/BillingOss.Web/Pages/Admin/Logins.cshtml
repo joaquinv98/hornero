@@ -1,0 +1,73 @@
+@page "/admin/seguridad/ingresos"
+@model LoginsModel
+@inject Microsoft.Extensions.Options.IOptions<BillingOss.App.BillingOptions> Billing
+@{
+    ViewData["Title"] = S["Logins.Title"];
+    string? Selected(string? value, string option) => value == option ? "selected" : null;
+}
+<h1>@S["Logins.Title"]</h1>
+<p><a href="/admin/seguridad">@S["Admin.SecurityTitle"]</a></p>
+<form method="get" class="search" role="search">
+    <label for="side">@S["Logins.Side"]</label>
+    <select id="side" name="Side">
+        <option value="">@S["Logins.All"]</option>
+        <option value="portal" selected="@Selected(Model.Side, "portal")">@S["Logins.Portal"]</option>
+        <option value="staff" selected="@Selected(Model.Side, "staff")">@S["Logins.Staff"]</option>
+    </select>
+    <label for="show">@S["History.Result"]</label>
+    <select id="show" name="Show">
+        <option value="">@S["Logins.All"]</option>
+        <option value="failed" selected="@Selected(Model.Show, "failed")">@S["Logins.Failed"]</option>
+        <option value="success" selected="@Selected(Model.Show, "success")">@S["Logins.Success"]</option>
+        <option value="new" selected="@Selected(Model.Show, "new")">@S["History.NewLocation"]</option>
+    </select>
+    <label for="ip">@S["History.Ip"]</label>
+    <input id="ip" name="Ip" value="@Model.Ip" aria-describedby="ip-help">
+    <label for="email">@L["Field.Email"]</label>
+    <input id="email" name="Email" type="email" value="@Model.Email">
+    <button type="submit">@S["Logins.Filter"]</button>
+</form>
+<p class="muted" id="ip-help">@S["Logins.IpHelp", LoginsModel.Limit]</p>
+@if (Model.Rows.Count == 0)
+{
+    <p class="muted">@S["History.Empty"]</p>
+}
+else
+{
+    <div class="table">
+        <table>
+            <thead>
+                <tr>
+                    <th scope="col">@S["History.When"]</th>
+                    <th scope="col">@S["Logins.Side"]</th>
+                    <th scope="col">@L["Field.Email"]</th>
+                    <th scope="col">@S["History.Ip"]</th>
+                    <th scope="col">@S["History.Device"]</th>
+                    <th scope="col">@S["History.Result"]</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var (e, email) in Model.Rows)
+                {
+                    <tr>
+                        <td><time datetime="@e.CreatedAt.ToString("O", CultureInfo.InvariantCulture)">@UiText.When(e.CreatedAt, Billing.Value.TimeZone)</time></td>
+                        <td>@S["Logins." + e.Audience]</td>
+                        <td>@(email ?? "")</td>
+                        <td>
+                            <a href="?Ip=@e.Ip"><code>@e.Ip</code></a>
+                            @if (e.NewLocation)
+                            {
+                                <span class="status" data-tone="warn">@S["History.NewLocation"]</span>
+                            }
+                        </td>
+                        <td>@BillingOss.App.Identity.Devices.Describe(e.UserAgent)</td>
+                        <td>
+                            <span class="status" data-tone="@UiText.Tone(e.Result)">@S["LoginResult." + e.Result]</span>
+                            <span class="muted">@S["LoginMethod." + e.Method]</span>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+}

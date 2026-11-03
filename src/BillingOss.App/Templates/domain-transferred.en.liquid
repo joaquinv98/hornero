@@ -1,0 +1,5 @@
+The transfer of {{ domain }} is complete
+<p>Hi {{ account_name }},</p>
+<p>The transfer of <strong>{{ domain }}</strong> is complete and the domain is now with us. It expires on {{ expires_on }}.</p>
+{% if auto_renew %}<p>It renews automatically: you will get the renewal invoice for {{ amount }} before it expires.</p>{% else %}<p>Automatic renewal is off: remember to renew it before {{ expires_on }}.</p>{% endif %}
+<p>Please check from {% if portal_url %}<a href="{{ portal_url }}">your account</a>{% else %}your account{% endif %} that its nameservers and registrant details are the ones you want.</p>

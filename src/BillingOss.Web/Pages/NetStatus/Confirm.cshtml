@@ -1,0 +1,11 @@
+@page "/estado-red/suscripcion/confirmar/{token}"
+@model ConfirmModel
+@section Head {
+    <link rel="stylesheet" href="~/css/contenidos.css" asp-append-version="true">
+}
+@{
+    ViewData["Title"] = C["Net.ConfirmedTitle"];
+}
+<h1>@C["Net.ConfirmedTitle"]</h1>
+<p class="notice" role="status">@C["Net.ConfirmedText"]</p>
+<p><a href="/estado-red">@C["Net.BackToStatus"]</a></p>

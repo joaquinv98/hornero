@@ -1,0 +1,300 @@
+# Nodo de aplicación de billing-oss: web, worker, módulos y conversor de PDF (D-14).
+#
+# Receta chica: este archivo más compose.postgres.yaml, en un solo host (COMPOSE_FILE en .env).
+# Alta disponibilidad: este archivo solo, igual en cada nodo, contra el clúster Patroni.
+# Guías: docs/despliegue/receta-chica.md y docs/despliegue/ha-vms.md.
+#
+# Las imágenes se construyen con deploy/Dockerfile. Los secretos son archivos de ./secrets, que arma
+# preparar.sh y nunca van al repo. Las migraciones corren aparte, antes de arrancar o de actualizar:
+#   docker compose run --rm migrate
+
+x-endurecido: &endurecido
+  restart: unless-stopped
+  read_only: true
+  tmpfs: [/tmp]
+  cap_drop: [ALL]
+  security_opt: [no-new-privileges:true]
+
+x-entorno-nucleo: &entorno-nucleo
+  Secrets__KeyFile: /run/billing/llaves
+  Billing__PublicUrl: ${BILLING_PUBLIC_URL:?Falta BILLING_PUBLIC_URL en .env}
+  # Traba de producción fiscal: apagada. Se prende recién al pasar a producción, junto con
+  # Arca__AllowProduction en el módulo. Hasta entonces ninguna instancia fiscal de producción recibe pedidos.
+  Fiscal__ProductionEnabled: "false"
+  # Traba de producción del correo: apagada. Aun con Notifications__Send prendido, solo reciben las casillas de
+  # Notifications__OnlyTo__{n}. Se prende al pasar a producción, junto con la fiscal.
+  Notifications__ProductionEnabled: "false"
+  # Proxies de confianza delante del rol web: solo a ellos se les cree X-Forwarded-For y X-Forwarded-Proto. Sin
+  # esto la interfaz ve el pedido como HTTP (las cookies seguras dan 500) y los topes por IP ven la IP del proxy.
+  ForwardedHeaders__KnownProxies__0: ${BILLING_PROXY:-127.0.0.1}
+  # Apagado: Workers:ShutdownGrace (20 s) debajo de Shutdown:Timeout, y este debajo de stop_grace_period.
+  Shutdown__Timeout: "00:01:30"
+
+x-nucleo: &nucleo
+  <<: *endurecido
+  image: ${BILLING_IMAGE:-billing-oss}:${BILLING_VERSION:?Falta BILLING_VERSION en .env}
+  secrets:
+    - source: db_app
+      target: ConnectionStrings__Main
+    - source: llaves
+      target: /run/billing/llaves
+    - source: pg_ca
+      target: /run/billing/pg-ca.crt
+  networks: [nucleo, arca, mercadopago, stripe, paypal, cryptocloud, pdf]
+
+x-modulo: &modulo
+  <<: *endurecido
+  # El manejador de una operación con efecto sigue aunque el núcleo corte, con el doble del plazo del manifiesto
+  # (authorize de ARCA: 90 s, así que 180 s), y una de lectura lo que declara (exchange_rate: 120 s). El host espera
+  # 200 s (DOTNET_shutdownTimeoutSeconds) y Docker un poco más, así una actualización no deja claves en curso.
+  stop_grace_period: 210s
+
+services:
+  web:
+    <<: *nucleo
+    environment:
+      <<: *entorno-nucleo
+      Role: web
+      # Listo pasa a 503 y el nodo sigue atendiendo este rato para que el balanceador lo saque antes de cerrar: más
+      # que lo que tarda en darlo por caído (en haproxy.cfg.example, inter 2s por fall 3 más el timeout del chequeo).
+      Shutdown__DrainDelay: "00:00:08"
+      # Conversor del PDF de facturas y notas. El PDF con CAE no sale hasta que el emisor tiene sus datos (docs/pdf).
+      Pdf__GotenbergUrl: http://gotenberg:3000
+    ports:
+      - ${BILLING_HTTP:-127.0.0.1:8080}:8080
+    stop_grace_period: 100s
+
+  worker:
+    <<: *nucleo
+    environment:
+      <<: *entorno-nucleo
+      Role: worker
+    stop_grace_period: 100s
+
+  # Aplica las migraciones, da de alta los módulos incluidos y termina. Usa el rol dueño del esquema, que la
+  # aplicación no tiene. Lleva la llave porque ningún rol arranca sin ella. Levanta antes los módulos para leer su
+  # manifiesto y fijar su huella con el certificado de cada uno: el staff nunca copia huellas ni secretos de firma
+  # (sección 4.2 del diseño de cobros).
+  migrate:
+    <<: *nucleo
+    profiles: [migrate]
+    restart: "no"
+    command: [migrate]
+    depends_on: [arca, mercadopago, stripe, paypal, cryptocloud]
+    environment:
+      Secrets__KeyFile: /run/billing/llaves
+      Modules__Included__arca__Url: https://arca:8443/
+      Modules__Included__arca__Certificate: /run/billing/modulos/arca.crt
+      Modules__Included__mercadopago__Url: https://mercadopago:8443/
+      Modules__Included__mercadopago__Certificate: /run/billing/modulos/mercadopago.crt
+      Modules__Included__stripe__Url: https://stripe:8443/
+      Modules__Included__stripe__Certificate: /run/billing/modulos/stripe.crt
+      Modules__Included__paypal__Url: https://paypal:8443/
+      Modules__Included__paypal__Certificate: /run/billing/modulos/paypal.crt
+      Modules__Included__cryptocloud__Url: https://cryptocloud:8443/
+      Modules__Included__cryptocloud__Certificate: /run/billing/modulos/cryptocloud.crt
+    secrets:
+      - source: db_dueno
+        target: ConnectionStrings__Main
+      - source: llaves
+        target: /run/billing/llaves
+      - source: pg_ca
+        target: /run/billing/pg-ca.crt
+      - source: arca_firma
+        target: Modules__Included__arca__SigningSecret
+      - source: arca_crt
+        target: /run/billing/modulos/arca.crt
+      - source: mercadopago_firma
+        target: Modules__Included__mercadopago__SigningSecret
+      - source: mercadopago_crt
+        target: /run/billing/modulos/mercadopago.crt
+      - source: stripe_firma
+        target: Modules__Included__stripe__SigningSecret
+      - source: stripe_crt
+        target: /run/billing/modulos/stripe.crt
+      - source: paypal_firma
+        target: Modules__Included__paypal__SigningSecret
+      - source: paypal_crt
+        target: /run/billing/modulos/paypal.crt
+      - source: cryptocloud_firma
+        target: Modules__Included__cryptocloud__SigningSecret
+      - source: cryptocloud_crt
+        target: /run/billing/modulos/cryptocloud.crt
+    networks: [nucleo, arca, mercadopago, stripe, paypal, cryptocloud]
+
+  # El fiscal va solo: nunca comparte red, volumen ni secreto con otro módulo (D-08).
+  arca:
+    <<: *modulo
+    image: ${BILLING_ARCA_IMAGE:-billing-oss-arca}:${BILLING_VERSION}
+    environment:
+      ASPNETCORE_URLS: https://+:8443
+      # Traba de producción del módulo: rechaza toda instancia de producción con invalid_config hasta pasar a producción.
+      Arca__AllowProduction: "false"
+      DOTNET_shutdownTimeoutSeconds: "200"
+      Kestrel__Certificates__Default__Path: /run/tls/modulo.crt
+      Kestrel__Certificates__Default__KeyPath: /run/tls/modulo.key
+    secrets:
+      - source: arca_firma
+        target: Module__SigningSecret
+      - source: arca_crt
+        target: /run/tls/modulo.crt
+      - source: arca_key
+        target: /run/tls/modulo.key
+    volumes:
+      - arca-datos:/data
+    networks: [arca, arca-salida]
+
+  mercadopago:
+    <<: *modulo
+    image: ${BILLING_MERCADOPAGO_IMAGE:-billing-oss-mercadopago}:${BILLING_VERSION}
+    environment:
+      ASPNETCORE_URLS: https://+:8443
+      DOTNET_shutdownTimeoutSeconds: "200"
+      Kestrel__Certificates__Default__Path: /run/tls/modulo.crt
+      Kestrel__Certificates__Default__KeyPath: /run/tls/modulo.key
+    secrets:
+      - source: mercadopago_firma
+        target: Module__SigningSecret
+      - source: mercadopago_crt
+        target: /run/tls/modulo.crt
+      - source: mercadopago_key
+        target: /run/tls/modulo.key
+    volumes:
+      - mercadopago-datos:/data
+    networks: [mercadopago, mercadopago-salida]
+
+  # Corre aunque no tenga instancias: sin credenciales no hace nada. Sale solo a api.stripe.com por 443.
+  stripe:
+    <<: *modulo
+    image: ${BILLING_STRIPE_IMAGE:-billing-oss-stripe}:${BILLING_VERSION}
+    environment:
+      ASPNETCORE_URLS: https://+:8443
+      DOTNET_shutdownTimeoutSeconds: "200"
+      Kestrel__Certificates__Default__Path: /run/tls/modulo.crt
+      Kestrel__Certificates__Default__KeyPath: /run/tls/modulo.key
+    secrets:
+      - source: stripe_firma
+        target: Module__SigningSecret
+      - source: stripe_crt
+        target: /run/tls/modulo.crt
+      - source: stripe_key
+        target: /run/tls/modulo.key
+    volumes:
+      - stripe-datos:/data
+    networks: [stripe, stripe-salida]
+
+  # Sale solo a api-m.paypal.com o api-m.sandbox.paypal.com por 443, según el ambiente de cada instancia.
+  paypal:
+    <<: *modulo
+    image: ${BILLING_PAYPAL_IMAGE:-billing-oss-paypal}:${BILLING_VERSION}
+    environment:
+      ASPNETCORE_URLS: https://+:8443
+      DOTNET_shutdownTimeoutSeconds: "200"
+      Kestrel__Certificates__Default__Path: /run/tls/modulo.crt
+      Kestrel__Certificates__Default__KeyPath: /run/tls/modulo.key
+    secrets:
+      - source: paypal_firma
+        target: Module__SigningSecret
+      - source: paypal_crt
+        target: /run/tls/modulo.crt
+      - source: paypal_key
+        target: /run/tls/modulo.key
+    volumes:
+      - paypal-datos:/data
+    networks: [paypal, paypal-salida]
+
+  # Sale solo a api.trybit.com por 443.
+  cryptocloud:
+    <<: *modulo
+    image: ${BILLING_CRYPTOCLOUD_IMAGE:-billing-oss-cryptocloud}:${BILLING_VERSION}
+    environment:
+      ASPNETCORE_URLS: https://+:8443
+      DOTNET_shutdownTimeoutSeconds: "200"
+      Kestrel__Certificates__Default__Path: /run/tls/modulo.crt
+      Kestrel__Certificates__Default__KeyPath: /run/tls/modulo.key
+    secrets:
+      - source: cryptocloud_firma
+        target: Module__SigningSecret
+      - source: cryptocloud_crt
+        target: /run/tls/modulo.crt
+      - source: cryptocloud_key
+        target: /run/tls/modulo.key
+    volumes:
+      - cryptocloud-datos:/data
+    networks: [cryptocloud, cryptocloud-salida]
+
+  # Conversor de HTML a PDF (D-13). Red interna sin salida y Chromium limitado a los archivos que recibe.
+  gotenberg:
+    image: ${GOTENBERG_IMAGE:-gotenberg/gotenberg:8}
+    restart: unless-stopped
+    command: [gotenberg, "--chromium-allow-list=^file:///tmp/.*"]
+    networks: [pdf]
+
+networks:
+  nucleo: {}
+  # Internas: el núcleo llega a cada módulo por su nombre (https://arca:8443/) y nadie sale por ellas.
+  arca:
+    internal: true
+  mercadopago:
+    internal: true
+  stripe:
+    internal: true
+  paypal:
+    internal: true
+  cryptocloud:
+    internal: true
+  pdf:
+    internal: true
+  # Salida a internet de cada módulo, por separado.
+  arca-salida: {}
+  mercadopago-salida: {}
+  stripe-salida: {}
+  paypal-salida: {}
+  cryptocloud-salida: {}
+
+volumes:
+  arca-datos: {}
+  mercadopago-datos: {}
+  stripe-datos: {}
+  paypal-datos: {}
+  cryptocloud-datos: {}
+
+secrets:
+  db_app:
+    file: ./secrets/db_app
+  db_dueno:
+    file: ./secrets/db_dueno
+  llaves:
+    file: ./secrets/llaves
+  pg_ca:
+    file: ./secrets/tls/ca.crt
+  arca_firma:
+    file: ./secrets/arca_firma
+  arca_crt:
+    file: ./secrets/tls/arca.crt
+  arca_key:
+    file: ./secrets/tls/arca.key
+  mercadopago_firma:
+    file: ./secrets/mercadopago_firma
+  mercadopago_crt:
+    file: ./secrets/tls/mercadopago.crt
+  mercadopago_key:
+    file: ./secrets/tls/mercadopago.key
+  stripe_firma:
+    file: ./secrets/stripe_firma
+  stripe_crt:
+    file: ./secrets/tls/stripe.crt
+  stripe_key:
+    file: ./secrets/tls/stripe.key
+  paypal_firma:
+    file: ./secrets/paypal_firma
+  paypal_crt:
+    file: ./secrets/tls/paypal.crt
+  paypal_key:
+    file: ./secrets/tls/paypal.key
+  cryptocloud_firma:
+    file: ./secrets/cryptocloud_firma
+  cryptocloud_crt:
+    file: ./secrets/tls/cryptocloud.crt
+  cryptocloud_key:
+    file: ./secrets/tls/cryptocloud.key

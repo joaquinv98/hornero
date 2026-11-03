@@ -1,0 +1,278 @@
+@page "/admin/dominios/precios"
+@model BillingOss.Web.Pages.Admin.TldPricesModel
+@{
+    ViewData["Title"] = L["AdminDomains.Prices"];
+    string Amount(decimal? value) => value is { } v ? v.ToString("N2", CultureInfo.CurrentCulture) : "";
+    string Cost(decimal? value) => value is { } v ? v.ToString("N2", CultureInfo.CurrentCulture) : L["AdminPrices.Missing"].Value;
+}
+<div class="bo-head">
+    <ol class="bo-crumbs"><li><a href="/admin/dominios">@L["Nav.Domains"]</a></li><li aria-current="page">@L["AdminDomains.Prices"]</li></ol>
+    <h1>@L["AdminDomains.Prices"]</h1>
+    <p class="bo-lead">@L["AdminPrices.Lead"]</p>
+</div>
+
+@if (Model.Notice is not null)
+{
+    <p class="bo-alert" data-tone="ok" role="status">@L[Model.Notice]</p>
+}
+@if (Model.Error is not null)
+{
+    <p class="bo-alert" data-tone="danger" role="alert">@(Model.Error.StartsWith("AdminPrices.", StringComparison.Ordinal) ? L[Model.Error] : Model.Error)</p>
+}
+
+<form method="get" class="search">
+    <label for="moneda">@L["AdminPrices.Currency"]</label>
+    <input id="moneda" name="moneda" value="@Model.CurrencyCode" maxlength="3" autocomplete="off" spellcheck="false">
+    <button type="submit">@L["AdminPrices.Show"]</button>
+</form>
+
+<section class="bo-card" aria-labelledby="vigentes">
+    <div class="bo-card__head"><h2 id="vigentes">@L["AdminPrices.Current", Model.CurrencyCode]</h2></div>
+    @if (Model.Offers.Count == 0)
+    {
+        <p class="bo-muted">@L["AdminPrices.None"]</p>
+    }
+    else
+    {
+        <div class="bo-table-wrap">
+            <table class="bo-table">
+                <thead>
+                    <tr>
+                        <th scope="col">@L["AdminPrices.Tld"]</th>
+                        <th scope="col" class="bo-num">@L["AdminPrices.Years"]</th>
+                        <th scope="col">@L["AdminDomains.Registrar"]</th>
+                        <th scope="col" class="bo-num">@L["AdminPrices.Register"]</th>
+                        <th scope="col" class="bo-num">@L["AdminPrices.Renew"]</th>
+                        <th scope="col" class="bo-num">@L["AdminPrices.TransferPrice"]</th>
+                        <th scope="col">@L["AdminPrices.ValidFrom"]</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var o in Model.Offers)
+                    {
+                        <tr>
+                            <th scope="row" class="bo-data">@o.Tld</th>
+                            <td class="bo-num">@o.Years</td>
+                            <td>@Model.RegistrarName(o.RegistrarInstanceId)</td>
+                            <td class="bo-num bo-money">@Amount(o.Register)</td>
+                            <td class="bo-num bo-money">@Amount(o.Renew)</td>
+                            <td class="bo-num bo-money">@Amount(o.Transfer)</td>
+                            <td><time datetime="@Ui.Iso(o.ValidFrom)">@Ui.Date(o.ValidFrom)</time></td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
+</section>
+
+<section class="bo-card" aria-labelledby="opciones">
+    <div class="bo-card__head"><h2 id="opciones">@L["AdminPrices.OptionsTitle", Model.CurrencyCode]</h2></div>
+    <p class="bo-small bo-muted">@L["AdminPrices.OptionsHelp"]</p>
+    <div class="bo-table-wrap">
+        <table class="bo-table">
+            <thead><tr><th scope="col">@L["AdminPrices.Option"]</th><th scope="col" class="bo-num">@L["AdminPrices.OptionYearly"]</th></tr></thead>
+            <tbody>
+                @foreach (var (option, price) in Model.OptionPrices)
+                {
+                    <tr>
+                        <th scope="row">@L[Ui.Key("DomainOption", option)]</th>
+                        <td class="bo-num">@(price > 0m ? Ui.Money(price, new BillingOss.Domain.Shared.Currency(Model.CurrencyCode)) : L["Domain.OptionFree"])</td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+    @if (Model.CanManage)
+    {
+        <form method="post" asp-page-handler="Option" class="bo-row">
+            <input type="hidden" name="moneda" value="@Model.CurrencyCode">
+            <div class="bo-field">
+                <label for="oopt">@L["AdminPrices.Option"]</label>
+                <select id="oopt" class="bo-select" name="option">
+                    @foreach (var option in BillingOss.Domain.Domains.DomainOptions.All)
+                    {
+                        <option value="@option">@L[Ui.Key("DomainOption", option)]</option>
+                    }
+                </select>
+            </div>
+            <div class="bo-field"><label for="oprice">@L["AdminPrices.OptionYearly"]</label><input id="oprice" class="bo-input" name="optionPrice" inputmode="decimal" required></div>
+            <div class="bo-field"><label for="ofrom">@L["AdminPrices.ValidFrom"]</label><input id="ofrom" class="bo-input" name="optionFrom" type="date"></div>
+            <div><button type="submit" class="bo-btn bo-btn--secondary">@L["AdminPrices.Save"]</button></div>
+        </form>
+    }
+</section>
+
+<section class="bo-card" aria-labelledby="por-extension">
+    <div class="bo-card__head"><h2 id="por-extension">@L["AdminPrices.TldOptionsTitle"]</h2></div>
+    <p class="bo-small bo-muted">@L["AdminPrices.TldOptionsHelp"]</p>
+    <div class="bo-table-wrap">
+        <table class="bo-table">
+            <thead>
+                <tr>
+                    <th scope="col">@L["AdminPrices.Tld"]</th>
+                    @foreach (var option in BillingOss.Domain.Domains.DomainOptions.All)
+                    {
+                        <th scope="col">@L[Ui.Key("DomainOption", option)]</th>
+                    }
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var (tld, offered) in Model.TldOptions)
+                {
+                    <tr>
+                        <th scope="row" class="bo-data">@tld</th>
+                        @foreach (var option in BillingOss.Domain.Domains.DomainOptions.All)
+                        {
+                            <td>@L[offered.Contains(option) ? "Common.Yes" : "Common.No"]</td>
+                        }
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+    @if (Model.CanManage)
+    {
+        <form method="post" asp-page-handler="TldOptions" class="bo-row">
+            <input type="hidden" name="moneda" value="@Model.CurrencyCode">
+            <div class="bo-field"><label for="otld">@L["AdminPrices.Tld"]</label><input id="otld" class="bo-input bo-data" name="optionsTld" placeholder=".com.ar" required></div>
+            <fieldset class="bo-field">
+                <legend>@L["AdminPrices.TldOptionsOffered"]</legend>
+                @foreach (var option in BillingOss.Domain.Domains.DomainOptions.All)
+                {
+                    <label class="bo-check"><input type="checkbox" name="offered" value="@option" checked> <span>@L[Ui.Key("DomainOption", option)]</span></label>
+                }
+            </fieldset>
+            <div><button type="submit" class="bo-btn bo-btn--secondary">@L["AdminPrices.Save"]</button></div>
+        </form>
+    }
+</section>
+
+@if (Model.CanManage)
+{
+    <div class="bo-grid">
+        <section class="bo-card" aria-labelledby="cargar">
+            <div class="bo-card__head"><h2 id="cargar">@L["AdminPrices.SetTitle"]</h2></div>
+            <form method="post" asp-page-handler="Set" class="bo-stack bo-stack--sm">
+                <input type="hidden" name="moneda" value="@Model.CurrencyCode">
+                <div class="bo-field"><label for="ptld">@L["AdminPrices.Tld"]</label><input id="ptld" class="bo-input bo-data" name="price.Tld" placeholder=".com.ar" required></div>
+                <div class="bo-field">
+                    <label for="pinst">@L["AdminDomains.Registrar"]</label>
+                    <select id="pinst" class="bo-select" name="price.InstanceId" required>
+                        @foreach (var r in Model.Registrars)
+                        {
+                            <option value="@r.Id">@r.Name</option>
+                        }
+                    </select>
+                </div>
+                <div class="bo-field"><label for="pyears">@L["AdminPrices.Years"]</label><input id="pyears" class="bo-input" name="price.Years" type="number" min="1" max="10" value="1" inputmode="numeric" required></div>
+                <div class="bo-field"><label for="preg">@L["AdminPrices.Register"]</label><input id="preg" class="bo-input" name="price.Register" inputmode="decimal" aria-describedby="pricesHelp"></div>
+                <div class="bo-field"><label for="pren">@L["AdminPrices.Renew"]</label><input id="pren" class="bo-input" name="price.Renew" inputmode="decimal" aria-describedby="pricesHelp"></div>
+                <div class="bo-field"><label for="ptra">@L["AdminPrices.TransferPrice"]</label><input id="ptra" class="bo-input" name="price.Transfer" inputmode="decimal" aria-describedby="pricesHelp"></div>
+                <p id="pricesHelp" class="bo-help">@L["AdminPrices.SetHelp", Model.CurrencyCode]</p>
+                <div class="bo-field"><label for="pfrom">@L["AdminPrices.ValidFrom"]</label><input id="pfrom" class="bo-input" name="price.ValidFrom" type="date"></div>
+                <div><button type="submit" class="bo-btn bo-btn--secondary">@L["AdminPrices.Save"]</button></div>
+            </form>
+        </section>
+
+        <section class="bo-card" aria-labelledby="importar">
+            <div class="bo-card__head"><h2 id="importar">@L["AdminPrices.ImportTitle"]</h2></div>
+            <p class="bo-small bo-muted">@L["AdminPrices.ImportHelp"]</p>
+            @if (Model.Registrars.Any(r => r.Pricing))
+            {
+                <form method="post" class="bo-stack bo-stack--sm">
+                    <input type="hidden" name="moneda" value="@Model.CurrencyCode">
+                    <div class="bo-field">
+                        <label for="iinst">@L["AdminDomains.Registrar"]</label>
+                        <select id="iinst" class="bo-select" name="import.InstanceId" required>
+                            @foreach (var r in Model.Registrars.Where(r => r.Pricing))
+                            {
+                                <option value="@r.Id" selected="@(r.Id == Model.Import.InstanceId)">@r.Name</option>
+                            }
+                        </select>
+                    </div>
+                    <div class="bo-field"><label for="irate">@L["AdminPrices.ExchangeRate", Model.CurrencyCode]</label><input id="irate" class="bo-input" name="import.ExchangeRate" value="@Model.Import.ExchangeRate.ToString(CultureInfo.CurrentCulture)" inputmode="decimal" required></div>
+                    <div class="bo-field"><label for="imargin">@L["AdminPrices.Margin"]</label><input id="imargin" class="bo-input" name="import.MarginPercent" value="@Model.Import.MarginPercent.ToString(CultureInfo.CurrentCulture)" inputmode="decimal"></div>
+                    <div class="bo-field"><label for="itax">@L["AdminPrices.Tax"]</label><input id="itax" class="bo-input" name="import.TaxPercent" value="@Model.Import.TaxPercent.ToString(CultureInfo.CurrentCulture)" inputmode="decimal" aria-describedby="taxHelp"><p id="taxHelp" class="bo-help">@L["AdminPrices.TaxHelp"]</p></div>
+                    <div class="bo-field"><label for="iround">@L["AdminPrices.RoundTo"]</label><input id="iround" class="bo-input" name="import.RoundTo" value="@Model.Import.RoundTo.ToString(CultureInfo.CurrentCulture)" inputmode="decimal"></div>
+                    <div class="bo-field"><label for="ifrom">@L["AdminPrices.ValidFrom"]</label><input id="ifrom" class="bo-input" name="import.ValidFrom" type="date" value="@Ui.Iso(Model.Import.ValidFrom)"></div>
+                    <div class="bo-row">
+                        <button type="submit" class="bo-btn bo-btn--secondary" formaction="?handler=Preview">@L["AdminPrices.Preview"]</button>
+                        @if (Model.Preview is { Count: > 0 } && Model.PreviewSource == "registrar")
+                        {
+                            <button type="submit" class="bo-btn" formaction="?handler=Apply">@L["AdminPrices.Apply"]</button>
+                        }
+                    </div>
+                </form>
+            }
+            else
+            {
+                <p class="bo-muted">@L["AdminPrices.NoPricingRegistrar"]</p>
+            }
+        </section>
+
+        <section class="bo-card" aria-labelledby="csv">
+            <div class="bo-card__head"><h2 id="csv">@L["AdminPrices.CsvTitle"]</h2></div>
+            <p class="bo-small bo-muted">@L["AdminPrices.CsvHelp"]</p>
+            <form method="post" class="bo-stack bo-stack--sm">
+                <input type="hidden" name="moneda" value="@Model.CurrencyCode">
+                <div class="bo-field">
+                    <label for="cinst">@L["AdminDomains.Registrar"]</label>
+                    <select id="cinst" class="bo-select" name="csvInstance" required>
+                        @foreach (var r in Model.Registrars)
+                        {
+                            <option value="@r.Id" selected="@(r.Id == Model.CsvInstance)">@r.Name</option>
+                        }
+                    </select>
+                </div>
+                <div class="bo-field">
+                    <label for="ccsv">@L["AdminPrices.Csv"]</label>
+                    <textarea id="ccsv" class="bo-input bo-data" name="csv" rows="6" spellcheck="false" required aria-describedby="csvFormat" placeholder="tld;years;register;renew;transfer">@Model.Csv</textarea>
+                    <p id="csvFormat" class="bo-help">@L["AdminPrices.CsvFormat"]</p>
+                </div>
+                <div class="bo-field"><label for="cfrom">@L["AdminPrices.ValidFrom"]</label><input id="cfrom" class="bo-input" name="csvFrom" type="date" value="@Ui.Iso(Model.CsvFrom)"></div>
+                <div class="bo-row">
+                    <button type="submit" class="bo-btn bo-btn--secondary" formaction="?handler=CsvPreview">@L["AdminPrices.Preview"]</button>
+                    @if (Model.Preview is { Count: > 0 } && Model.PreviewSource == "csv")
+                    {
+                        <button type="submit" class="bo-btn" formaction="?handler=CsvApply">@L["AdminPrices.Apply"]</button>
+                    }
+                </div>
+            </form>
+        </section>
+    </div>
+
+    @if (Model.Preview is { } preview)
+    {
+        <section class="bo-card" aria-labelledby="propuesta">
+            <div class="bo-card__head"><h2 id="propuesta">@L["AdminPrices.PreviewTitle", preview.Count]</h2></div>
+            <div class="bo-table-wrap">
+                <table class="bo-table">
+                    <thead>
+                        <tr>
+                            <th scope="col">@L["AdminPrices.Tld"]</th>
+                            <th scope="col" class="bo-num">@L["AdminPrices.Years"]</th>
+                            <th scope="col" class="bo-num">@L["AdminPrices.Cost"]</th>
+                            <th scope="col" class="bo-num">@L["AdminPrices.Register"]</th>
+                            <th scope="col" class="bo-num">@L["AdminPrices.Renew"]</th>
+                            <th scope="col" class="bo-num">@L["AdminPrices.TransferPrice"]</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var p in preview)
+                        {
+                            <tr>
+                                <th scope="row" class="bo-data">@p.Tld</th>
+                                <td class="bo-num">@p.Years</td>
+                                <td class="bo-num bo-money">@(p.CostRegister is null && p.CostRenew is null && p.CostTransfer is null ? "" : $"{Cost(p.CostRegister)} / {Cost(p.CostRenew)} / {Cost(p.CostTransfer)} {p.CostCurrency}")</td>
+                                <td class="bo-num bo-money">@Amount(p.Register)</td>
+                                <td class="bo-num bo-money">@Amount(p.Renew)</td>
+                                <td class="bo-num bo-money">@Amount(p.Transfer)</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </section>
+    }
+}

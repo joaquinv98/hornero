@@ -1,0 +1,16 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!--
+    Herramientas del circuito de versiones (D-20), para los trabajos de Forgejo y los mantenedores, nunca para el
+    proveedor: el vigía diario (vigia), el manifiesto de una versión (manifiesto) y el canal (entrada, retirar y
+    renovar). Usa el mismo formato y las mismas reglas del canal que el actualizador. Guía: docs/versiones/README.md.
+  -->
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <AssemblyName>billing-oss-versiones</AssemblyName>
+    <RootNamespace>BillingOss.Releases</RootNamespace>
+    <InvariantGlobalization>true</InvariantGlobalization>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="../BillingOss.Updates/BillingOss.Updates.csproj" />
+  </ItemGroup>
+</Project>

@@ -1,0 +1,6 @@
+Constancia de baja {{ code }}
+<p>Hola{% if account_name %}, {{ account_name }}{% endif %}:</p>
+<p>Registramos tu pedido de baja{% if service %} del servicio <strong>{{ service }}</strong>{% endif %} el {{ requested }}.</p>
+<p>Tu código de constancia es <strong>{{ code }}</strong>. Guardalo: te sirve para cualquier consulta sobre este trámite.</p>
+{% if date %}<p>La baja se hace efectiva el {{ date }}.</p>{% endif %}
+<p>Dar de baja un servicio no tiene ningún costo.</p>

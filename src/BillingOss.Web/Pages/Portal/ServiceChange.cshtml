@@ -1,0 +1,108 @@
+@page "/servicios/{id:long}/cambio"
+@model BillingOss.Web.Pages.Portal.ServiceChangeModel
+@using BillingOss.Domain.Services
+@{
+    var s = Model.Service!;
+    var title = L["Change.Title", s.Id].Value;
+    ViewData["Title"] = title;
+}
+<nav aria-label="@L["Catalog.Breadcrumb"]"><a href="/servicios">@L["Nav.Services"]</a></nav>
+<h1>@title</h1>
+<p class="muted">@Model.ProductName@(s.Label is { Length: > 0 } label ? $" · {label}" : "") · @Ui.Money(s.UnitPrice * s.Quantity, s.Currency) @L["Cycle." + s.Cycle.Code] · @L["Services.NextDue"] @Ui.Date(s.NextDueDate)</p>
+
+@if (Model.Done is { } done)
+{
+    <div class="notice" role="status">
+        @if (done.Status == ServiceChangeStatus.Pending)
+        {
+            <p>@L["Change.DonePending", done.DocumentId ?? 0] <a href="/facturas/@done.DocumentId">@L["Change.PayInvoice"]</a></p>
+        }
+        else if (done.Status == ServiceChangeStatus.Applied)
+        {
+            <p>@L["Change.PortalApplied"] @(done.Amount < 0m ? L["Change.PortalCredited", Ui.Money(-done.Amount, s.Currency)].Value : "")</p>
+        }
+        else
+        {
+            <p>@L["Change.DoneCancelled"]</p>
+        }
+    </div>
+}
+@if (Model.Error is { } error)
+{
+    <div class="alert" role="alert" tabindex="-1" autofocus><p><strong>@L["Change.ErrorTitle"]</strong> @error</p></div>
+}
+@if (Model.Pending is { } pending)
+{
+    <section class="card" aria-labelledby="pending">
+        <h2 id="pending">@L["Change.PendingTitle"]</h2>
+        <p>@L["Change.PendingText", Ui.Money(pending.Amount, s.Currency), pending.DocumentId ?? 0] <a href="/facturas/@pending.DocumentId">@L["Change.PayInvoice"]</a></p>
+    </section>
+}
+else if (s.Status != ServiceStatus.Active)
+{
+    <p>@L["Change.OnlyActive"]</p>
+}
+else if (!Model.CanChange)
+{
+    <p>@L["Change.NoChanges"]</p>
+}
+else
+{
+    <p>@L["Change.PortalHelp"]</p>
+    @if (Model.Products.Count > 1)
+    {
+        <form method="get" class="search" action="/servicios/@s.Id/cambio">
+            <label for="producto">@L["Catalog.Plan"]</label>
+            <select id="producto" name="producto">
+                @foreach (var (id, name) in Model.Products)
+                {
+                    <option value="@id" selected="@(id == Model.Input.ProductId)">@name @(id == s.ProductId ? L["Change.Current"].Value : "")</option>
+                }
+            </select>
+            <button type="submit" class="secondary">@L["Change.ShowOptions"]</button>
+        </form>
+    }
+
+    <form method="post" class="stack">
+        <input type="hidden" asp-for="Input.ProductId">
+        @if (Model.Editable.Count > 0)
+        {
+            <fieldset class="card">
+                <legend>@L["Change.NewPlan"]</legend>
+                <div class="grid">
+                    <partial name="_OptionChoices" model="new OptionChoices(Model.Options!, Model.Input.Choices, s.Currency, s.Cycle, ShowHidden: false)" />
+                </div>
+            </fieldset>
+        }
+        <p class="actions">
+            <button type="submit" asp-page-handler="Preview" class="secondary">@L["Change.Preview"]</button>
+            @if (Model.Quote is not null)
+            {
+                <button type="submit" asp-page-handler="Confirm">@L["Change.Confirm"]</button>
+            }
+        </p>
+    </form>
+
+    @if (Model.Quote is { } q)
+    {
+        <section class="card" aria-labelledby="quote" role="status">
+            <h2 id="quote">@L["Change.QuoteTitle"]</h2>
+            <dl class="facts">
+                <dt>@L["Change.UnitPrice"]</dt>
+                <dd>@L["Change.FromTo", Ui.Money(q.FromUnitPrice, s.Currency), Ui.Money(q.ToUnitPrice, s.Currency)]</dd>
+                <dt>@L["Change.Period"]</dt>
+                <dd>@(q.Until is { } until && until > q.From ? L["Change.PeriodRange", Ui.Date(q.From), Ui.Date(until.AddDays(-1))].Value : L["Change.NoPeriod"].Value)</dd>
+            </dl>
+            <p class="strong">
+                @(q.Amount > 0m ? L["Change.WillCharge", Ui.Money(q.Amount, s.Currency)].Value
+                    : q.Amount < 0m ? L["Change.PortalWillCredit", Ui.Money(-q.Amount, s.Currency)].Value
+                    : L["Change.NoMoney"].Value)
+            </p>
+            @if (q.DiscountEnds)
+            {
+                <p>@L["Change.DiscountEnds"]</p>
+            }
+            <p class="muted">@L["Change.ConfirmHelp"]</p>
+        </section>
+    }
+}

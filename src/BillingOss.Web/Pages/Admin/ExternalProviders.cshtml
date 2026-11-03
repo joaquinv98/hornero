@@ -1,0 +1,92 @@
+@page "/admin/seguridad/proveedores"
+@model ExternalProvidersModel
+@using BillingOss.App.Identity
+@{
+    ViewData["Title"] = S["Providers.Title"];
+}
+<h1>@S["Providers.Title"]</h1>
+<p><a href="/admin/seguridad">@S["Admin.SecurityTitle"]</a></p>
+<p class="muted">@S["Providers.Help"]</p>
+@if (Model.Notice is not null)
+{
+    <p class="notice" role="status">@S[Model.Notice]</p>
+}
+@if (Model.Error is not null)
+{
+    <p class="alert" role="alert">@S[Model.Error]</p>
+}
+@foreach (var row in Model.Rows)
+{
+    var p = row.Provider;
+    var id = "p-" + row.Key;
+    <section class="card" aria-labelledby="@(id)-title">
+        <h2 id="@(id)-title">@(p?.Name ?? (row.Kind == ExternalProviderKind.Google ? "Google" : row.Key))</h2>
+        <dl class="facts">
+            <dt>@S["Providers.State"]</dt>
+            <dd>
+                @if (p is { Enabled: true })
+                {
+                    <span class="status" data-tone="ok">@S["Providers.On"]</span>
+                }
+                else
+                {
+                    <span class="status" data-tone="warn" data-shape="ring">@S["Providers.Off"]</span>
+                }
+            </dd>
+            <dt>@S["Providers.RedirectUri"]</dt>
+            <dd>@if (row.RedirectUri is { } uri) { <code>@uri</code> } else { <span class="warn">@S["Providers.NoPublicUrl"]</span> }</dd>
+            <dt>@S["Providers.Links"]</dt>
+            <dd>@row.Links</dd>
+        </dl>
+        @if (Model.Tested is { } tested && tested.Key == row.Key)
+        {
+            <p class="@(tested.Result == "External.TestOk" ? "notice" : "alert")" role="status">@S[tested.Result]</p>
+        }
+        <form method="post" asp-page-handler="Save" class="stack narrow">
+            <input type="hidden" name="key" value="@row.Key">
+            <input type="hidden" name="kind" value="@row.Kind">
+            <input type="hidden" name="version" value="@(p?.Version ?? 0)">
+            <label for="@(id)-name">@S["Providers.Name"]</label>
+            <input id="@(id)-name" name="name" maxlength="100" required value="@(p?.Name ?? (row.Kind == ExternalProviderKind.Google ? "Google" : string.Empty))">
+            @if (row.Kind == ExternalProviderKind.Oidc)
+            {
+                <label for="@(id)-authority">@S["Providers.Authority"]</label>
+                <input id="@(id)-authority" name="authority" type="url" maxlength="300" required value="@p?.Authority">
+            }
+            <label for="@(id)-client">@S["Providers.ClientId"]</label>
+            <input id="@(id)-client" name="clientId" maxlength="200" autocomplete="off" spellcheck="false" value="@p?.ClientId">
+            <label for="@(id)-secret">@S["Providers.ClientSecret"]</label>
+            <input id="@(id)-secret" name="clientSecret" type="password" maxlength="500" autocomplete="new-password" aria-describedby="@(id)-secret-help">
+            <p class="muted" id="@(id)-secret-help">@(p?.ClientSecret is null ? S["Providers.SecretMissing"] : S["Providers.SecretStored"])</p>
+            <label class="check"><input type="checkbox" name="enabled" value="true" checked="@(p is { Enabled: true } ? "checked" : null)"> @S["Providers.Enabled"]</label>
+            <div><button type="submit">@S["Providers.Save"]</button></div>
+        </form>
+        @if (p is not null)
+        {
+            <form method="post" asp-page-handler="Test">
+                <input type="hidden" name="key" value="@row.Key">
+                <button type="submit" class="secondary">@S["Providers.Test"]</button>
+            </form>
+        }
+    </section>
+}
+<section class="card" aria-labelledby="new-provider">
+    <h2 id="new-provider">@S["Providers.Add"]</h2>
+    <p class="muted">@S["Providers.AddHelp"]</p>
+    <form method="post" asp-page-handler="Save" class="stack narrow">
+        <input type="hidden" name="kind" value="@ExternalProviderKind.Oidc">
+        <input type="hidden" name="version" value="0">
+        <label for="new-key">@S["Providers.Key"]</label>
+        <input id="new-key" name="key" maxlength="32" pattern="[a-z0-9-]{2,32}" required aria-describedby="new-key-help">
+        <p class="muted" id="new-key-help">@S["Providers.KeyHelp"]</p>
+        <label for="new-name">@S["Providers.Name"]</label>
+        <input id="new-name" name="name" maxlength="100" required>
+        <label for="new-authority">@S["Providers.Authority"]</label>
+        <input id="new-authority" name="authority" type="url" maxlength="300" required>
+        <label for="new-client">@S["Providers.ClientId"]</label>
+        <input id="new-client" name="clientId" maxlength="200" autocomplete="off" spellcheck="false">
+        <label for="new-secret">@S["Providers.ClientSecret"]</label>
+        <input id="new-secret" name="clientSecret" type="password" maxlength="500" autocomplete="new-password">
+        <div><button type="submit" class="secondary">@S["Providers.Save"]</button></div>
+    </form>
+</section>

@@ -1,0 +1,157 @@
+@page "/cuenta/medios-de-pago"
+@model PaymentMethodsModel
+@using BillingOss.App.UseCases
+@using BillingOss.Domain.Payments
+@{
+    ViewData["Title"] = L["Nav.PaymentMethods"];
+    var many = Model.Accounts.Count > 1;
+}
+<div class="bo-stack bo-wrap--narrow">
+    <div class="bo-head">
+        <h1>@L["Nav.PaymentMethods"]</h1>
+        <p class="bo-muted">@L["PaymentMethods.Intro"] <a href="/debito-automatico">@L["Pay.Conditions"]</a></p>
+    </div>
+
+    @if (Model.Done is not null)
+    {
+        <div class="bo-alert" data-tone="ok" role="status"><p>@L[Model.Done]</p></div>
+    }
+    @if (Model.Error is not null)
+    {
+        <div class="bo-error-summary" role="alert">
+            <h2>@L["Pay.ErrorTitle"]</h2>
+            <p>@L[Model.Error]</p>
+        </div>
+    }
+
+    @foreach (var a in Model.Accounts)
+    {
+        <section class="bo-card" aria-labelledby="cuenta-@a.Id">
+            <div class="bo-card__head">
+                <h2 id="cuenta-@a.Id">@(many ? a.Name : L["PaymentMethods.Saved"])</h2>
+            </div>
+            @if (a.Methods.Count == 0)
+            {
+                <p class="bo-muted">@L["PaymentMethods.None"]</p>
+            }
+            else
+            {
+                <ul class="bo-list">
+                    @foreach (var m in a.Methods)
+                    {
+                        var gateway = Model.Gateways.TryGetValue(m.ModuleInstanceId, out var g) ? g : string.Empty;
+                        <li>
+                            <div class="bo-list__main">
+                                <span class="bo-strong">@AutoChargeService.Describe(m)</span>
+                                <span class="bo-small bo-muted">
+                                    @gateway
+                                    @if (m.ExpMonth is { } month && m.ExpYear is { } year)
+                                    {
+                                        @(" · ")@L["PaymentMethods.Expires", month.ToString("00", CultureInfo.InvariantCulture) + "/" + year.ToString(CultureInfo.InvariantCulture)]
+                                    }
+                                </span>
+                                <span class="bo-row">
+                                    @if (m.Status == SavedMethodStatus.Expired)
+                                    {
+                                        <span class="bo-status" data-tone="danger" data-shape="ring">@L["PaymentMethods.Expired"]</span>
+                                    }
+                                    else if (m.AutoCharge)
+                                    {
+                                        <span class="bo-status" data-tone="ok">@L["PaymentMethods.ForAutoCharge"]</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="bo-status" data-tone="neutral">@L["PaymentMethods.StateSaved"]</span>
+                                    }
+                                </span>
+                            </div>
+                            <div class="bo-list__side">
+                                @if (m.AutoCharge)
+                                {
+                                    <form method="post" asp-page-handler="AutoCharge">
+                                        <input type="hidden" name="id" value="@m.Id">
+                                        <input type="hidden" name="on" value="false">
+                                        <button type="submit" class="bo-btn bo-btn--secondary">@L["PaymentMethods.TurnOff"]</button>
+                                    </form>
+                                }
+                                else if (m.Status == SavedMethodStatus.Active)
+                                {
+                                    <form method="post" asp-page-handler="AutoCharge" class="bo-stack bo-stack--sm">
+                                        <input type="hidden" name="id" value="@m.Id">
+                                        <input type="hidden" name="on" value="true">
+                                        <label class="bo-check bo-small">
+                                            <input type="checkbox" name="consent" value="true" required>
+                                            <span>@Model.ConsentText</span>
+                                        </label>
+                                        <button type="submit" class="bo-btn bo-btn--secondary">@L["PaymentMethods.TurnOn"]</button>
+                                    </form>
+                                }
+                                <form method="post" asp-page-handler="Remove">
+                                    <input type="hidden" name="id" value="@m.Id">
+                                    <button type="submit" class="bo-btn bo-btn--quiet">@L["PaymentMethods.Remove"]</button>
+                                </form>
+                            </div>
+                        </li>
+                    }
+                </ul>
+            }
+        </section>
+
+        @* Una vigente se muestra siempre, también con el débito por suscripción apagado: la pasarela sigue cobrando y el cliente la tiene que poder desactivar. *@
+        @if (a.Subscription is not null || (Model.SubscriptionsEnabled && a.Offered.Count > 0))
+        {
+            <section class="bo-card" aria-labelledby="suscripcion-@a.Id">
+                <div class="bo-card__head">
+                    <h2 id="suscripcion-@a.Id">@L["PaymentMethods.Subscription"]</h2>
+                    @if (a.Subscription is { } s)
+                    {
+                        @if (s.Status == SubscriptionStatus.Active)
+                        {
+                            <span class="bo-status" data-tone="ok">@L["PaymentMethods.SubscriptionActive"]</span>
+                        }
+                        else if (s.Status == SubscriptionStatus.Paused)
+                        {
+                            <span class="bo-status" data-tone="warn">@L["PaymentMethods.SubscriptionPaused"]</span>
+                        }
+                        else
+                        {
+                            <span class="bo-status" data-tone="info" data-shape="hollow">@L["PaymentMethods.SubscriptionPending"]</span>
+                        }
+                    }
+                </div>
+                @if (a.Subscription is { } current)
+                {
+                    <p>@L["PaymentMethods.SubscriptionAmount", Model.Gateways.TryGetValue(current.ModuleInstanceId, out var name) ? name : string.Empty, Ui.Money(current.Amount, current.Currency)]</p>
+                    @if (current.Status == SubscriptionStatus.Pending && current.RedirectUrl is { } approve)
+                    {
+                        <p><a href="@approve">@L["PaymentMethods.SubscriptionApprove"]</a></p>
+                    }
+                    <form method="post" asp-page-handler="Unsubscribe">
+                        <input type="hidden" name="id" value="@current.Id">
+                        <button type="submit" class="bo-btn bo-btn--secondary">@L["PaymentMethods.SubscriptionTurnOff"]</button>
+                    </form>
+                }
+                else if (a.MonthlyTotal <= 0m)
+                {
+                    <p class="bo-muted">@L["PaymentMethods.SubscriptionNothing"]</p>
+                }
+                else
+                {
+                    <p>@L["PaymentMethods.SubscriptionOffer", Ui.Money(a.MonthlyTotal, a.Currency)]</p>
+                    @foreach (var offer in a.Offered)
+                    {
+                        <form method="post" asp-page-handler="Subscribe" class="bo-stack bo-stack--sm">
+                            <input type="hidden" name="account" value="@a.Id">
+                            <input type="hidden" name="instance" value="@offer.Id">
+                            <label class="bo-check">
+                                <input type="checkbox" name="consent" value="true" required>
+                                <span>@Model.ConsentText</span>
+                            </label>
+                            <button type="submit" class="bo-btn">@L["PaymentMethods.SubscriptionTurnOn", offer.Name]</button>
+                        </form>
+                    }
+                }
+            </section>
+        }
+    }
+</div>

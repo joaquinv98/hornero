@@ -1,0 +1,89 @@
+@page "/soporte/nuevo"
+@model BillingOss.Web.Pages.Portal.Tickets.TicketNewModel
+@using BillingOss.App.Support
+@{
+    ViewData["Title"] = (Model.Problems.Count > 0 ? L["Support.ErrorPrefix"] + " " : string.Empty) + L["Support.New"];
+}
+<h1>@L["Support.New"]</h1>
+@if (Model.Problems.Count > 0)
+{
+    <div class="alert" role="alert" tabindex="-1" id="problemas">
+        <p class="strong">@L["Support.FixBelow"]</p>
+        <ul>
+            @foreach (var (field, message) in Model.Problems)
+            {
+                <li>@if (field.Length > 0) { <a href="#@field">@message</a> } else { @message }</li>
+            }
+        </ul>
+    </div>
+}
+@if (Model.Departments.Count == 0 || Model.Accounts.Count == 0)
+{
+    <p>@L["Support.NoDepartments"]</p>
+    return;
+}
+<form method="post" enctype="multipart/form-data" class="bo-form" novalidate>
+    @if (Model.Accounts.Count > 1)
+    {
+        <div class="bo-field">
+            <label for="AccountId">@L["Field.Account"]</label>
+            <select id="AccountId" name="AccountId" aria-invalid="@(Model.Invalid("AccountId") ? "true" : null)">
+                @foreach (var (id, name) in Model.Accounts)
+                {
+                    <option value="@id" selected="@(id == Model.AccountId)">@name</option>
+                }
+            </select>
+        </div>
+    }
+    <div class="bo-field">
+        <label for="DepartmentId">@L["Support.Department"]</label>
+        <select id="DepartmentId" name="DepartmentId" aria-describedby="departamentos" aria-invalid="@(Model.Invalid("DepartmentId") ? "true" : null)">
+            @foreach (var (id, name, _) in Model.Departments)
+            {
+                <option value="@id" selected="@(id == Model.DepartmentId)">@name</option>
+            }
+        </select>
+        <ul class="bo-help" id="departamentos">
+            @foreach (var (_, name, description) in Model.Departments.Where(d => !string.IsNullOrWhiteSpace(d.Description)))
+            {
+                <li><strong>@name:</strong> @description</li>
+            }
+        </ul>
+    </div>
+    @if (Model.Services.Count > 0)
+    {
+        <div class="bo-field">
+            <label for="ServiceId">@L["Support.Service"] <span class="muted">@L["Support.Optional"]</span></label>
+            <select id="ServiceId" name="ServiceId" aria-invalid="@(Model.Invalid("ServiceId") ? "true" : null)">
+                <option value="">@L["Support.NoService"]</option>
+                @foreach (var s in Model.Services)
+                {
+                    <option value="@s.Id" selected="@(s.Id == Model.ServiceId)">@s.Name</option>
+                }
+            </select>
+        </div>
+    }
+    <div class="bo-field">
+        <label for="Priority">@L["Support.Priority"]</label>
+        <select id="Priority" name="Priority">
+            @foreach (var p in Enum.GetValues<TicketPriority>())
+            {
+                <option value="@p" selected="@(p == Model.Priority)">@L["TicketPriority." + p]</option>
+            }
+        </select>
+    </div>
+    <div class="bo-field">
+        <label for="Subject">@L["Support.Subject"]</label>
+        <input id="Subject" name="Subject" value="@Model.Subject" maxlength="@TicketService.MaxSubject" autocomplete="off" aria-invalid="@(Model.Invalid("Subject") ? "true" : null)">
+    </div>
+    <div class="bo-field">
+        <label for="Message">@L["Support.Message"]</label>
+        <textarea id="Message" name="Message" rows="8" aria-invalid="@(Model.Invalid("Message") ? "true" : null)">@Model.Message</textarea>
+    </div>
+    <div class="bo-field">
+        <label for="Files">@L["Support.Files"] <span class="muted">@L["Support.Optional"]</span></label>
+        <input id="Files" name="Files" type="file" multiple accept="@SupportUi.Accept(Model.Options)" aria-describedby="adjuntos" aria-invalid="@(Model.Invalid("Files") ? "true" : null)">
+        <p class="bo-help" id="adjuntos">@L["Support.FilesHelp", Model.Options.MaxAttachments, SupportUi.Megabytes(Model.Options.MaxAttachmentBytes), SupportUi.Extensions(Model.Options)]</p>
+    </div>
+    <div><button type="submit">@L["Support.Send"]</button></div>
+</form>

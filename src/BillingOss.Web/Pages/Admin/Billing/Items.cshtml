@@ -1,0 +1,113 @@
+@page "/admin/items"
+@model BillingOss.Web.Pages.Admin.Billing.ItemsModel
+@using BillingOss.Domain.Billing
+@using BillingOss.Web.Pages.Admin.Billing
+@{
+    ViewData["Title"] = L["Billing.Items"];
+}
+<h1>@L["Billing.Items"]</h1>
+@if (Model.Error is not null)
+{
+    <p class="alert" role="alert">@Model.Error</p>
+}
+<form method="get" class="search" role="search">
+    <label>@L["Field.Status"]
+        <select name="estado">
+            @foreach (var s in Enum.GetValues<BillableItemStatus>())
+            {
+                <option value="@s" selected="@(Model.State == s)">@L["BillableItemStatus." + s]</option>
+            }
+        </select>
+    </label>
+    <label>@L["Billing.Account"] <input name="cuenta" type="number" min="1" value="@Model.AccountId"></label>
+    <button type="submit">@L["Admin.SearchButton"]</button>
+</form>
+@if (Model.Rows.Count == 0)
+{
+    <p>@L["Admin.NoResults"]</p>
+}
+else
+{
+    <div class="table">
+        <table>
+            <thead>
+                <tr>
+                    <th scope="col">@L["Billing.Account"]</th>
+                    <th scope="col">@L["Billing.Description"]</th>
+                    <th scope="col" class="num">@L["Billing.Quantity"]</th>
+                    <th scope="col" class="num">@L["Billing.UnitPrice"]</th>
+                    <th scope="col">@L["Billing.InvoiceOn"]</th>
+                    <th scope="col">@L["Field.Status"]</th>
+                    <th scope="col"><span class="bo-sr">@L["Invoices.Actions"]</span></th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var r in Model.Rows)
+                {
+                    var i = r.Item;
+                    <tr>
+                        <td><a href="/admin/cuentas/@i.AccountId">@r.Account</a></td>
+                        <td>@i.Description</td>
+                        <td class="num">@i.Quantity.ToString("0.####", CultureInfo.CurrentCulture)</td>
+                        <td class="num bo-money">@Ui.Money(i.UnitPrice, i.Currency)</td>
+                        <td>@Ui.Date(i.InvoiceOn)</td>
+                        <td>
+                            @if (i.DocumentId is { } doc)
+                            {
+                                <a href="/admin/facturas/@doc">@L["BillableItemStatus." + i.Status]</a>
+                            }
+                            else
+                            {
+                                @L["BillableItemStatus." + i.Status]
+                            }
+                        </td>
+                        <td>
+                            @if (Model.CanWrite && i.Status == BillableItemStatus.Pending)
+                            {
+                                <form method="post" asp-page-handler="Cancel" class="inline">
+                                    <input type="hidden" name="item" value="@i.Id">
+                                    <input type="hidden" name="cuenta" value="@Model.AccountId">
+                                    <button type="submit" class="link">@L["Billing.CancelItem"]</button>
+                                </form>
+                            }
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+}
+@if (Model.CanWrite)
+{
+    @if (Model.AccountId is { } account && Model.Rows.Any(r => r.Item.Status == BillableItemStatus.Pending))
+    {
+        <form method="post" asp-page-handler="Invoice" class="bo-actions">
+            <input type="hidden" name="cuenta" value="@account">
+            <button type="submit">@L["Billing.InvoiceItemsNow"]</button>
+            <span class="muted">@L["Billing.InvoiceItemsHelp"]</span>
+        </form>
+    }
+    <h2>@L["Billing.NewItem"]</h2>
+    <form method="post" asp-page-handler="Add" class="stack">
+        <div class="bo-actions">
+            <label>@L["Billing.Account"] <input name="cuenta" type="number" min="1" value="@Model.AccountId" required></label>
+            <label>@L["Admin.Currency"] <input name="Currency" value="@Model.Currency" maxlength="3" size="4" placeholder="@L["Billing.AccountCurrency"]"></label>
+            <label>@L["Billing.InvoiceOn"] <input name="InvoiceOn" type="date" value="@Model.InvoiceOn?.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture)"></label>
+        </div>
+        <div class="bo-actions">
+            <label>@L["Billing.Description"] <input name="Description" value="@Model.Description" maxlength="500" required></label>
+            <label>@L["Billing.Quantity"] <input name="Quantity" value="@(Model.Quantity ?? "1")" inputmode="decimal" size="6"></label>
+            <label>@L["Billing.UnitPrice"] <input name="UnitPrice" value="@Model.UnitPrice" inputmode="decimal" size="10" required></label>
+            <label>@L["Billing.Treatment"]
+                <select name="Treatment">
+                    @foreach (var t in BillingForm.Treatments)
+                    {
+                        <option value="@t" selected="@(Model.Treatment == t)">@L["TaxTreatment." + t]</option>
+                    }
+                </select>
+            </label>
+        </div>
+        <p class="muted">@L["Billing.NewItemHelp"]</p>
+        <div class="bo-actions"><button type="submit">@L["Billing.AddItem"]</button></div>
+    </form>
+}

@@ -1,0 +1,27 @@
+// Configuración del actualizador de billing-oss (D-20). Va en /etc/billing-oss/actualizador.json, solo para root.
+// La URL del canal y las llaves públicas viven acá y no en la base: una web comprometida no puede cambiarlas.
+// Guía: docs/despliegue/actualizador.md.
+{
+  "Updater": {
+    // Uno por host, el mismo en cada arranque.
+    "Node": "billnode01",
+    "ComposeDirectory": "/opt/billing-oss/deploy/compose",
+    // La cadena del rol dueño, que arma preparar.sh (secrets/db_actualizador, solo root).
+    "ConnectionStringFile": "/opt/billing-oss/deploy/compose/secrets/db_actualizador",
+    // Sin URL el chequeo de versiones está apagado y el canal se carga a mano con "check --file". Prenderlo lo decide
+    // el operador: es un GET anónimo de un archivo estático, sin identificadores.
+    "ChannelUrl": null,
+    // PEM de las llaves públicas del canal, en orden: la vigente y la siguiente.
+    "PublicKeys": [],
+    "HealthUrl": "http://127.0.0.1:8080/health/ready",
+    "SmokeUrls": ["http://127.0.0.1:8080/health/live"],
+    "ReadyTimeout": "00:05:00",
+    // Período de prueba de cada nodo antes de pasar al siguiente.
+    "SoakPeriod": "00:02:00",
+    // dump en la receta chica, restore-point con pgBackRest en la de alta disponibilidad, none sin marca.
+    "RecoveryMark": "dump",
+    "DumpDirectory": "/var/lib/billing-oss/marcas",
+    // En alta disponibilidad, true: sin réplica sincrónica no se toca nada.
+    "RequireSyncReplica": false
+  }
+}

@@ -1,0 +1,10 @@
+# Prueba de restauración semanal de billing-oss. Va en una VM descartable sin salida a la red, nunca en un nodo
+# del clúster (docs/despliegue/backups.md).
+[Unit]
+Description=Prueba de restauración de billing-oss
+
+[Service]
+Type=oneshot
+User=postgres
+EnvironmentFile=/etc/billing-ha/secretos.env
+ExecStart=/usr/local/bin/prueba-restauracion.sh

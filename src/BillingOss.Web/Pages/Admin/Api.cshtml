@@ -1,0 +1,217 @@
+@page "/admin/configuracion/webhooks"
+@model ApiModel
+@{
+    ViewData["Title"] = L["Webhooks.Title"];
+}
+<h1>@L["Webhooks.Title"]</h1>
+<p>@L["Webhooks.Intro"]</p>
+
+@if (Model.Issued is { } issued)
+{
+    <section class="notice" role="status" aria-labelledby="issued">
+        <h2 id="issued">@L["ApiKeys.IssuedTitle"]</h2>
+        <p>@L["ApiKeys.IssuedOnce"]</p>
+        <code class="key" data-secret>@issued.Token</code>
+        <p class="muted">@L["ApiKeys.CompatHelp"]</p>
+        <dl class="facts">
+            <dt>identifier</dt>
+            <dd><code>@issued.Prefix</code></dd>
+            <dt>secret</dt>
+            <dd><code>@issued.Secret</code></dd>
+        </dl>
+    </section>
+}
+@if (Model.Revoked)
+{
+    <p class="notice" role="status">@L["ApiKeys.Revoked"]</p>
+}
+@if (Model.Created is { } created)
+{
+    <section class="notice" role="status" aria-labelledby="secret">
+        <h2 id="secret">@L["Webhooks.SecretTitle"]</h2>
+        <p>@L["Webhooks.SecretOnce"]</p>
+        <code class="key" data-secret>@created.Secret</code>
+        <p><a href="/admin/configuracion/webhooks/@created.Id">@L["Webhooks.Open"]</a></p>
+    </section>
+}
+
+<section aria-labelledby="keys">
+    <h2 id="keys">@L["ApiKeys.List"]</h2>
+    <p>@L["ApiKeys.Intro"]</p>
+    @if (!Model.CompatEnabled)
+    {
+        <p class="muted">@L["ApiKeys.CompatOff"]</p>
+    }
+    @if (Model.Keys.Count == 0)
+    {
+        <p>@L["ApiKeys.Empty"]</p>
+    }
+    else
+    {
+        <div class="table">
+            <table>
+                <thead>
+                    <tr>
+                        <th scope="col">@L["ApiKeys.Name"]</th>
+                        <th scope="col">@L["ApiKeys.Identifier"]</th>
+                        <th scope="col">@L["ApiKeys.Scopes"]</th>
+                        <th scope="col">@L["ApiKeys.Limits"]</th>
+                        <th scope="col">@L["Webhooks.State"]</th>
+                        <th scope="col"><span class="visually-hidden">@L["ApiKeys.Revoke"]</span></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var k in Model.Keys)
+                    {
+                        var expired = k.ExpiresAt is { } at && at <= Model.Now;
+                        var ips = System.Text.Json.JsonSerializer.Deserialize<string[]>(k.AllowedIps) ?? [];
+                        <tr>
+                            <td>@k.Name</td>
+                            <td><code>@k.Prefix</code></td>
+                            <td>@string.Join(", ", System.Text.Json.JsonSerializer.Deserialize<string[]>(k.Scopes) ?? [])</td>
+                            <td>
+                                @(ips.Length == 0 ? L["ApiKeys.AnyIp"] : string.Join(", ", ips))
+                                @if (k.ExpiresAt is { } until)
+                                {
+                                    <br><span class="muted">@L["ApiKeys.Until"] <time datetime="@until.ToString("O", CultureInfo.InvariantCulture)">@until.ToString("g", CultureInfo.CurrentCulture)</time></span>
+                                }
+                                @if (k.RequestsPerMinute is { } perMinute)
+                                {
+                                    <br><span class="muted">@L["ApiKeys.PerMinute", perMinute]</span>
+                                }
+                            </td>
+                            <td>
+                                @if (k.RevokedAt is not null)
+                                {
+                                    <span class="status bo-status s-cancelled" data-tone="neutral" data-shape="filled"><span class="dot" aria-hidden="true"></span>@L["ApiKeys.StateRevoked"]</span>
+                                }
+                                else if (expired)
+                                {
+                                    <span class="status bo-status s-suspended" data-tone="warn" data-shape="hollow"><span class="dot" aria-hidden="true"></span>@L["ApiKeys.StateExpired"]</span>
+                                }
+                                else
+                                {
+                                    <span class="status bo-status s-active" data-tone="ok" data-shape="filled"><span class="dot" aria-hidden="true"></span>@L["ApiKeys.StateActive"]</span>
+                                }
+                            </td>
+                            <td>
+                                @if (k.RevokedAt is null)
+                                {
+                                    <form method="post" asp-page-handler="Revoke" asp-route-keyId="@k.Id" class="inline">
+                                        <button type="submit" class="link">@L["ApiKeys.Revoke"]</button>
+                                    </form>
+                                }
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
+</section>
+
+<section aria-labelledby="issue">
+    <h2 id="issue">@L["ApiKeys.Add"]</h2>
+    @if (Model.KeyError is { } keyError)
+    {
+        <p class="alert" role="alert" tabindex="-1" autofocus>@L["Webhooks.ErrorPrefix"]: @keyError</p>
+    }
+    <form method="post" asp-page-handler="Key" class="stack narrow">
+        <label for="key-name">@L["ApiKeys.Name"]</label>
+        <input id="key-name" name="KeyName" value="@Model.KeyName" required maxlength="100" aria-describedby="key-name-help" autocomplete="off">
+        <small id="key-name-help" class="muted">@L["ApiKeys.NameHelp"]</small>
+        <fieldset class="stack">
+            <legend>@L["ApiKeys.OwnScopes"]</legend>
+            @foreach (var scope in Model.OwnScopes)
+            {
+                <label class="check"><input type="checkbox" name="Scopes" value="@scope" checked="@Model.Scopes.Contains(scope)"> <code>@scope</code></label>
+            }
+        </fieldset>
+        <fieldset class="stack">
+            <legend>@L["ApiKeys.CompatScopes"]</legend>
+            @foreach (var command in Model.CompatCommands)
+            {
+                var scope = "compat:" + command;
+                <label class="check"><input type="checkbox" name="Scopes" value="@scope" checked="@Model.Scopes.Contains(scope)"> <code>@command</code></label>
+            }
+        </fieldset>
+        <label for="key-ips">@L["ApiKeys.Ips"]</label>
+        <textarea id="key-ips" name="AllowedIps" rows="2" aria-describedby="key-ips-help">@Model.AllowedIps</textarea>
+        <small id="key-ips-help" class="muted">@L["ApiKeys.IpsHelp"]</small>
+        <label for="key-expires">@L["ApiKeys.Expires"]</label>
+        <input id="key-expires" name="ExpiresOn" type="date" value="@Model.ExpiresOn?.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture)" aria-describedby="key-expires-help">
+        <small id="key-expires-help" class="muted">@L["ApiKeys.ExpiresHelp"]</small>
+        <label for="key-rpm">@L["ApiKeys.Rpm"]</label>
+        <input id="key-rpm" name="RequestsPerMinute" type="number" min="1" inputmode="numeric" value="@Model.RequestsPerMinute" aria-describedby="key-rpm-help">
+        <small id="key-rpm-help" class="muted">@L["ApiKeys.RpmHelp"]</small>
+        <button type="submit">@L["ApiKeys.AddButton"]</button>
+    </form>
+</section>
+
+<section aria-labelledby="list">
+    <h2 id="list">@L["Webhooks.List"]</h2>
+    @if (Model.Rows.Count == 0)
+    {
+        <p>@L["Webhooks.Empty"]</p>
+    }
+    else
+    {
+        <div class="table">
+            <table>
+                <thead>
+                    <tr>
+                        <th scope="col">@L["Webhooks.Url"]</th>
+                        <th scope="col">@L["Webhooks.Events"]</th>
+                        <th scope="col">@L["Webhooks.State"]</th>
+                        <th scope="col">@L["Webhooks.LastDelivery"]</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var row in Model.Rows)
+                    {
+                        var e = row.Endpoint;
+                        <tr>
+                            <td><a href="/admin/configuracion/webhooks/@e.Id">@e.Url</a> @if (e.Description is { } description) { <span class="muted">@description</span> }</td>
+                            <td>@string.Join(", ", e.Events)</td>
+                            <td>@(e.Active ? L["Webhooks.On"] : L["Webhooks.Off"])</td>
+                            <td>
+                                @if (row.Last is { } last)
+                                {
+                                    <partial name="_DeliveryStatus" model="last.Status" />
+                                    <time datetime="@last.CreatedAt.ToString("O", CultureInfo.InvariantCulture)">@last.CreatedAt.ToString("g", CultureInfo.CurrentCulture)</time>
+                                }
+                                else
+                                {
+                                    <span class="muted">@L["Webhooks.Never"]</span>
+                                }
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
+</section>
+
+<section aria-labelledby="add">
+    <h2 id="add">@L["Webhooks.Add"]</h2>
+    @if (Model.WebhookError is { } error)
+    {
+        <p class="alert" role="alert" tabindex="-1" autofocus>@L["Webhooks.ErrorPrefix"]: @error</p>
+    }
+    <form method="post" asp-page-handler="Webhook" class="stack narrow">
+        <label for="url">@L["Webhooks.Url"]</label>
+        <input id="url" name="Destination" type="url" value="@Model.Destination" required maxlength="500" aria-describedby="url-help" autocomplete="off">
+        <small id="url-help" class="muted">@L["Webhooks.UrlHelp"]</small>
+        <label for="description">@L["Webhooks.Description"]</label>
+        <input id="description" name="Description" value="@Model.Description" maxlength="200" aria-describedby="description-help">
+        <small id="description-help" class="muted">@L["Webhooks.DescriptionHelp"]</small>
+        <partial name="_EventChoices" model="(IReadOnlyCollection<string>)Model.Events" />
+        <button type="submit">@L["Webhooks.AddButton"]</button>
+    </form>
+</section>
+
+<section aria-labelledby="verify">
+    <h2 id="verify">@L["Webhooks.Verify"]</h2>
+    <p>@L["Webhooks.VerifyHelp"]</p>
+</section>

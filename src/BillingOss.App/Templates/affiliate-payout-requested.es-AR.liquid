@@ -1,0 +1,3 @@
+Pedido de retiro de afiliado N.º {{ payout_id }}
+<p>El afiliado N.º {{ affiliate_id }} ({{ account_name }}) pidió un retiro de <strong>{{ amount }}</strong>.</p>
+<p>Los datos para la transferencia están en el admin, en Clientes, Afiliados, Cobros{% if portal_url %}: <a href="{{ portal_url }}/admin/afiliados/retiros">{{ portal_url }}/admin/afiliados/retiros</a>{% endif %}. Una vez transferido, marcalo pagado con la referencia o rechazalo con el motivo.</p>

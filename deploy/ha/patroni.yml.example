@@ -1,0 +1,131 @@
+# Patroni 4.1 de billing-oss, uno por nodo de base (docs/despliegue/ha-vms.md).
+# Copiar a /etc/patroni/billing.yml y cambiar lo marcado con CAMBIAR. Los tres nodos usan el mismo archivo salvo
+# name, las direcciones y los tags.
+#
+# Las contraseñas no van acá. Patroni las lee de variables de entorno (PATRONI_SUPERUSER_PASSWORD,
+# PATRONI_REPLICATION_PASSWORD, PATRONI_REWIND_PASSWORD, PATRONI_RESTAPI_PASSWORD), que el servicio carga de
+# /etc/billing-ha/secretos.env (ver secretos.env.example).
+
+scope: billing
+namespace: /billing-oss/
+name: billnode01                                  # CAMBIAR
+
+restapi:
+  listen: 0.0.0.0:8008
+  connect_address: 192.0.2.11:8008                # CAMBIAR
+  certfile: /etc/billing-ha/tls/nodo.crt
+  keyfile: /etc/billing-ha/tls/nodo.key
+  cafile: /etc/billing-ha/tls/ca.crt
+  # Las lecturas (GET /primary, /health) quedan abiertas para HAProxy y el monitoreo. Los cambios piden usuario.
+  authentication:
+    username: patroni
+
+ctl:
+  certfile: /etc/billing-ha/tls/nodo.crt
+  keyfile: /etc/billing-ha/tls/nodo.key
+  cacert: /etc/billing-ha/tls/ca.crt
+
+# etcd con TLS mutuo: el certificado del nodo es también su credencial.
+etcd3:
+  hosts: 192.0.2.11:2379,192.0.2.12:2379,192.0.2.13:2379   # CAMBIAR
+  protocol: https
+  cacert: /etc/billing-ha/tls/ca.crt
+  cert: /etc/billing-ha/tls/nodo.crt
+  key: /etc/billing-ha/tls/nodo.key
+
+bootstrap:
+  # Esto se guarda en etcd la primera vez y vale para todo el clúster. Después se cambia con patronictl edit-config.
+  dcs:
+    ttl: 30
+    loop_wait: 10
+    retry_timeout: 10
+    maximum_lag_on_failover: 1048576
+    # Replicación sincrónica por quórum y estricta (D-14): un commit confirmado está en otra base, y sin réplica
+    # las escrituras esperan en lugar de confirmarse solo en la primaria.
+    synchronous_mode: quorum
+    synchronous_mode_strict: true
+    synchronous_node_count: 1
+    # Con quórum ANY 1 y tres nodos, si caen a la vez la primaria y la réplica que dio el último acuse, Patroni no
+    # promueve solo (no puede comparar el LSN con otro votante): ver conmutacion.md, "Doble falla". Dos nodos con
+    # datos más un árbitro y el modo estricto apagado no sirven para emitir comprobantes: no se soporta.
+    # Si etcd pierde el quórum, la primaria sigue mientras vea a todos los nodos por la API de Patroni.
+    failsafe_mode: true
+    postgresql:
+      use_pg_rewind: true
+      use_slots: true
+      parameters:
+        wal_level: replica
+        hot_standby: "on"
+        wal_log_hints: "on"
+        max_connections: 200
+        max_wal_senders: 10
+        max_replication_slots: 10
+        wal_keep_size: 1GB
+        synchronous_commit: "on"
+        password_encryption: scram-sha-256
+        # Archivo continuo para PITR. Solo archiva la primaria.
+        archive_mode: "on"
+        archive_command: pgbackrest --stanza=billing archive-push %p
+        archive_timeout: 60s
+        shared_buffers: 1GB
+        effective_cache_size: 3GB
+  initdb:
+    - encoding: UTF8
+    - locale: C.UTF-8
+    - data-checksums
+
+postgresql:
+  listen: 0.0.0.0:5432
+  connect_address: 192.0.2.11:5432                # CAMBIAR
+  data_dir: /var/lib/postgresql/18/billing
+  bin_dir: /usr/lib/postgresql/18/bin
+  pgpass: /var/lib/postgresql/.pgpass_patroni
+  use_unix_socket: true
+  authentication:
+    superuser:
+      username: postgres
+    replication:
+      username: replicador
+      sslmode: verify-full
+      sslrootcert: /etc/billing-ha/tls/ca.crt
+    rewind:
+      username: rebobinador
+      sslmode: verify-full
+      sslrootcert: /etc/billing-ha/tls/ca.crt
+  parameters:
+    ssl: "on"
+    ssl_cert_file: /etc/billing-ha/tls/nodo.crt
+    ssl_key_file: /etc/billing-ha/tls/nodo.key
+    ssl_ca_file: /etc/billing-ha/tls/ca.crt
+    ssl_min_protocol_version: TLSv1.3
+    unix_socket_directories: /var/run/postgresql
+  # Solo TLS con scram-sha-256 desde la red de los nodos. CAMBIAR la red.
+  pg_hba:
+    - local   all          postgres                 peer
+    - hostssl replication  replicador  192.0.2.0/24 scram-sha-256
+    - hostssl all          all         192.0.2.0/24 scram-sha-256
+    - host    all          all         0.0.0.0/0    reject
+  # Una réplica nueva se arma desde el backup y no carga a la primaria. Si no hay backup, desde la primaria.
+  create_replica_methods:
+    - pgbackrest
+    - basebackup
+  pgbackrest:
+    command: /usr/bin/pgbackrest --stanza=billing --delta restore
+    keep_data: true
+    no_params: true
+  basebackup:
+    checkpoint: fast
+
+# El watchdog reinicia la VM si Patroni se cuelga siendo primaria: así nunca quedan dos primarias.
+watchdog:
+  mode: required
+  device: /dev/watchdog
+  safety_margin: 5
+
+tags:
+  # Mayor número, más prioridad para ser primaria. Bajarlo en el nodo con el disco más lento.
+  failover_priority: 1                            # CAMBIAR
+  nofailover: false
+  noloadbalance: false
+  clonefrom: false
+  nosync: false

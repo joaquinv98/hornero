@@ -1,0 +1,26 @@
+@model IReadOnlyList<EventView>
+@* Lo que está pasando en la red y toca los productos del cliente: cada evento con su estado, la palabra y la forma. *@
+@if (Model.Count > 0)
+{
+    <link rel="stylesheet" href="~/css/contenidos.css" asp-append-version="true">
+    <section class="card ct-known" aria-labelledby="known-issues">
+        <h2 id="known-issues">@C["Net.KnownIssues"]</h2>
+        <p class="muted">@C["Net.KnownIssuesIntro"]</p>
+        <ul class="ct-events">
+            @foreach (var e in Model)
+            {
+                <li>
+                    <div class="ct-row">
+                        <a class="ct-name" href="/estado-red/@e.Id" lang="@e.Language">@e.Title</a>
+                        <partial name="_Pill" model="ContentUi.EventPill(e, C)" />
+                    </div>
+                    @if (e.Components.Count > 0)
+                    {
+                        <p class="muted">@C["Net.Affects"]: @string.Join(", ", e.Components.Select(c => c.Name))</p>
+                    }
+                </li>
+            }
+        </ul>
+        <p><a href="/estado-red">@C["Net.KnownIssuesSee"]</a></p>
+    </section>
+}

@@ -1,0 +1,19 @@
+@model BillingOss.Domain.Affiliates.AffiliateCommission
+@using BillingOss.Domain.Affiliates
+@* Estado de una comisión con punto, palabra y forma (D-19, 4.4): en espera es hueco, liberada lleno y revertida neutro. *@
+@switch (Model.Status)
+{
+    case CommissionStatus.Held:
+        <span class="status bo-status" data-tone="info" data-shape="hollow">@L["Affiliates.HeldUntil", Ui.Date(Model.ReleaseOn)]</span>
+        break;
+    case CommissionStatus.Released:
+        <span class="status i-paid bo-status" data-tone="ok">@L["CommissionStatus.Released"]</span>
+        break;
+    default:
+        <span class="status bo-status" data-tone="neutral">@L["CommissionStatus.Reversed"]</span>
+        break;
+}
+@if (Model.Reversed > 0m && Model.Status != CommissionStatus.Reversed)
+{
+    <span class="muted bo-muted">@L["Affiliates.PartlyReversed", Ui.Money(Model.Reversed, Model.Currency)]</span>
+}

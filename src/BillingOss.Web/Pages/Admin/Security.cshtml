@@ -1,0 +1,80 @@
+@page "/admin/seguridad"
+@model AdminSecurityModel
+@{
+    ViewData["Title"] = S["Admin.SecurityTitle"];
+}
+<h1>@S["Admin.SecurityTitle"]</h1>
+@if (Model.CanManage || Model.CanRead)
+{
+    <nav aria-label="@S["Admin.SecurityNav"]" class="menu">
+        @if (Model.CanManage)
+        {
+            <a href="/admin/seguridad/ajustes">@S["Settings.Title"]</a>
+            <a href="/admin/seguridad/bloqueos">@S["Block.Title"]</a>
+            <a href="/admin/seguridad/proveedores">@S["Providers.Title"]</a>
+        }
+        @if (Model.CanRead)
+        {
+            <a href="/admin/seguridad/ingresos">@S["Logins.Title"]</a>
+        }
+    </nav>
+}
+@if (Model.Error is not null)
+{
+    <div class="alert" role="alert">
+        <p>@UiText.Get(L, S, Model.Error)</p>
+        <partial name="_PasswordProblems" model="Model.Problems" />
+    </div>
+}
+@if (Model.Notice is not null)
+{
+    <p class="notice" role="status">@S[Model.Notice]</p>
+}
+
+<section aria-labelledby="second-factor">
+    <h2 id="second-factor">@S["TwoFa.Title"]</h2>
+    @if (Model.RecoveryCodes is { } codes)
+    {
+        <partial name="_RecoveryCodes" model="codes" />
+    }
+    else
+    {
+        <p class="@(Model.CodesLeft <= BillingOss.Web.Pages.Portal.SecurityModel.FewCodes ? "alert" : "muted")">@S["TwoFa.CodesLeft", Model.CodesLeft]</p>
+    }
+    <form method="post" asp-page-handler="Codes" class="stack narrow">
+        <label for="code">@L["Field.Code"]</label>
+        <input id="code" name="Code" inputmode="numeric" autocomplete="one-time-code" required>
+        <button type="submit" class="secondary">@S["TwoFa.NewCodes"]</button>
+    </form>
+</section>
+
+<section aria-labelledby="password">
+    <h2 id="password">@S["Pwd.Title"]</h2>
+    <p class="muted" id="password-rules">@S["Pwd.Hint", Model.MinLength]</p>
+    <form method="post" asp-page-handler="Password" class="stack narrow">
+        <label for="current">@S["Pwd.Current"]</label>
+        <input id="current" name="CurrentPassword" type="password" autocomplete="current-password" required>
+        <label for="new">@L["Field.NewPassword"]</label>
+        <input id="new" name="NewPassword" type="password" autocomplete="new-password" minlength="@Model.MinLength" maxlength="128" aria-describedby="password-rules" required>
+        <label for="confirm">@L["Field.ConfirmPassword"]</label>
+        <input id="confirm" name="ConfirmPassword" type="password" autocomplete="new-password" minlength="@Model.MinLength" maxlength="128" required>
+        <button type="submit" class="secondary">@S["Pwd.Change"]</button>
+    </form>
+</section>
+
+<section aria-labelledby="oidc">
+    <h2 id="oidc">@S["Oidc.Title"]</h2>
+    <p>
+        <span class="status" data-tone="@(Model.OidcConfigured ? "ok" : "neutral")">@(Model.OidcConfigured ? S["Oidc.Configured"] : S["Oidc.NotConfigured"])</span>
+        @if (Model.OidcConfigured)
+        {
+            <span class="status" data-tone="@(Model.OidcLinked ? "ok" : "warn")">@(Model.OidcLinked ? S["Oidc.Linked"] : S["Oidc.NotLinked"])</span>
+        }
+    </p>
+    <p class="muted">@S["Oidc.Help"]</p>
+</section>
+
+<section aria-labelledby="logins">
+    <h2 id="logins">@S["History.Title"]</h2>
+    <partial name="_LoginHistory" model="Model.Logins" />
+</section>

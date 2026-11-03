@@ -1,0 +1,68 @@
+@page "/admin/registradores"
+@model BillingOss.Web.Pages.Admin.RegistrarsModel
+@{
+    ViewData["Title"] = L["Nav.Registrars"];
+}
+<div class="bo-head">
+    <div class="bo-head__row">
+        <h1>@L["Nav.Registrars"]</h1>
+        <a class="bo-btn bo-btn--secondary" href="/admin/dominios/precios">@L["Nav.TldPricing"]</a>
+    </div>
+    <p class="bo-lead">@L["Registrars.Lead"]</p>
+</div>
+
+@if (Model.Tested is { } tested)
+{
+    <p class="bo-alert" data-tone="@(tested.Error is null ? "ok" : "danger")" role="status">
+        @(tested.Error is null ? L["Registrars.TestOk"] : tested.Error == "-" ? L["Registrars.NoModules"] : L["Registrars.TestFailed", tested.Error])
+    </p>
+}
+
+@if (Model.Rows.Count == 0)
+{
+    <p class="bo-card">@L["Registrars.None"]</p>
+}
+else
+{
+    <div class="bo-table-wrap">
+        <table class="bo-table">
+            <thead>
+                <tr>
+                    <th scope="col">@L["Registrars.Instance"]</th>
+                    <th scope="col">@L["Registrars.Module"]</th>
+                    <th scope="col">@L["Registrars.Where"]</th>
+                    <th scope="col">@L["Registrars.Capabilities"]</th>
+                    <th scope="col" class="bo-num">@L["Nav.Domains"]</th>
+                    <th scope="col" class="bo-num">@L["Registrars.Tlds"]</th>
+                    @if (Model.CanManage)
+                    {
+                        <th scope="col"><span class="bo-sr">@L["Registrars.Test"]</span></th>
+                    }
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var r in Model.Rows)
+                {
+                    <tr>
+                        <th scope="row">@r.Name <span class="bo-muted">#@r.Id</span></th>
+                        <td>@r.Module</td>
+                        <td class="bo-data">@(r.Where.Length == 0 ? L["Registrars.NotDeployed"].Value : r.Where)</td>
+                        <td class="bo-small">@string.Join(", ", r.Capabilities)</td>
+                        <td class="bo-num">@r.Domains</td>
+                        <td class="bo-num">@r.Tlds</td>
+                        @if (Model.CanManage)
+                        {
+                            <td>
+                                <form method="post" asp-page-handler="Test">
+                                    <input type="hidden" name="instance" value="@r.Id">
+                                    <button type="submit" class="bo-btn bo-btn--secondary">@L["Registrars.Test"]</button>
+                                </form>
+                            </td>
+                        }
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+    <p class="bo-small bo-muted">@L["Registrars.ConfigHelp"]</p>
+}

@@ -1,0 +1,35 @@
+@model AudienceFields
+@* A quién se le muestra: cualquiera, cualquier cliente con sesión, o clientes con un servicio vivo de ciertos productos o en ciertos grupos. *@
+@{
+    var id = Model.Prefix.Replace('.', '_');
+}
+<fieldset>
+    <legend>@C["Cms.Audience"]</legend>
+    <label for="@(id)_audience">@C["Cms.AudienceWho"]</label>
+    <select id="@(id)_audience" name="@(Model.Prefix).Audience">
+        <option value="Public" selected="@(Model.Audience == ContentAudience.Public)">@C["Cms.AudiencePublic"]</option>
+        <option value="Customers" selected="@(Model.Audience == ContentAudience.Customers)">@C["Cms.AudienceCustomers"]</option>
+        <option value="Targeted" selected="@(Model.Audience == ContentAudience.Targeted)">@C["Cms.AudienceTargeted"]</option>
+    </select>
+    <p class="muted">@C["Cms.AudienceHelp"]</p>
+    @if (Model.Products.Count > 0)
+    {
+        <label for="@(id)_products">@C["Cms.Products"]</label>
+        <select id="@(id)_products" name="@(Model.Prefix).ProductIds" multiple size="6">
+            @foreach (var p in Model.Products)
+            {
+                <option value="@p.Id" selected="@Model.ProductIds.Contains(p.Id)">@p.Name (#@p.Id)</option>
+            }
+        </select>
+    }
+    @if (Model.Groups.Count > 0)
+    {
+        <label for="@(id)_groups">@C["Cms.Groups"]</label>
+        <select id="@(id)_groups" name="@(Model.Prefix).GroupIds" multiple size="4">
+            @foreach (var g in Model.Groups)
+            {
+                <option value="@g.Id" selected="@Model.GroupIds.Contains(g.Id)">@g.Name (#@g.Id)</option>
+            }
+        </select>
+    }
+</fieldset>

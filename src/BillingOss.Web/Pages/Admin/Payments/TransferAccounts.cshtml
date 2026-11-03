@@ -1,0 +1,101 @@
+@page "/admin/cobros/cuentas-para-transferir"
+@model TransferAccountsModel
+@{
+    ViewData["Title"] = L["Transfers.Accounts"];
+    var e = Model.Editing;
+}
+<div class="bo-stack">
+    <div class="bo-head">
+        <a class="bo-small" href="/admin/cobros">@L["Gateway.Back"]</a>
+        <h1>@L["Transfers.Accounts"]</h1>
+        <p class="bo-muted">@L["Transfers.AccountsIntro"]</p>
+    </div>
+
+    @if (Model.Saved)
+    {
+        <div class="bo-alert" data-tone="ok" role="status"><p>@L["Transfers.AccountSaved"]</p></div>
+    }
+    @if (Model.Error is not null)
+    {
+        <div class="bo-error-summary" role="alert"><h2>@L["Pay.ErrorTitle"]</h2><p>@L[Model.Error]</p></div>
+    }
+
+    @if (Model.BankAccounts.Count > 0)
+    {
+        <div class="bo-table-wrap">
+            <table class="bo-table">
+                <thead>
+                    <tr>
+                        <th scope="col">@L["PayTransfer.Bank"]</th>
+                        <th scope="col">@L["PayTransfer.Holder"]</th>
+                        <th scope="col">@L["PayTransfer.Cbu"]</th>
+                        <th scope="col">@L["Gateway.Currency"]</th>
+                        <th scope="col" class="bo-act">@L["Transfers.Actions"]</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var a in Model.BankAccounts)
+                    {
+                        <tr>
+                            <td>
+                                @a.Bank
+                                @if (!a.Active)
+                                {
+                                    <span class="bo-status" data-tone="neutral">@L["Transfers.Inactive"]</span>
+                                }
+                            </td>
+                            <td>@a.Holder</td>
+                            <td><span class="bo-data">@a.Cbu</span>@(a.Alias is null ? "" : " · " + a.Alias)</td>
+                            <td>@a.Currency.Code</td>
+                            <td class="bo-act"><a href="/admin/cobros/cuentas-para-transferir?cuenta=@a.Id#cuenta-form">@L["Transfers.Edit"]</a></td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
+
+    <section class="bo-card" aria-labelledby="cuenta-form-titulo">
+        <form method="post" class="bo-form" id="cuenta-form">
+            <h2 id="cuenta-form-titulo">@(e is null ? L["Transfers.NewAccount"] : L["Transfers.EditAccount", e.Bank])</h2>
+            @if (e is not null)
+            {
+                <input type="hidden" name="id" value="@e.Id">
+            }
+            <div class="bo-field">
+                <label for="banco">@L["PayTransfer.Bank"]</label>
+                <input id="banco" name="bank" class="bo-input" maxlength="100" required value="@e?.Bank">
+            </div>
+            <div class="bo-field">
+                <label for="titular">@L["PayTransfer.Holder"]</label>
+                <input id="titular" name="holder" class="bo-input" maxlength="200" required value="@e?.Holder">
+            </div>
+            <div class="bo-field">
+                <label for="cuit">@L["PayTransfer.HolderCuit"]</label>
+                <input id="cuit" name="cuit" class="bo-input" inputmode="numeric" required value="@e?.Cuit">
+            </div>
+            <div class="bo-field">
+                <label for="cbu">@L["PayTransfer.Cbu"]</label>
+                <input id="cbu" name="cbu" class="bo-input" inputmode="numeric" required value="@e?.Cbu">
+            </div>
+            <div class="bo-field">
+                <label for="alias">@L["PayTransfer.Alias"]</label>
+                <input id="alias" name="alias" class="bo-input" maxlength="20" value="@e?.Alias">
+            </div>
+            <div class="bo-field">
+                <label for="moneda">@L["Gateway.Currency"]</label>
+                <input id="moneda" name="currency" class="bo-input" maxlength="3" required value="@(e?.Currency.Code ?? "ARS")">
+            </div>
+            <label class="bo-check">
+                <input type="checkbox" name="active" value="true" checked="@(e?.Active ?? true)">
+                <span>@L["Transfers.Active"]</span>
+            </label>
+            <div class="bo-field">
+                <label for="mapa">@L["Transfers.Map"]</label>
+                <textarea id="mapa" name="csvMap" class="bo-textarea" rows="6" aria-describedby="mapa-ayuda">@(e?.CsvMap ?? TransferAccountsModel.DefaultMap)</textarea>
+                <p id="mapa-ayuda" class="bo-help">@L["Transfers.MapHelp"]</p>
+            </div>
+            <button type="submit" class="bo-btn">@L["Transfers.SaveAccount"]</button>
+        </form>
+    </section>
+</div>

@@ -1,0 +1,96 @@
+# Alertas de billing-oss para quien recibe el OTLP en Prometheus (receptor OTLP propio o un OpenTelemetry
+# Collector). Son las mismas que la plantilla de Zabbix. Las métricas de la cola salen de la base y las publica
+# cada trabajador con el mismo valor: por eso se agregan con max, nunca con sum.
+# Guía: docs/observabilidad/README.md.
+groups:
+  - name: billing-oss
+    rules:
+      - alert: BillingColaTrabada
+        expr: max(billing_jobs_oldest_due_seconds) > 900
+        for: 2m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Un trabajo vencido espera hace {{ $value | humanizeDuration }}: no hay trabajadores o uno está trabado."
+
+      - alert: BillingTrabajosMuertos
+        expr: max by (job_kind) (billing_jobs_dead) > 0
+        labels:
+          severity: critical
+        annotations:
+          summary: "Hay {{ $value }} trabajos {{ $labels.job_kind }} muertos esperando al staff."
+
+      - alert: BillingLeaseVencido
+        expr: max by (job_kind) (billing_jobs_stuck) > 0
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Trabajos {{ $labels.job_kind }} con el lease vencido: nadie retoma lo que dejó un nodo caído."
+
+      - alert: BillingEmisionFiscalIncierta
+        expr: max(billing_fiscal_emissions{emission_status="Unknown"}) > 0
+        for: 15m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Una emisión fiscal sigue incierta. No reemitir a mano."
+
+      - alert: BillingEmisionFiscalEnConflicto
+        expr: max(billing_fiscal_emissions{emission_status="Conflict"}) > 0
+        labels:
+          severity: critical
+        annotations:
+          summary: "Una serie fiscal quedó frenada por un conflicto con el fisco."
+
+      - alert: BillingAvisosSinProcesar
+        expr: max(billing_webhooks_oldest_seconds) > 600
+        labels:
+          severity: critical
+        annotations:
+          summary: "Un aviso de pasarela espera hace {{ $value | humanizeDuration }}: los pagos no se acreditan."
+
+      - alert: BillingPagoEnDisputa
+        expr: max(billing_payments_pending{payment_status="Disputed"}) > 0
+        labels:
+          severity: warning
+        annotations:
+          summary: "Hay pagos en disputa en la pasarela."
+
+      - alert: BillingFacturacionNoCorre
+        expr: max(billing_run_age_seconds) > 93600
+        labels:
+          severity: critical
+        annotations:
+          summary: "La corrida de facturación no termina hace {{ $value | humanizeDuration }}."
+
+      # La serie no existe hasta la primera corrida: en una instalación nueva nadie encoló billing.run.
+      - alert: BillingFacturacionNuncaCorrio
+        expr: absent(billing_run_age_seconds)
+        for: 26h
+        labels:
+          severity: critical
+        annotations:
+          summary: "Ninguna corrida de facturación terminó en 26 horas: no hay trabajadores o el planificador no encola billing.run."
+
+      - alert: BillingPagosSinCasar
+        expr: max(billing_payments_unmatched) > 0
+        labels:
+          severity: critical
+        annotations:
+          summary: "Hay {{ $value }} pagos de pasarela sin un intento propio: plata cobrada que ninguna factura explica (payments.unmatched)."
+
+      - alert: BillingHallazgosDeConciliacion
+        expr: max by (finding_kind) (billing_reconcile_findings) > 0
+        labels:
+          severity: critical
+        annotations:
+          summary: "Hay {{ $value }} hallazgos {{ $labels.finding_kind }} de la conciliación sin resolver (platform.reconcile_findings)."
+
+      - alert: BillingSinMetricasDeNegocio
+        expr: absent(billing_webhooks_unprocessed)
+        for: 10m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Ningún trabajador publica las métricas de negocio: no hay trabajadores o no llegan a la base."

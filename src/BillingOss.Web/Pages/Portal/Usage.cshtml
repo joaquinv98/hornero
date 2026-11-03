@@ -1,0 +1,14 @@
+@page "/servicios/{id:long}/uso"
+@model UsageModel
+@{
+    var v = Model.View!;
+    var name = v.Label is { Length: > 0 } label ? $"{v.Product} ({label})" : v.Product;
+    ViewData["Title"] = L["Usage.Title", name];
+}
+<p><a href="/servicios">@L["Nav.Services"]</a></p>
+<h1>@L["Usage.Title", name]</h1>
+<section aria-labelledby="current">
+    <h2 id="current">@L["Usage.Current"]</h2>
+    <partial name="_UsageSummary" model="v" />
+</section>
+<partial name="_UsageHistory" model="v" />

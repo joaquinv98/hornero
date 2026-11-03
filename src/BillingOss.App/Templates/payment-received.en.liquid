@@ -1,0 +1,7 @@
+We received your payment of {{ amount }}
+<p>Hi {{ account_name }},</p>
+<p>We have recorded your payment of <strong>{{ amount }}</strong> on {{ date }}.</p>
+{% if documents.size > 0 %}<p>It was applied to:</p>
+<ul>{% for doc in documents %}<li>Invoice #{{ doc.number }}: {{ doc.amount }}</li>{% endfor %}</ul>{% endif %}
+{% if credit %}<p><strong>{{ credit }}</strong> remains as credit for your next invoices.</p>{% endif %}
+<p>Thank you!</p>

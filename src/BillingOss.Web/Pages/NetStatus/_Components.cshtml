@@ -1,0 +1,20 @@
+@model IReadOnlyList<ComponentView>
+<ul class="ct-components">
+    @foreach (var c in Model)
+    {
+        <li>
+            <div class="ct-row">
+                <span class="ct-name">@c.Name</span>
+                <partial name="_Pill" model="ContentUi.ComponentPill(c.Status, C)" />
+            </div>
+            @if (!string.IsNullOrWhiteSpace(c.Description))
+            {
+                <p class="muted">@c.Description</p>
+            }
+            @if (c.Children.Count > 0)
+            {
+                <partial name="_Components" model="c.Children" />
+            }
+        </li>
+    }
+</ul>

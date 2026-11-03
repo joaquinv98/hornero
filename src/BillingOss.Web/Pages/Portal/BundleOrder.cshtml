@@ -1,0 +1,121 @@
+@page "/contratar/paquete/{id:long}"
+@model BillingOss.Web.Pages.Portal.BundleOrderModel
+@{
+    var b = Model.Bundle!;
+    var account = Model.Account!;
+    var currency = account.Currency;
+    var price = b.Prices.First(p => p.Currency == currency.Code);
+    ViewData["Title"] = L["Shop.OrderTitle", b.Name];
+    string CycleOption(string code) => L["CycleOption." + code] is { ResourceNotFound: false } text ? text.Value : code;
+}
+<nav aria-label="@L["Catalog.Breadcrumb"]"><a href="/contratar">@L["Shop.Title"]</a></nav>
+<h1>@L["Shop.OrderTitle", b.Name]</h1>
+@if (b.Description is { Length: > 0 } description)
+{
+    <p class="muted multiline">@description</p>
+}
+<p>
+    @L["Shop.BundleSummary", Ui.Money(price.Amount, currency), Ui.Money(price.FullAmount, currency)]
+    @if (b.DiscountPercent > 0m)
+    {
+        <span class="muted">@L["Shop.BundleDiscount", b.DiscountPercent.ToString("0.##", CultureInfo.CurrentCulture)]@(b.DiscountCycles is { } cycles ? " " + L["Shop.DiscountCycles", cycles].Value : "")</span>
+    }
+</p>
+@if (Model.Changed)
+{
+    <div class="alert" role="alert" tabindex="-1" autofocus><p>@L["Shop.Changed"]</p></div>
+}
+@if (Model.Error is { } error)
+{
+    <div class="alert" role="alert" tabindex="-1" autofocus><p><strong>@L["Shop.ErrorTitle"]</strong> @error</p></div>
+}
+@if (Model.Accounts.Count > 1)
+{
+    <form method="get" class="search" action="/contratar/paquete/@b.Id">
+        <label for="cuenta">@L["Field.Account"]</label>
+        <select id="cuenta" name="cuenta">
+            @foreach (var a in Model.Accounts)
+            {
+                <option value="@a.Id" selected="@(a.Id == account.Id)">@a.Name (@a.Currency.Code)</option>
+            }
+        </select>
+        <button type="submit" class="secondary">@L["Shop.ChangeAccount"]</button>
+    </form>
+}
+<form method="post" class="stack">
+    <input type="hidden" asp-for="Input.AccountId">
+    <input type="hidden" asp-for="Input.Reference">
+    @* El total del cálculo va tal cual: asp-for mostraría el que llegó en el pedido anterior. *@
+    <input type="hidden" name="Input.Total" value="@Model.Input.Total">
+    @for (var i = 0; i < Model.Lines.Count; i++)
+    {
+        var line = Model.Lines[i];
+        var prefix = string.Create(CultureInfo.InvariantCulture, $"Input.Lines[{i}].Choices");
+        <fieldset class="card">
+            <legend>@line.Product.Name · @CycleOption(line.Plan.Cycle.Code)</legend>
+            <div class="grid">
+                @if (line.Product.Addon)
+                {
+                    @* Cada línea manda algo: la lista del formulario se lee por índices seguidos desde el cero. *@
+                    <input type="hidden" name="Input.Lines[@i].Label" value="">
+                    @if (line.ParentItem is { } parent)
+                    {
+                        <p class="muted">@L["Shop.AddonOf", Model.Lines[parent].Product.Name]</p>
+                    }
+                }
+                else
+                {
+                    <div class="field">
+                        <label for="label-@i">@L["Shop.Label"]</label>
+                        <input id="label-@i" name="Input.Lines[@i].Label" value="@(Model.Input.Lines[i].Label)" maxlength="255" autocomplete="off">
+                    </div>
+                }
+                @if (line.Shown.Count > 0)
+                {
+                    <partial name="_OptionChoices" model="new OptionChoices(line.Options, Model.Input.Lines[i].Choices, currency, line.Plan.Cycle, ShowHidden: false, Prefix: prefix)" />
+                }
+            </div>
+        </fieldset>
+    }
+    <p class="actions">
+        <button type="submit" asp-page-handler="Quote" class="secondary">@L["Shop.Quote"]</button>
+        @if (Model.Quote is not null)
+        {
+            <button type="submit" asp-page-handler="Confirm">@L["Shop.Confirm"]</button>
+        }
+    </p>
+</form>
+
+@if (Model.Quote is { } q)
+{
+    <section class="card" aria-labelledby="quote" role="status">
+        <h2 id="quote">@L["Shop.QuoteTitle"]</h2>
+        <div class="table">
+            <table>
+                <thead>
+                    <tr><th scope="col">@L["Catalog.Product"]</th><th scope="col" class="num">@L["Shop.Price"]</th><th scope="col" class="num">@L["Shop.Setup"]</th></tr>
+                </thead>
+                <tbody>
+                    @foreach (var line in q.Lines)
+                    {
+                        <tr>
+                            <td>@line.Description</td>
+                            <td class="num">
+                                @if (line.DiscountedUnitPrice < line.UnitPrice)
+                                {
+                                    <s>@Ui.Money(line.UnitPrice * line.Quantity, currency)</s>
+                                }
+                                @Ui.Money(line.DiscountedUnitPrice * line.Quantity, currency)
+                            </td>
+                            <td class="num">@Ui.Money(line.SetupFee, currency)</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+        <p class="strong">
+            @(q.Total > 0m ? L["Shop.WillInvoice", Ui.Money(q.Total, currency), Ui.Money(q.Tax, currency)].Value : Model.Lines.Any(l => l.Product.Activation == BillingOss.Domain.Catalog.ProductActivation.Manual) ? L["Shop.NothingToPayReview"].Value : L["Shop.NothingToPay"].Value)
+        </p>
+        <p class="muted">@L["Shop.ConfirmHelp"]</p>
+    </section>
+}

@@ -1,0 +1,156 @@
+@page "/admin/soporte/resumen"
+@model BillingOss.Web.Pages.Admin.Tickets.OverviewModel
+@using BillingOss.App.Identity
+@using BillingOss.Web.Pages.Admin.Tickets
+@{
+    ViewData["Title"] = L["SupportOverview.Title"];
+    var reports = StaffPermissions.Granting(ReportPermissions.Support).Any(p => User.HasClaim(Claims.Permission, p));
+}
+<h1>@L["SupportOverview.Title"]</h1>
+<p class="bo-actions"><a class="button" href="/admin/soporte/nuevo">@L["Menu.OpenTicket"]</a> <a href="/admin/soporte">@L["Menu.Tickets"]</a></p>
+
+<ul class="bo-cards">
+    @foreach (var card in Model.Cards)
+    {
+        <li><a href="@card.Href"><strong data-tone="@(card.Count > 0 ? card.Tone : "neutral")">@card.Count</strong> <span>@L[card.Label]</span></a></li>
+    }
+</ul>
+
+<h2>@L["SupportOverview.Waiting"]</h2>
+@if (Model.Oldest.Count == 0)
+{
+    <p>@L["SupportOverview.NothingWaiting"]</p>
+}
+else
+{
+    <div class="table">
+        <table class="bo-dense">
+            <caption class="bo-sr">@L["SupportOverview.Waiting"]</caption>
+            <thead>
+                <tr>
+                    <th scope="col">@L["Support.NumberShort"]</th>
+                    <th scope="col">@L["Support.Subject"]</th>
+                    <th scope="col">@L["Support.Department"]</th>
+                    <th scope="col">@L["Field.Status"]</th>
+                    <th scope="col">@L["SupportOverview.WaitingSince"]</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var w in Model.Oldest)
+                {
+                    var (tone, shape) = SupportUi.Status(w.Status, staff: true);
+                    <tr>
+                        <td><a href="/admin/soporte/@w.Id">#@w.Number</a></td>
+                        <th scope="row"><a href="/admin/soporte/@w.Id">@w.Subject</a></th>
+                        <td>@w.Department</td>
+                        <td><span class="bo-status" data-tone="@tone" data-shape="@shape">@L["TicketStatus." + w.Status]</span></td>
+                        <td><time datetime="@SupportUi.Iso(w.Since)">@SupportUi.When(w.Since, Model.Billing)</time></td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+}
+
+<h2>@L["SupportReport.ByDepartment"]</h2>
+@if (Model.Departments.Count == 0)
+{
+    <p>@L["SupportOverview.NoActive"]</p>
+}
+else
+{
+    <div class="table">
+        <table class="bo-dense">
+            <caption class="bo-sr">@L["SupportReport.ByDepartment"]</caption>
+            <thead>
+                <tr>
+                    <th scope="col">@L["Support.Department"]</th>
+                    <th scope="col" class="num">@L["TicketStatus.Open"]</th>
+                    <th scope="col" class="num">@L["TicketStatus.InProgress"]</th>
+                    <th scope="col" class="num">@L["TicketStatus.AwaitingCustomer"]</th>
+                    <th scope="col" class="num">@L["TicketStatus.OnHold"]</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var d in Model.Departments)
+                {
+                    var queue = "/admin/soporte?departamento=" + d.Id.ToString(CultureInfo.InvariantCulture);
+                    <tr>
+                        <th scope="row"><a href="@queue">@d.Name</a></th>
+                        <td class="num"><a href="@queue&amp;estado=sin-responder">@d.Open</a></td>
+                        <td class="num"><a href="@queue&amp;estado=en-curso">@d.InProgress</a></td>
+                        <td class="num"><a href="@queue&amp;estado=esperando-al-cliente">@d.AwaitingCustomer</a></td>
+                        <td class="num"><a href="@queue&amp;estado=en-pausa">@d.OnHold</a></td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+}
+
+<h2>@L["SupportOverview.ByStaff"]</h2>
+@if (Model.Staff.Count == 0)
+{
+    <p>@L["SupportOverview.NoneAssigned"]</p>
+}
+else
+{
+    <div class="table">
+        <table class="bo-dense">
+            <caption class="bo-sr">@L["SupportOverview.ByStaff"]</caption>
+            <thead>
+                <tr>
+                    <th scope="col">@L["SupportAdmin.Assigned"]</th>
+                    <th scope="col" class="num">@L["SupportOverview.WaitStaff"]</th>
+                    <th scope="col" class="num">@L["SupportOverview.Active"]</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var s in Model.Staff)
+                {
+                    <tr>
+                        <th scope="row"><a href="/admin/soporte?asignado=@s.Id">@s.Name</a></th>
+                        <td class="num">@s.Waiting</td>
+                        <td class="num">@s.Active</td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+}
+
+<h2>@L["SupportOverview.Week"]</h2>
+<dl class="facts">
+    <dt>@L["SupportReport.Opened"]</dt>
+    <dd>@Model.OpenedWeek</dd>
+    <dt>@L["SupportReport.Closed"]</dt>
+    <dd>@Model.ClosedWeek</dd>
+    <dt>@L["SupportReport.FirstReply"]</dt>
+    <dd>@(Model.FirstReplyWeek is { } reply ? OverviewModel.Duration(reply) : "-")</dd>
+</dl>
+
+<h2>@L["Survey.Latest"]</h2>
+@if (Model.Surveys.Count == 0)
+{
+    <p>@L["Survey.NoAnswers"]</p>
+}
+else
+{
+    <ul class="plain">
+        @foreach (var s in Model.Surveys)
+        {
+            <li>
+                <span class="bo-status" data-tone="@SupportUi.RatingTone(s.Rating)">@L["Survey.OutOfTen", s.Rating]</span>
+                <a href="/admin/soporte/@s.TicketId">@s.Subject</a> <span class="muted">@L["Support.Number", s.Number] · <time datetime="@SupportUi.Iso(s.At)">@SupportUi.When(s.At, Model.Billing)</time></span>
+                @if (s.Comment is { Length: > 0 } comment)
+                {
+                    <span class="bo-body">@comment</span>
+                }
+            </li>
+        }
+    </ul>
+}
+@if (reports)
+{
+    <p><a href="/admin/reportes/soporte">@L["SupportOverview.SeeReport"]</a></p>
+}

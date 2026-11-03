@@ -1,0 +1,134 @@
+@page "/admin/estado-red"
+@model NetworkModel
+@{
+    ViewData["Title"] = C["Cms.Network"];
+    var overall = ContentUi.ComponentPill(Model.Overall, C);
+    var events = new EventList(Model.Events, Model.Zone);
+    var past = new EventList(Model.Past, Model.Zone);
+    var home = Model.View is null;
+    string? Current(string? view) => Model.View == view ? "page" : null;
+}
+<h1>@C["Cms.Network"]</h1>
+<partial name="_Tabs" />
+<partial name="_Alerts" model="Model" />
+<p>@C["Cms.NetworkNow"] <partial name="_Pill" model="overall" /> <a href="/estado-red">@C["Cms.SeeOnSite"]</a></p>
+<p class="ct-actions"><a class="button" href="/admin/estado-red/nueva">@C["Cms.NetNewEvent"]</a></p>
+<nav class="ct-tabs" aria-label="@C["Cms.NetViews"]">
+    <a href="/admin/estado-red" aria-current="@Current(null)">@C["Cms.NetViewAll"]</a>
+    <a href="/admin/estado-red?vista=abiertas" aria-current="@Current(NetworkModel.ViewOpen)">@C["Cms.NetViewOpen"]</a>
+    <a href="/admin/estado-red?vista=programadas" aria-current="@Current(NetworkModel.ViewScheduled)">@C["Cms.NetViewScheduled"]</a>
+    <a href="/admin/estado-red?vista=resueltas" aria-current="@Current(NetworkModel.ViewResolved)">@C["Cms.NetViewResolved"]</a>
+</nav>
+
+@if (Model.View == NetworkModel.ViewResolved)
+{
+    <form method="get" action="/admin/estado-red" class="ct-form">
+        <input type="hidden" name="vista" value="resueltas">
+        <label for="net-month">@C["Cms.NetMonth"]</label>
+        <input id="net-month" name="mes" type="month" value="@Model.MonthValue">
+        <p class="ct-actions"><button type="submit">@C["Cms.NetSearchMonth"]</button></p>
+    </form>
+}
+
+<section aria-labelledby="open-events">
+    <h2 id="open-events">@C[Model.View switch { NetworkModel.ViewOpen => "Cms.NetViewOpen", NetworkModel.ViewScheduled => "Cms.NetViewScheduled", NetworkModel.ViewResolved => "Cms.NetViewResolved", _ => "Cms.NetOpenEvents" }]</h2>
+    @if (Model.Events.Count == 0)
+    {
+        <p>@C[home ? "Cms.NetNoOpenEvents" : "Cms.NetNoEventsView"]</p>
+    }
+    else
+    {
+        <partial name="_EventRows" model="events" />
+    }
+</section>
+
+@if (home)
+{
+    <section aria-labelledby="components">
+        <h2 id="components">@C["Net.Components"]</h2>
+        <p class="ct-actions">
+            <a class="button" href="/admin/estado-red/componentes">@C["Cms.NetNewComponent"]</a>
+        </p>
+        @if (Model.Components.Count == 0)
+        {
+            <p>@C["Net.NoComponents"]</p>
+        }
+        else
+        {
+            <div class="table">
+                <table aria-labelledby="components">
+                    <thead>
+                        <tr>
+                            <th scope="col">@C["Cms.Name"]</th>
+                            <th scope="col">@C["Cms.Type"]</th>
+                            <th scope="col">@C["Cms.State"]</th>
+                            <th scope="col">@C["Cms.Visibility"]</th>
+                            <th scope="col">@C["Cms.Order"]</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var (row, depth) in Model.Flat)
+                        {
+                            <tr>
+                                <td class="ct-depth-@depth"><a href="/admin/estado-red/componentes/@row.Component.Id">@ComponentTree.NameOf(row)</a></td>
+                                <td>@C[$"Cms.Kind{row.Component.Kind}"]</td>
+                                <td><partial name="_Pill" model="ContentUi.ComponentPill(row.Status, C)" /></td>
+                                <td>@(row.Component.Hidden ? C["Cms.Hidden"] : C["Cms.Visible"])</td>
+                                <td>@row.Component.SortOrder</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
+    </section>
+
+    <section aria-labelledby="past-events">
+        <h2 id="past-events">@C["Cms.NetPastEvents"]</h2>
+        @if (Model.Past.Count == 0)
+        {
+            <p>@C["Net.NoRecent"]</p>
+        }
+        else
+        {
+            <partial name="_EventRows" model="past" />
+        }
+    </section>
+
+    <section aria-labelledby="subscribers">
+        <h2 id="subscribers">@C["Cms.NetSubscribers"]</h2>
+        <p>@C["Cms.NetSubscribersCount", Model.Confirmed, Model.Pending]</p>
+        @if (Model.Subscribers.Count > 0)
+        {
+            <div class="table">
+                <table aria-labelledby="subscribers">
+                    <thead>
+                        <tr>
+                            <th scope="col">@C["Net.Email"]</th>
+                            <th scope="col">@C["Net.Language"]</th>
+                            <th scope="col">@C["Cms.State"]</th>
+                            <th scope="col">@C["Cms.NetSince"]</th>
+                            <th scope="col"><span class="ct-sr">@C["Cms.Actions"]</span></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var s in Model.Subscribers)
+                        {
+                            <tr>
+                                <td>@s.Email</td>
+                                <td>@s.Language</td>
+                                <td>@(s.ConfirmedAt is null ? C["Cms.NetPendingConfirm"] : C["Cms.NetConfirmed"])</td>
+                                <td><time datetime="@s.CreatedAt.ToString("O")">@ContentUi.Day(s.CreatedAt, Model.Zone)</time></td>
+                                <td>
+                                    <form method="post" asp-page-handler="RemoveSubscriber" asp-route-id="@s.Id" class="inline">
+                                        <button type="submit" class="link">@C["Cms.Delete"]</button>
+                                    </form>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
+    </section>
+}

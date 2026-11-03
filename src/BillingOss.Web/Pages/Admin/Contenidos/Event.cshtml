@@ -1,0 +1,134 @@
+@page "/admin/estado-red/eventos/{id:long}"
+@model EventModel
+@{
+    var e = Model.Item!;
+    var isIncident = e.Kind == StatusEventKind.Incident;
+    var isOpen = isIncident ? e.State != StatusEventState.Resolved : e.State == StatusEventState.Scheduled && e.Phase != MaintenancePhase.Completed;
+    ViewData["Title"] = e.Title;
+    var messageTexts = new TextsFields("Update.Texts", Model.Update.Texts, Summary: false, Body: true, TitleKey: "Cms.Title", BodyKey: "Cms.Message", Preview: true, PreviewUrl: "?handler=Preview");
+    var retitleTexts = new TextsFields("Retitle.Texts", Model.Retitle.Texts, Summary: false, Body: false);
+    var impacts = new ImpactFields("Update.Components", Model.Update.Components, Model.Choices, isIncident);
+}
+<h1 lang="@e.Language">@e.Title</h1>
+<partial name="_Tabs" />
+<partial name="_Alerts" model="Model" />
+<nav class="ct-crumbs" aria-label="@C["Kb.Breadcrumb"]"><a href="/admin/estado-red">@C["Cms.Network"]</a></nav>
+<dl class="facts">
+    <dt>@C["Cms.Type"]</dt>
+    <dd>@(isIncident ? C["Cms.Incident"] : C["Cms.Maintenance"])</dd>
+    <dt>@C["Cms.State"]</dt>
+    <dd><partial name="_Pill" model="ContentUi.EventPill(e, C)" /></dd>
+    <dt>@(isIncident ? C["Net.StartedAt"] : C["Net.From"])</dt>
+    <dd><time datetime="@e.StartsAt.ToString("O")">@ContentUi.When(e.StartsAt, Model.Zone)</time></dd>
+    @if (e.EndsAt is { } end)
+    {
+        <dt>@(isIncident ? C["Net.ResolvedLabel"] : C["Net.To"])</dt>
+        <dd><time datetime="@end.ToString("O")">@ContentUi.When(end, Model.Zone)</time></dd>
+    }
+    <dt>@C["Net.Affects"]</dt>
+    <dd>
+        @if (e.Components.Count == 0)
+        {
+            @C["Cms.None"]
+        }
+        else
+        {
+            <ul class="plain">
+                @foreach (var c in e.Components)
+                {
+                    <li>@c.Name @if (isIncident) { <partial name="_Pill" model="ContentUi.ComponentPill(c.Impact, C)" /> }</li>
+                }
+            </ul>
+        }
+    </dd>
+</dl>
+<p><a href="/estado-red/@e.Id">@C["Cms.SeeOnSite"]</a></p>
+
+<section aria-labelledby="timeline">
+    <h2 id="timeline">@C["Net.Updates"]</h2>
+    @if (e.Updates.Count == 0)
+    {
+        <p>@C["Net.NoUpdates"]</p>
+    }
+    else
+    {
+        <ol class="ct-timeline">
+            @foreach (var u in e.Updates.Reverse())
+            {
+                <li>
+                    <p class="muted"><time datetime="@u.PostedAt.ToString("O")">@ContentUi.When(u.PostedAt, Model.Zone)</time> &middot; <partial name="_Pill" model="ContentUi.IncidentPill(u.State, C)" /></p>
+                    <div class="ct-body" lang="@u.Language">@Html.Raw(u.Html)</div>
+                </li>
+            }
+        </ol>
+    }
+</section>
+
+@if (isOpen)
+{
+    <section aria-labelledby="post-update">
+        <h2 id="post-update">@C["Cms.NetPostUpdate"]</h2>
+        <p class="muted">@(isIncident ? C["Cms.NetPostUpdateIncidentHelp"] : C["Cms.NetPostUpdateMaintenanceHelp"])</p>
+        <form method="post" asp-page-handler="Update" asp-route-id="@e.Id" class="ct-form">
+            <input type="hidden" name="Update.Revision" value="@Model.Update.Revision">
+            @if (isIncident)
+            {
+                <fieldset>
+                    <legend>@C["Cms.State"]</legend>
+                    <label for="u-state">@C["Cms.NetNewState"]</label>
+                    <select id="u-state" name="Update.State">
+                        <option value="Investigating" selected="@(Model.Update.State == "Investigating")">@C["Net.StateInvestigating"]</option>
+                        <option value="Identified" selected="@(Model.Update.State == "Identified")">@C["Net.StateIdentified"]</option>
+                        <option value="Monitoring" selected="@(Model.Update.State == "Monitoring")">@C["Net.StateMonitoring"]</option>
+                        <option value="Resolved" selected="@(Model.Update.State == "Resolved")">@C["Net.StateResolved"]</option>
+                    </select>
+                </fieldset>
+            }
+            <partial name="_Texts" model="messageTexts" />
+            @if (isIncident)
+            {
+                <partial name="_Impacts" model="impacts" />
+            }
+            <p class="ct-actions"><button type="submit">@C["Cms.NetPostUpdateButton"]</button></p>
+        </form>
+    </section>
+}
+
+<details>
+    <summary>@C["Cms.NetFixTitle"]</summary>
+    <form method="post" asp-page-handler="Retitle" asp-route-id="@e.Id" class="ct-form">
+        <input type="hidden" name="Retitle.Revision" value="@Model.Retitle.Revision">
+        <p class="muted">@C["Cms.NetFixTitleHelp"]</p>
+        <partial name="_Texts" model="retitleTexts" />
+        <p class="ct-actions"><button type="submit">@C["Cms.NetFixTitleButton"]</button></p>
+    </form>
+</details>
+
+@if (!isIncident && isOpen)
+{
+    <section aria-labelledby="window">
+        <h2 id="window">@C["Cms.NetWindow"]</h2>
+        <form method="post" asp-page-handler="Reschedule" asp-route-id="@e.Id" class="ct-form">
+            <input type="hidden" name="Reschedule.Revision" value="@Model.Reschedule.Revision">
+            <label for="r-starts">@C["Net.From"]</label>
+            <input id="r-starts" name="Reschedule.StartsText" type="datetime-local" value="@Model.Reschedule.StartsText" required>
+            <label for="r-ends">@C["Net.To"]</label>
+            <input id="r-ends" name="Reschedule.EndsText" type="datetime-local" value="@Model.Reschedule.EndsText" required aria-describedby="r-help">
+            <p id="r-help" class="muted">@C["Cms.TimeZoneHelp", Model.Zone.Id]</p>
+            <p class="ct-actions"><button type="submit">@C["Cms.Reschedule"]</button></p>
+        </form>
+        <div class="ct-actions">
+            @if (e.Phase == MaintenancePhase.InProgress)
+            {
+                <form method="post" asp-page-handler="Complete" asp-route-id="@e.Id" class="inline">
+                    <input type="hidden" name="revision" value="@e.Revision">
+                    <button type="submit">@C["Cms.NetComplete"]</button>
+                </form>
+            }
+            <form method="post" asp-page-handler="Cancel" asp-route-id="@e.Id" class="inline">
+                <input type="hidden" name="revision" value="@e.Revision">
+                <button type="submit" class="danger">@C["Cms.NetCancel"]</button>
+            </form>
+        </div>
+    </section>
+}

@@ -1,0 +1,93 @@
+@page "/"
+@model IndexModel
+@{
+    ViewData["Title"] = L["Home.Title"];
+}
+<h1>@L["Home.Title"]</h1>
+@if (Model.Accounts.Count == 0)
+{
+    <p>@L["Home.NoAccounts"]</p>
+}
+else
+{
+    <section aria-labelledby="accounts">
+        <h2 id="accounts">@L["Home.Accounts"]</h2>
+        <ul class="plain">
+            @foreach (var a in Model.Accounts)
+            {
+                <li>@a.Name <span class="muted">#@a.Id</span></li>
+            }
+        </ul>
+    </section>
+    <partial name="_KnownIssues" model="Model.Issues" />
+    <div class="cards">
+        <section class="card" aria-labelledby="unpaid">
+            <h2 id="unpaid">@L["Home.Unpaid"]</h2>
+            @if (Model.Unpaid.Count == 0)
+            {
+                <p>@L["Home.NothingDue"]</p>
+            }
+            else
+            {
+                <ul class="plain">
+                    @foreach (var d in Model.Unpaid)
+                    {
+                        <li><a href="/facturas/@d.Id">@L["Invoice.Number", d.Number ?? d.Id]</a> @Ui.Money(d.Pending, d.Currency) <span class="muted">@L["Invoice.DueOn", Ui.Date(d.DueDate)]</span></li>
+                    }
+                </ul>
+            }
+        </section>
+        <section class="card" aria-labelledby="services">
+            <h2 id="services">@L["Nav.Services"]</h2>
+            <p>@L["Home.ActiveServices", Model.ActiveServices]</p>
+            <p><a href="/servicios">@L["Home.SeeServices"]</a></p>
+        </section>
+        <section class="card" aria-labelledby="domains">
+            <h2 id="domains">@L["Nav.Domains"]</h2>
+            @if (Model.DomainsNeedingAction.Count == 0)
+            {
+                <p>@L["Home.DomainsOk"]</p>
+            }
+            else
+            {
+                <ul class="plain">
+                    @foreach (var d in Model.DomainsNeedingAction)
+                    {
+                        <li>
+                            <a href="/dominios/@d.Id">@d.Name</a> <partial name="_DomainStatus" model="d.Status" />
+                            <span class="muted">@L[d.AutoRenew ? "Home.DomainRenews" : "Home.DomainExpires", Ui.Date(d.ExpiresOn ?? d.PaidThrough), Ui.Money(d.RecurringAmount, d.Currency)]</span>
+                        </li>
+                    }
+                </ul>
+            }
+            <p><a href="/dominios">@L["Home.SeeDomains"]</a></p>
+        </section>
+        @if (Model.HasSupport)
+        {
+            <section class="card" aria-labelledby="support">
+                <h2 id="support">@L["Nav.Support"]</h2>
+                @if (Model.Answered > 0)
+                {
+                    <p><span class="bo-status" data-tone="warn" data-shape="ring">@L["Home.Answered", Model.Answered]</span></p>
+                }
+                else
+                {
+                    <p>@L["Home.NoAnswers"]</p>
+                }
+                <p><a href="/soporte">@L["Home.SeeSupport"]</a></p>
+            </section>
+        }
+        @if (Model.Credit.Count > 0)
+        {
+            <section class="card" aria-labelledby="credit">
+                <h2 id="credit">@L["Home.Credit"]</h2>
+                <ul class="plain">
+                    @foreach (var c in Model.Credit)
+                    {
+                        <li>@Ui.Money(c.Balance, c.Currency)</li>
+                    }
+                </ul>
+            </section>
+        }
+    </div>
+}

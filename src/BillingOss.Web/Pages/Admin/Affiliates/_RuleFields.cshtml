@@ -1,0 +1,32 @@
+@model BillingOss.Web.Pages.Admin.Affiliates.RuleForm
+@using BillingOss.Domain.Affiliates
+@{
+    var products = ViewData["Products"] as IReadOnlyList<(long Id, string Name)> ?? [];
+    var prefix = ViewData["Prefix"] as string ?? "rule";
+}
+@if (ViewData["Products"] is not null)
+{
+    <label for="@prefix-product">@L["Services.Service"]</label>
+    <select id="@prefix-product" name="rule.ProductId" class="bo-select">
+        <option value="">@L["Affiliates.AllProducts"]</option>
+        @foreach (var (id, name) in products)
+        {
+            <option value="@id" selected="@(Model.ProductId == id)">@name</option>
+        }
+    </select>
+}
+<label for="@prefix-kind">@L["Affiliates.Kind"]</label>
+<select id="@prefix-kind" name="rule.Kind" class="bo-select">
+    @foreach (var kind in Enum.GetValues<CommissionKind>())
+    {
+        <option value="@kind" selected="@(Model.Kind == kind)">@L["CommissionKind." + kind]</option>
+    }
+</select>
+<label for="@prefix-value">@L["Affiliates.Value"]</label>
+<input id="@prefix-value" name="rule.Value" type="text" inputmode="decimal" autocomplete="off" value="@Model.Value" class="bo-input" aria-describedby="@prefix-value-help">
+<p id="@prefix-value-help" class="muted bo-help">@L["Affiliates.ValueHelp"]</p>
+<label for="@prefix-currency">@L["Admin.Currency"]</label>
+<input id="@prefix-currency" name="rule.Currency" type="text" maxlength="3" autocomplete="off" value="@Model.Currency" class="bo-input" aria-describedby="@prefix-currency-help">
+<p id="@prefix-currency-help" class="muted bo-help">@L["Affiliates.CurrencyHelp"]</p>
+<label class="check bo-check"><input type="checkbox" name="rule.Recurring" value="true" checked="@Model.Recurring"> @L["Affiliates.Recurring"]</label>
+<input type="hidden" name="rule.Recurring" value="false">

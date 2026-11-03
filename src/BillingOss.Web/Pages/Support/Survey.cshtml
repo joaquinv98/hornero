@@ -1,0 +1,40 @@
+@page "/soporte/encuesta/{token}"
+@model BillingOss.Web.Pages.Support.SurveyModel
+@using BillingOss.App.Support
+@{
+    ViewData["Title"] = (Model.Problem is not null ? L["Support.ErrorPrefix"] + " " : string.Empty) + L["Survey.Title"];
+}
+<h1>@L["Survey.Title"]</h1>
+<p class="muted">@L["Support.Number", Model.Number] · @Model.Subject</p>
+@if (Model.Thanks)
+{
+    <p class="notice" role="status">@L["Survey.Thanks"]</p>
+}
+else if (Model.Answered)
+{
+    <p class="notice" role="status">@L["Survey.AlreadyAnswered"]</p>
+}
+else
+{
+    @if (Model.Problem is { } problem)
+    {
+        <div class="alert" role="alert"><p class="strong">@L[problem, TicketFeedback.MaxComment]</p></div>
+    }
+    <form method="post" class="bo-form" novalidate>
+        <fieldset class="bo-fieldset">
+            <legend>@L["Survey.Question"]</legend>
+            <div class="bo-scale">
+                @for (var i = 0; i <= 10; i++)
+                {
+                    <label><input type="radio" name="Rating" value="@i" checked="@(Model.Rating == i)"> @i</label>
+                }
+            </div>
+            <p class="bo-help">@L["Survey.ScaleHelp"]</p>
+        </fieldset>
+        <div class="bo-field">
+            <label for="Comment">@L["Survey.Comment"] <span class="muted">@L["Support.Optional"]</span></label>
+            <textarea id="Comment" name="Comment" rows="4" maxlength="@TicketFeedback.MaxComment">@Model.Comment</textarea>
+        </div>
+        <div><button type="submit">@L["Survey.Send"]</button></div>
+    </form>
+}

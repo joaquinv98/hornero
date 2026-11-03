@@ -1,0 +1,240 @@
+@using BillingOss.App.Identity
+@inject Microsoft.Extensions.Configuration.IConfiguration Config
+@inject BillingOss.App.Persistence.BillingDbContext Db
+@{
+    var brand = Config["Ui:Brand"] ?? "billing-oss";
+    var signedIn = User.Identity?.IsAuthenticated == true && User.Identity.AuthenticationType == Schemes.Staff;
+    var path = Context.Request.Path.Value ?? string.Empty;
+    bool Can(string permission) => User.HasClaim(Claims.Permission, permission);
+    string? Current(string href) => string.Equals(path, href, StringComparison.OrdinalIgnoreCase) ? "page" : null;
+}
+<!doctype html>
+<html lang="@CultureInfo.CurrentUICulture.TwoLetterISOLanguageName">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="htmx-config" content='{"includeIndicatorStyles":false}'>
+    <title>@ViewData["Title"] | @L["Admin.Title"] | @brand</title>
+    <link rel="stylesheet" href="~/css/site.css" asp-append-version="true">
+    <script src="~/lib/htmx/htmx.min.js" asp-append-version="true" defer></script>
+    <script src="~/js/menu.js" asp-append-version="true" defer></script>
+</head>
+<body class="admin">
+    <a class="skip" href="#main">@L["Layout.Skip"]</a>
+    <header class="top">
+        <div class="wrap top-row">
+            <a class="brand" href="/admin">@brand <span class="tag">@L["Admin.Title"]</span></a>
+            @if (signedIn)
+            {
+                @* Menú de la sección 10.2 de interfaz-y-temas.md, en su orden. Solo se muestra lo que ya existe. *@
+                <nav class="menu" aria-label="@L["Layout.MainNav"]">
+                    @* Menú clásico (D-19, sección 10): cada área despliega sus ítems y solo se ve lo que el staff puede usar. *@
+                    @{
+                        var accounts = Can(StaffPermissions.AccountsRead);
+                        var affiliates = Can(StaffPermissions.AffiliatesRead);
+                        var domains = Can(StaffPermissions.DomainsRead);
+                        var addOrder = accounts && Can(StaffPermissions.OrdersWrite);
+                        var catalog = Can(StaffPermissions.CatalogRead);
+                        var billing = Can(StaffPermissions.BillingRead);
+                        var payments = Can(StaffPermissions.PaymentsManage);
+                        var support = Can(StaffPermissions.SupportTickets);
+                        var supportSettings = Can(StaffPermissions.SupportSettings);
+                        var taxes = Can(StaffPermissions.TaxesEdit);
+                        var fiscal = Can(StaffPermissions.FiscalEdit);
+                        var integrations = Can(StaffPermissions.Integrations);
+                        var updates = Can(StaffPermissions.SystemUpdates);
+                    }
+                    @if (accounts || affiliates || domains)
+                    {
+                        <details class="bo-menu" name="menu">
+                            <summary>@L["Menu.Clients"]</summary>
+                            <ul>
+                                @if (accounts)
+                                {
+                                    <li><a href="/admin" aria-current="@Current("/admin")">@L["Menu.ClientList"]</a></li>
+                                }
+                                @if (domains)
+                                {
+                                    <li><a href="/admin/dominios" aria-current="@Current("/admin/dominios")">@L["Nav.Domains"]</a></li>
+                                }
+                                @if (affiliates)
+                                {
+                                    <li><a href="/admin/afiliados" aria-current="@Current("/admin/afiliados")">@L["Affiliates.Title"]</a></li>
+                                }
+                            </ul>
+                        </details>
+                    }
+                    @if (addOrder)
+                    {
+                        <details class="bo-menu" name="menu">
+                            <summary>@L["Nav.Orders"]</summary>
+                            <ul>
+                                <li><a href="/admin/pedidos/nuevo" aria-current="@Current("/admin/pedidos/nuevo")">@L["Nav.AddOrder"]</a></li>
+                            </ul>
+                        </details>
+                    }
+                    @if (billing || payments)
+                    {
+                        <details class="bo-menu" name="menu">
+                            <summary>@L["Nav.Billing"]</summary>
+                            <ul>
+                                @if (billing)
+                                {
+                                    <li><a href="/admin/facturas">@L["Billing.Invoices"]</a></li>
+                                    <li><a href="/admin/presupuestos" aria-current="@Current("/admin/presupuestos")">@L["Billing.Quotes"]</a></li>
+                                    <li><a href="/admin/items" aria-current="@Current("/admin/items")">@L["Billing.Items"]</a></li>
+                                    <li><a href="/admin/facturas?tipo=nota-de-credito">@L["Billing.CreditNotes"]</a></li>
+                                }
+                                @if (payments)
+                                {
+                                    <li><a href="/admin/cobros/transferencias" aria-current="@Current("/admin/cobros/transferencias")">@L["Menu.Unallocated"]</a></li>
+                                    <li><a href="/admin/cobros/automaticos" aria-current="@Current("/admin/cobros/automaticos")">@L["Menu.AutoCharges"]</a></li>
+                                    <li><a href="/admin/registro-modulos?tipo=pasarelas" aria-current="@Current("/admin/registro-modulos")">@L["Menu.ModuleLog"]</a></li>
+                                }
+                            </ul>
+                        </details>
+                    }
+                    @if (support)
+                    {
+                        <details class="bo-menu" name="menu">
+                            <summary>@L["Nav.Support"]</summary>
+                            <ul>
+                                <li><a href="/admin/soporte/resumen" aria-current="@Current("/admin/soporte/resumen")">@L["Menu.SupportOverview"]</a></li>
+                                <li>
+                                    <a href="/admin/soporte">@L["Menu.Tickets"]</a>
+                                    @* El submenú por estado (D-19, 10.2): cada vista es la cola con su filtro en el enlace. *@
+                                    <ul>
+                                        <li><a href="/admin/soporte?asignado=yo">@L["SupportAdmin.Mine"]</a></li>
+                                        <li><a href="/admin/soporte?estado=abiertos">@L["Menu.ActiveTickets"]</a></li>
+                                        <li><a href="/admin/soporte?estado=nuevos">@L["SupportAdmin.ViewNew"]</a></li>
+                                        <li><a href="/admin/soporte?estado=esperando-al-cliente">@L["SupportAdmin.ViewAnswered"]</a></li>
+                                        <li><a href="/admin/soporte?estado=respuesta-del-cliente">@L["SupportAdmin.ViewCustomerReply"]</a></li>
+                                        <li><a href="/admin/soporte?estado=en-pausa">@L["TicketStatus.OnHold"]</a></li>
+                                        <li><a href="/admin/soporte?estado=en-curso">@L["TicketStatus.InProgress"]</a></li>
+                                        <li><a href="/admin/soporte?estado=cerrados">@L["SupportAdmin.ViewClosed"]</a></li>
+                                    </ul>
+                                </li>
+                                <li><a href="/admin/soporte/nuevo" aria-current="@Current("/admin/soporte/nuevo")">@L["Menu.OpenTicket"]</a></li>
+                                @if (supportSettings)
+                                {
+                                    <li><a href="/admin/soporte/respuestas" aria-current="@Current("/admin/soporte/respuestas")">@L["SupportAdmin.SavedReplies"]</a></li>
+                                }
+                            </ul>
+                        </details>
+                    }
+                    @if (Can(StaffPermissions.ContentRead))
+                    {
+                        <a href="/admin/contenidos" aria-current="@Current("/admin/contenidos")">@C["Cms.Menu"]</a>
+                    }
+                    else if (Can(StaffPermissions.StatusWrite))
+                    {
+                        <a href="/admin/estado-red" aria-current="@Current("/admin/estado-red")">@C["Cms.Menu"]</a>
+                    }
+                    @if (Can(StaffPermissions.OrdersReview))
+                    {
+                        // Los retenidos, con el índice parcial de la cola: es una cuenta chica en cada página.
+                        var holding = await Microsoft.EntityFrameworkCore.EntityFrameworkQueryableExtensions.CountAsync(
+                            Db.Set<BillingOss.Domain.Orders.FraudCheck>(), c => c.Status == BillingOss.Domain.Orders.ScreeningStatus.Pending || c.Status == BillingOss.Domain.Orders.ScreeningStatus.Review);
+                        <a href="/admin/pedidos/revision" aria-current="@Current("/admin/pedidos/revision")">
+                            @S["Review.Title"]
+                            @if (holding > 0)
+                            {
+                                <span class="count" aria-label="@S["Review.MenuCount", holding]">@holding</span>
+                            }
+                        </a>
+                    }
+                    @* Reportes antes que la configuración, como en el menú de la sección 10.2 de la interfaz. Los de soporte
+                       (tickets, respuestas del staff y encuesta) van en su grupo. *@
+                    @if (BillingOss.Web.Pages.Admin.Reports.ReportModel.Visible(User).Any())
+                    {
+                        <partial name="/Pages/Admin/Reports/_ReportsMenu.cshtml" />
+                    }
+                    @if (supportSettings || domains)
+                    {
+                        <details class="bo-menu" name="menu">
+                            <summary>@L["Menu.Utilities"]</summary>
+                            <ul>
+                                @if (supportSettings)
+                                {
+                                    <li><a href="/admin/registros/correo-entrante" aria-current="@Current("/admin/registros/correo-entrante")">@L["SupportAdmin.Mail"]</a></li>
+                                }
+                                @if (domains)
+                                {
+                                    <li><a href="/admin/dominios/consulta" aria-current="@Current("/admin/dominios/consulta")">@L["Nav.DomainLookup"]</a></li>
+                                }
+                            </ul>
+                        </details>
+                    }
+                    @if (integrations)
+                    {
+                        <details class="bo-menu" name="menu">
+                            <summary>@L["Menu.Addons"]</summary>
+                            <ul>
+                                <li><a href="/admin/complementos/extensiones" aria-current="@Current("/admin/complementos/extensiones")">@L["Extensions.Title"]</a></li>
+                            </ul>
+                        </details>
+                    }
+                    <a href="/admin/seguridad" aria-current="@Current("/admin/seguridad")">@S["Admin.SecurityTitle"]</a>
+                    @* Una sola Configuración (sección 10 de D-19), con lo que cada permiso deja ver: el catálogo y las promociones,
+                       precios por TLD, registrars, pasarelas, impuestos, ARCA, monedas, webhooks, actualizaciones y los ajustes del
+                       soporte. Un desplegable nativo, sin JavaScript. *@
+                    @if (catalog || domains || billing || payments || taxes || fiscal || integrations || updates || supportSettings)
+                    {
+                        <details class="bo-menu" name="menu">
+                            <summary>@L["Admin.Settings"]</summary>
+                            <ul>
+                                @if (catalog)
+                                {
+                                    <li><a href="/admin/catalogo" aria-current="@Current("/admin/catalogo")">@L["Catalog.Title"]</a></li>
+                                    <li><a href="/admin/catalogo/cupones" aria-current="@Current("/admin/catalogo/cupones")">@L["Nav.Promotions"]</a></li>
+                                }
+                                @if (domains)
+                                {
+                                    <li><a href="/admin/dominios/precios" aria-current="@Current("/admin/dominios/precios")">@L["Nav.TldPricing"]</a></li>
+                                    <li><a href="/admin/registradores" aria-current="@Current("/admin/registradores")">@L["Nav.Registrars"]</a></li>
+                                }
+                                @if (payments)
+                                {
+                                    <li><a href="/admin/cobros" aria-current="@Current("/admin/cobros")">@L["Menu.Gateways"]</a></li>
+                                }
+                                @if (taxes)
+                                {
+                                    <li><a href="/admin/impuestos" aria-current="@Current("/admin/impuestos")">@L["Taxes.Title"]</a></li>
+                                }
+                                @if (fiscal)
+                                {
+                                    <li><a href="/admin/fiscal" aria-current="@Current("/admin/fiscal")">@L["Fiscal.Title"]</a></li>
+                                }
+                                @if (billing)
+                                {
+                                    <li><a href="/admin/monedas" aria-current="@Current("/admin/monedas")">@L["Rates.Title"]</a></li>
+                                }
+                                @if (integrations)
+                                {
+                                    <li><a href="/admin/configuracion/webhooks" aria-current="@Current("/admin/configuracion/webhooks")">@L["Webhooks.Title"]</a></li>
+                                }
+                                @if (updates)
+                                {
+                                    <li><a href="/admin/actualizaciones" aria-current="@Current("/admin/actualizaciones")">@L["Updates.Title"]</a></li>
+                                }
+                                @if (supportSettings)
+                                {
+                                    <li><a href="/admin/soporte/ajustes" aria-current="@Current("/admin/soporte/ajustes")">@L["SupportSettings.Title"]</a></li>
+                                    <li><a href="/admin/soporte/departamentos" aria-current="@Current("/admin/soporte/departamentos")">@L["Menu.SupportDepartments"]</a></li>
+                                    <li><a href="/admin/soporte/escalamiento" aria-current="@Current("/admin/soporte/escalamiento")">@L["Escalation.Title"]</a></li>
+                                    <li><a href="/admin/soporte/correo" aria-current="@Current("/admin/soporte/correo")">@L["SupportAdmin.SpamControl"]</a></li>
+                                }
+                            </ul>
+                        </details>
+                    }
+                    <span class="muted">@User.Identity!.Name</span>
+                    <form method="post" action="/admin/salir" class="inline" asp-antiforgery="true"><button type="submit" class="link">@L["Nav.Logout"]</button></form>
+                </nav>
+            }
+        </div>
+    </header>
+    <main id="main" class="wrap">
+        @RenderBody()
+    </main>
+</body>
+</html>

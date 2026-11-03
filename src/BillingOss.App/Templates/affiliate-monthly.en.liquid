@@ -1,0 +1,11 @@
+Your affiliate summary for {{ month }}
+<p>Hi {{ account_name }},</p>
+<p>Here is how your affiliate link did in {{ month }}:</p>
+<ul>
+<li>Visits: <strong>{{ clicks }}</strong></li>
+<li>New referred services: <strong>{{ signups }}</strong></li>
+<li>Commissions this month: <strong>{% if earned.size > 0 %}{{ earned | join: ", " }}{% else %}none{% endif %}</strong></li>
+</ul>
+{% if balances.size > 0 %}<p>Your balance today:</p>
+<ul>{% for b in balances %}<li>{{ b.available }} available{% if b.held %}, and {{ b.held }} on hold{% endif %}</li>{% endfor %}</ul>{% endif %}
+<p>See the details and collect your balance at {% if portal_url %}<a href="{{ portal_url }}/afiliados">{{ portal_url }}/afiliados</a>{% else %}the Affiliates section of the portal{% endif %}.</p>

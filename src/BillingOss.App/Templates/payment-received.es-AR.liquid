@@ -1,0 +1,7 @@
+Recibimos tu pago de {{ amount }}
+<p>Hola, {{ account_name }}:</p>
+<p>Registramos tu pago del {{ date }} por <strong>{{ amount }}</strong>.</p>
+{% if documents.size > 0 %}<p>Lo aplicamos a:</p>
+<ul>{% for doc in documents %}<li>Factura N.º {{ doc.number }}: {{ doc.amount }}</li>{% endfor %}</ul>{% endif %}
+{% if credit %}<p>Quedan <strong>{{ credit }}</strong> como saldo a favor para tus próximas facturas.</p>{% endif %}
+<p>¡Gracias!</p>

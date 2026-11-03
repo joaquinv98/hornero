@@ -1,0 +1,31 @@
+# El actualizador de billing-oss (D-20, sección 7.3): uno por nodo, en el host. Lee el canal firmado y los pedidos de la
+# base, y aplica solo versiones del canal verificado con la receta de Compose. No escucha en ningún puerto.
+#
+# Es root en su nodo: para recrear contenedores tiene que poder crearlos. Por eso nada de lo que lee se usa como
+# comando y la configuración (URL del canal y llaves) vive acá, en el host, y no en la base.
+#
+# Cuando se actualiza a sí mismo sale con 0 y systemd lo arranca de nuevo con el binario nuevo. Si el nuevo no arranca,
+# después de varios intentos la unidad falla y OnFailure= vuelve al anterior. Guía: docs/despliegue/actualizador.md.
+[Unit]
+Description=Actualizador de billing-oss
+After=network-online.target docker.service
+Wants=network-online.target
+Requires=docker.service
+StartLimitIntervalSec=10min
+StartLimitBurst=5
+OnFailure=billing-oss-actualizador-anterior.service
+
+[Service]
+Type=simple
+ExecStart=/opt/billing-oss/actualizador/billing-oss-actualizador --config /etc/billing-oss/actualizador.json run
+Restart=always
+RestartSec=10s
+# El binario, la receta y las marcas de recuperación quedan escribibles. El resto del sistema, de solo lectura.
+ProtectSystem=full
+ProtectHome=yes
+PrivateTmp=yes
+NoNewPrivileges=yes
+UMask=0077
+
+[Install]
+WantedBy=multi-user.target

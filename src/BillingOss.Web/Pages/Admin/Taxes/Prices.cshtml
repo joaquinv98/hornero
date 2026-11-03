@@ -1,0 +1,92 @@
+@page "/admin/impuestos/precios"
+@model TaxesPricesModel
+@using BillingOss.Domain.Billing
+@using BillingOss.Domain.Catalog
+@{
+    ViewData["Title"] = L["Taxes.Prices"];
+    var s = Model.Settings;
+}
+<h1>@L["Taxes.Title"]</h1>
+<partial name="_Nav" model="@("/admin/impuestos/precios")" />
+@if (Model.Error is not null)
+{
+    <p class="alert" role="alert">@Model.Error</p>
+}
+@if (Model.Done is { Length: > 0 })
+{
+    <p class="notice" role="status">@L["Taxes.Done"]</p>
+}
+
+<section aria-labelledby="modes">
+    <h2 id="modes">@L["Taxes.PriceModes"]</h2>
+    <p>@L["Taxes.PriceModesHelp"]</p>
+    <div class="table">
+        <table>
+            <thead><tr><th scope="col">@L["Admin.Currency"]</th><th scope="col">@L["Taxes.ModeDefault"]</th><th scope="col"></th></tr></thead>
+            <tbody>
+                @foreach (var (currency, mode) in Model.Currencies)
+                {
+                    <tr>
+                        <td>@currency</td>
+                        <td>@L["PriceMode." + mode]</td>
+                        <td>
+                            <form method="post" asp-page-handler="PriceMode" class="inline">
+                                <input type="hidden" name="currency" value="@currency">
+                                <input type="hidden" name="mode" value="@(mode == PriceMode.TaxIncluded ? "TaxExcluded" : "TaxIncluded")">
+                                <button type="submit" class="link">@L["Taxes.SwitchTo", L["PriceMode." + (mode == PriceMode.TaxIncluded ? "TaxExcluded" : "TaxIncluded")].Value]</button>
+                            </form>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+    <details>
+        <summary>@L["Taxes.AddCurrencyMode"]</summary>
+        <form method="post" asp-page-handler="PriceMode" class="stack narrow">
+            <div class="field"><label for="pm-currency">@L["Admin.Currency"]</label><input id="pm-currency" name="currency" maxlength="3" required></div>
+            <div class="field"><label for="pm-mode">@L["Taxes.ModeDefault"]</label>
+                <select id="pm-mode" name="mode"><option value="TaxIncluded">@L["PriceMode.TaxIncluded"]</option><option value="TaxExcluded">@L["PriceMode.TaxExcluded"]</option></select></div>
+            <div><button type="submit">@L["Taxes.Save"]</button></div>
+        </form>
+    </details>
+    <p class="muted">@L["Taxes.PriceModeFrozen"]</p>
+</section>
+
+<section aria-labelledby="display">
+    <h2 id="display">@L["Taxes.Display"]</h2>
+    <form method="post" asp-page-handler="Display" class="stack narrow">
+        <div class="field">
+            <label for="catalog">@L["Taxes.CatalogDisplay"]</label>
+            <select id="catalog" name="catalogDisplay" disabled="@Model.DisplayFixedByLaw">
+                @foreach (var option in TaxSettings.CatalogDisplays)
+                {
+                    <option value="@option" selected="@(option == s.CatalogDisplay)">@L["CatalogDisplay." + option]</option>
+                }
+            </select>
+            @if (Model.DisplayFixedByLaw)
+            {
+                <input type="hidden" name="catalogDisplay" value="@s.CatalogDisplay">
+                <span class="help">@L["Taxes.CatalogDisplayFixed"]</span>
+            }
+        </div>
+        <label class="check"><input type="checkbox" name="businessMayViewNet" value="true" checked="@s.BusinessMayViewNet"> @L["Taxes.BusinessMayViewNet"]</label>
+        <div><button type="submit">@L["Taxes.Save"]</button></div>
+    </form>
+    <dl class="facts">
+        <dt>@L["Taxes.Channel.Checkout"]</dt><dd>@L["Taxes.Channel.CheckoutHelp"]</dd>
+        <dt>@L["Taxes.Channel.Invoice"]</dt><dd>@L["Taxes.Channel.InvoiceHelp"]</dd>
+        <dt>@L["Taxes.Channel.Mail"]</dt><dd>@L["Taxes.Channel.MailHelp"]</dd>
+        <dt>@L["Taxes.Channel.Api"]</dt><dd>@L["Taxes.Channel.ApiHelp"]</dd>
+    </dl>
+</section>
+
+<section aria-labelledby="rounding">
+    <h2 id="rounding">@L["Taxes.RoundingTitle"]</h2>
+    <p>@L["Taxes.Rounding"]</p>
+    <dl class="facts">
+        <dt>@L["Taxes.ConsumerIdThreshold"]</dt><dd>@Ui.Money(s.ConsumerIdThreshold, BillingOss.Domain.Shared.Currency.Ars) <span class="muted">@L["Taxes.Since", Ui.Date(s.ConsumerIdThresholdFrom)]</span></dd>
+        <dt>@L["Taxes.FceMinimum"]</dt><dd>@Ui.Money(s.FceMinimum, BillingOss.Domain.Shared.Currency.Ars) <span class="muted">@L["Taxes.Since", Ui.Date(s.FceMinimumFrom)]</span></dd>
+    </dl>
+    <p class="muted">@L["Taxes.ThresholdsHelp"]</p>
+</section>

@@ -1,0 +1,32 @@
+@page "/recuperar/nueva"
+@model ResetModel
+@{
+    ViewData["Title"] = L["Reset.Title"];
+}
+<h1>@L["Reset.Title"]</h1>
+@if (Model.Done)
+{
+    <p class="notice" role="status">@L["Reset.Done"]</p>
+    <p><a class="button" href="/ingresar">@L["Nav.Login"]</a></p>
+}
+else
+{
+    @if (Model.Error is not null)
+    {
+        <div class="alert" role="alert">
+            <p>@UiText.Get(L, S, Model.Error)</p>
+            <partial name="_PasswordProblems" model="Model.Problems" />
+        </div>
+    }
+    <p>@L["Reset.Help"]</p>
+    <p class="muted" id="rules">@S["Pwd.Hint", Model.MinLength]</p>
+    <form method="post" class="stack narrow">
+        <input type="hidden" name="U" value="@Model.U">
+        <input type="hidden" name="T" value="@Model.T">
+        <label for="password">@L["Field.NewPassword"]</label>
+        <input id="password" name="Password" type="password" autocomplete="new-password" minlength="@Model.MinLength" maxlength="128" aria-describedby="rules" required>
+        <label for="confirm">@L["Field.ConfirmPassword"]</label>
+        <input id="confirm" name="Confirm" type="password" autocomplete="new-password" minlength="@Model.MinLength" maxlength="128" required>
+        <button type="submit">@L["Reset.Submit"]</button>
+    </form>
+}

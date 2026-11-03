@@ -1,0 +1,10 @@
+# Vuelta atrás del actualizador (D-20, sección 7.3): si el binario nuevo no arranca, vuelve el que quedó al lado con
+# el sufijo .anterior cuando se actualizó a sí mismo, y arranca otra vez el servicio.
+[Unit]
+Description=Vuelve el actualizador de billing-oss al binario anterior
+
+[Service]
+Type=oneshot
+ExecStart=/bin/sh -c 'b=/opt/billing-oss/actualizador/billing-oss-actualizador; if [ -f "$b.anterior" ]; then mv -f "$b.anterior" "$b"; fi'
+ExecStartPost=/bin/systemctl reset-failed billing-oss-actualizador.service
+ExecStartPost=/bin/systemctl start --no-block billing-oss-actualizador.service

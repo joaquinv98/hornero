@@ -1,0 +1,139 @@
+@page "/admin/fiscal"
+@model FiscalIndexModel
+@using BillingOss.Domain.Accounts
+@using BillingOss.Domain.Fiscal
+@{
+    ViewData["Title"] = L["Fiscal.Title"];
+}
+<h1>@L["Fiscal.Title"]</h1>
+@if (Model.Error is not null)
+{
+    <p class="alert" role="alert">@Model.Error</p>
+}
+@if (Model.Done is { Length: > 0 })
+{
+    <p class="notice" role="status">@L["Fiscal.Done." + Model.Done]</p>
+}
+@if (Model.Issuer is not { } issuer)
+{
+    <p>@L["Fiscal.NoIssuer"]</p>
+    <p><a class="button" href="/admin/fiscal/arca">@L["Fiscal.Connect"]</a></p>
+}
+else
+{
+    var tone = Model.Status.Tone;
+    <div class="cards">
+        <section class="card" aria-labelledby="state">
+            <h2 id="state">@L["Fiscal.State"]</h2>
+            <p><span class="status" data-tone="@tone" data-shape="@(tone == "ok" ? null : "ring")">@L[Model.Status.Key]</span></p>
+            <p class="muted">@issuer.LegalName · CUIT @issuer.TaxId · @L["Environment." + Model.Environment]</p>
+            <div class="actions">
+                <a class="button" href="/admin/fiscal/arca">@(issuer.SetupStep < 7 || Model.InSetup is not null ? L["Fiscal.Resume"] : L["Fiscal.Connect"])</a>
+                @if (Model.HasInstance)
+                {
+                    <form method="post" asp-page-handler="Test"><input type="hidden" name="id" value="@issuer.Id"><button type="submit" class="secondary">@L["Fiscal.TestAgain"]</button></form>
+                }
+                @if (Model.InSetup is null && Model.HasInstance && Model.Environment == FiscalEnvironments.Homologation && issuer.SetupStep >= 7)
+                {
+                    <form method="post" asp-page-handler="NewEnvironment"><input type="hidden" name="id" value="@issuer.Id"><button type="submit" class="secondary">@L["Fiscal.GoProduction"]</button></form>
+                }
+            </div>
+            @if (Model.InSetup is { } inSetup)
+            {
+                <p class="notice" role="status">@L["Fiscal.InSetup", inSetup.SetupStep]</p>
+            }
+            else if (Model.HasInstance && Model.Environment == FiscalEnvironments.Homologation && issuer.SetupStep >= 7)
+            {
+                <p class="muted">@L["Fiscal.GoProductionHelp"]</p>
+            }
+        </section>
+
+        <section class="card" aria-labelledby="certificate">
+            <h2 id="certificate">@L["Fiscal.Certificate"]</h2>
+            @if (Model.Credential is { } c)
+            {
+                var days = c.DaysLeft(Model.Today);
+                <dl class="facts">
+                    <dt>@L["Fiscal.Alias"]</dt><dd>@c.CertificateAlias</dd>
+                    <dt>CUIT</dt><dd>@c.CertificateTaxId</dd>
+                    <dt>@L["Fiscal.IssuedBy"]</dt><dd>@c.CertificateIssuer</dd>
+                    <dt>@L["Fiscal.ExpiresOn"]</dt><dd>@Ui.Date(c.NotAfter is { } until ? DateOnly.FromDateTime(until.UtcDateTime) : null) <span class="status" data-tone="@(days < 0 ? "danger" : days < 30 ? "warn" : "ok")">@L["Fiscal.DaysLeft", days ?? 0]</span></dd>
+                </dl>
+                <form method="post" asp-page-handler="Renew" class="actions"><input type="hidden" name="credentialId" value="@c.Id"><button type="submit" class="secondary">@L["Fiscal.Renew"]</button></form>
+            }
+            else
+            {
+                <p>@L["Fiscal.NoCertificateHelp"]</p>
+            }
+            @if (Model.Pending.Count > 0)
+            {
+                <p class="muted">@L["Fiscal.PendingCredentials", Model.Pending.Count] <a href="/admin/fiscal/arca/5">@L["Fiscal.LoadCertificate"]</a></p>
+            }
+        </section>
+
+        <section class="card" aria-labelledby="points">
+            <h2 id="points">@L["Fiscal.PointsOfSale"]</h2>
+            <dl class="facts">
+                <dt>@L["Fiscal.PointLocal"]</dt><dd>@issuer.PointOfSale <span class="status" data-tone="@(Model.PointState(issuer.PointOfSale) switch { "ok" => "ok", "blocked" => "danger", _ => "neutral" })">@L["Fiscal.Point." + Model.PointState(issuer.PointOfSale)]</span></dd>
+                @if (issuer.Exports)
+                {
+                    <dt>@L["Fiscal.PointExport"]</dt><dd>@(issuer.ExportPointOfSale?.ToString(CultureInfo.InvariantCulture) ?? L["Fiscal.NotSet"].Value)</dd>
+                }
+            </dl>
+            <p><a href="/admin/fiscal/arca/6">@L["Fiscal.ChangePoints"]</a></p>
+        </section>
+
+        <section class="card" aria-labelledby="series">
+            <h2 id="series">@L["Fiscal.Series"]</h2>
+            @if (Model.Series.Count == 0)
+            {
+                <p class="muted">@L["Fiscal.NoSeries"]</p>
+            }
+            else
+            {
+                <div class="table">
+                    <table>
+                        <thead><tr><th scope="col">@L["Fiscal.PointOfSale"]</th><th scope="col">@L["Fiscal.Type"]</th><th scope="col" class="num">@L["Fiscal.LastNumber"]</th><th scope="col">@L["Fiscal.LastDate"]</th></tr></thead>
+                        <tbody>
+                            @foreach (var s in Model.Series)
+                            {
+                                <tr><td>@s.PointOfSale</td><td>@s.TypeCode</td><td class="num">@s.LastNumber</td><td>@Ui.Date(s.LastDate)</td></tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            }
+            @if (Model.Report is { } report)
+            {
+                <p class="muted">@L["Fiscal.LastTest", report.At.ToLocalTime().ToString("g", CultureInfo.CurrentCulture)] <span class="status" data-tone="@(report.Ok ? "ok" : "danger")">@(report.Ok ? L["Fiscal.TestOk"] : L["Fiscal.TestFailed"])</span></p>
+            }
+        </section>
+
+        <section class="card" aria-labelledby="locks">
+            <h2 id="locks">@L["Fiscal.Locks"]</h2>
+            <dl class="facts">
+                <dt>Fiscal:ProductionEnabled</dt><dd><span class="status" data-tone="@(Model.CoreProductionEnabled ? "ok" : "neutral")">@(Model.CoreProductionEnabled ? L["Fiscal.LockOn"] : L["Fiscal.LockOff"])</span></dd>
+                <dt>Arca:Production</dt><dd><span class="status" data-tone="@(Model.Report?.AuthorizeEnabled == true ? "ok" : "neutral")">@(Model.Report?.AuthorizeEnabled switch { true => L["Fiscal.LockOn"], false => L["Fiscal.LockOff"], _ => L["Fiscal.LockUnknown"] })</span></dd>
+            </dl>
+            <p class="muted">@L["Fiscal.LocksHelp"]</p>
+        </section>
+
+        <section class="card" aria-labelledby="print">
+            <h2 id="print">@L["Fiscal.PrintData"]</h2>
+            <dl class="facts">
+                <dt>@L["Fiscal.LegalName"]</dt><dd>@issuer.LegalName</dd>
+                <dt>@L["Fiscal.VatCondition"]</dt><dd>@VatConditions.Describe(issuer.VatCondition)</dd>
+                <dt>@L["Fiscal.Address"]</dt><dd>@(issuer.Address ?? L["Fiscal.NotSet"].Value)</dd>
+                <dt>@L["Fiscal.GrossIncome"]</dt><dd>@(issuer.GrossIncomeNumber ?? L["Fiscal.NotSet"].Value)</dd>
+                <dt>@L["Fiscal.ActivityStart"]</dt><dd>@(issuer.ActivityStart is { } start ? Ui.Date(start) : L["Fiscal.NotSet"].Value)</dd>
+            </dl>
+            <div class="actions">
+                <a class="button secondary" href="/admin/fiscal/arca/2">@L["Fiscal.Edit"]</a>
+                @if (issuer.UsesRegistry && Model.HasInstance)
+                {
+                    <form method="post" asp-page-handler="Fill"><input type="hidden" name="id" value="@issuer.Id"><button type="submit" class="secondary">@L["Fiscal.FillFromArca"]</button></form>
+                }
+            </div>
+        </section>
+    </div>
+}

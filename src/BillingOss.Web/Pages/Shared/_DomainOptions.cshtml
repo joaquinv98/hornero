@@ -1,0 +1,47 @@
+@model BillingOss.Web.Pages.DomainOptionsView
+@using BillingOss.Domain.Domains
+@{
+    var d = Model.Domain;
+    // La protección se ofrece siempre que el registrar la tenga. La gestión de DNS y el reenvío, solo con precio: gratis
+    // están siempre, y se usan desde la página de DNS y correo.
+    var shown = Model.Options.Where(o => o.Option == DomainOptions.Privacy || o.Price > 0m || o.Paid).ToList();
+}
+@if (shown.Count > 0)
+{
+    <section class="bo-card" aria-labelledby="opciones">
+        <div class="bo-card__head"><h2 id="opciones">@L["Domain.Options"]</h2></div>
+        <p class="bo-small bo-muted">@L["Domain.OptionsHelp"]</p>
+        <div class="bo-grid">
+            @foreach (var o in shown)
+            {
+                var money = Ui.Money(o.Price, d.Currency);
+                <div class="bo-stack bo-stack--sm" data-option="@o.Option">
+                    <h3>@L[Ui.Key("DomainOption", o.Option)]</h3>
+                    <p class="bo-small bo-muted">@L[Ui.Key("DomainOptionHelp", o.Option)]</p>
+                    <p class="bo-small">
+                        <span class="bo-status" data-tone="@(o.On ? "ok" : "neutral")" data-shape="@(o.On ? "solid" : "hollow")">@L[o.On ? "Domain.OptionIsOn" : "Domain.OptionIsOff"]</span>
+                        @(o.Price > 0m ? L["Domain.OptionPrice", money] : L["Domain.OptionFree"])
+                    </p>
+                    @if (o.WaitingInvoice is { } invoice)
+                    {
+                        <p class="bo-alert" data-tone="info" role="status">
+                            @L["Domain.OptionWaiting", invoice]
+                            @if (Model.InvoicePath is { } path)
+                            {
+                                <a href="@path@invoice">@L["Domain.PayInvoice"]</a>
+                            }
+                        </p>
+                    }
+                    else if (Model.CanChange)
+                    {
+                        <form method="post" asp-page-handler="Option">
+                            <input type="hidden" name="option" value="@o.Option">
+                            <input type="hidden" name="enabled" value="@(o.On ? "false" : "true")">
+                            <button type="submit" class="bo-btn bo-btn--secondary">@(o.On ? L["Domain.OptionRemove"] : o.Price > 0m ? L["Domain.OptionContract", money] : L["Domain.OptionEnable"])</button>
+                        </form>
+                    }
+                </div>
+            }
+        </div>
+    </section>
+}

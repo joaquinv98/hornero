@@ -1,0 +1,21 @@
+# Patroni de billing-oss, con las contraseñas de /etc/billing-ha/secretos.env (docs/despliegue/ha-vms.md).
+# Reemplaza a la unidad que trae el paquete, que se deja deshabilitada.
+[Unit]
+Description=Patroni de billing-oss
+After=network-online.target etcd.service
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=postgres
+Group=postgres
+EnvironmentFile=/etc/billing-ha/secretos.env
+ExecStart=/usr/bin/patroni /etc/patroni/billing.yml
+ExecReload=/bin/kill -HUP $MAINPID
+# Patroni apaga PostgreSQL por su cuenta: systemd no tiene que matar a los procesos hijos.
+KillMode=process
+TimeoutSec=30
+Restart=on-failure
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,71 @@
+@page "/admin/monedas"
+@model BillingOss.Web.Pages.Admin.Billing.RatesModel
+@{
+    ViewData["Title"] = L["Rates.Title"];
+}
+<h1>@L["Rates.Title"]</h1>
+@if (Model.Error is not null)
+{
+    <p class="alert" role="alert">@Model.Error</p>
+}
+@if (Model.Notice is not null)
+{
+    <p class="notice" role="status">@L[Model.Notice]</p>
+}
+<p class="muted">@L["Rates.Help"]</p>
+<ul class="bo-list">
+    @foreach (var c in Model.Current)
+    {
+        <li>
+            <span class="bo-list__main">
+                <span class="strong">@c.Currency.Code</span>
+                @if (c.Conversion is { } conversion)
+                {
+                    <span class="muted">@L["Rates.Source", L["RateSource." + (conversion.Rate.Source == "bna" ? "Bna" : "Manual")], Ui.Date(conversion.Rate.Date)]</span>
+                }
+                else
+                {
+                    <span class="muted">@L["Rates.Missing"]</span>
+                }
+            </span>
+            @if (c.Conversion is { } shown)
+            {
+                <span class="bo-money">@Ui.Money(shown.Rate.Rate, shown.Rate.Quote)</span>
+            }
+        </li>
+    }
+</ul>
+@if (Model.CanWrite)
+{
+    <h2>@L["Rates.Manual"]</h2>
+    <form method="post" asp-page-handler="Manual" class="bo-actions">
+        <label>@L["Admin.Currency"] <input name="Currency" value="@(Model.Currency ?? "USD")" maxlength="3" size="4" required></label>
+        <label>@L["Rates.Rate"] <input name="Rate" value="@Model.Rate" inputmode="decimal" size="12" required></label>
+        <label>@L["Rates.Date"] <input name="Date" type="date" value="@Model.Date?.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture)"></label>
+        <button type="submit">@L["Billing.Save"]</button>
+    </form>
+    <form method="post" asp-page-handler="Refresh" class="bo-actions">
+        <button type="submit" class="secondary">@L["Rates.Refresh"]</button>
+        @if (!Model.Bna)
+        {
+            <span class="muted">@L["Rates.BnaOff"]</span>
+        }
+    </form>
+}
+<h2>@L["Rates.Recent"]</h2>
+<div class="table">
+    <table>
+        <thead><tr><th scope="col">@L["Rates.Date"]</th><th scope="col">@L["Admin.Currency"]</th><th scope="col" class="num">@L["Rates.Rate"]</th><th scope="col">@L["Rates.SourceColumn"]</th></tr></thead>
+        <tbody>
+            @foreach (var r in Model.Recent)
+            {
+                <tr>
+                    <td>@Ui.Date(r.Date)</td>
+                    <td>@r.Currency.Code</td>
+                    <td class="num bo-money">@Ui.Money(r.Rate, r.Quote)</td>
+                    <td>@L["RateSource." + (r.Source == "bna" ? "Bna" : "Manual")]</td>
+                </tr>
+            }
+        </tbody>
+    </table>
+</div>

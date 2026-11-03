@@ -1,0 +1,68 @@
+@page "/registro"
+@model RegisterModel
+@{
+    ViewData["Title"] = S["Register.Title"];
+    var back = Ui.SafeReturn(Model.ReturnUrl);
+}
+<h1>@S["Register.Title"]</h1>
+@if (!Model.Open)
+{
+    <p class="notice" role="status">@S["Register.Closed"]</p>
+    <p><a href="/ingresar?ReturnUrl=@Uri.EscapeDataString(back)">@L["Nav.Login"]</a></p>
+}
+else
+{
+    @if (Model.Error is not null)
+    {
+        <div class="alert" role="alert">
+            <p>@UiText.Get(L, S, Model.Error)</p>
+            <partial name="_PasswordProblems" model="Model.Problems" />
+        </div>
+    }
+    @foreach (var provider in Model.Providers)
+    {
+        <form method="post" asp-page-handler="External">
+            <input type="hidden" name="provider" value="@provider.Key">
+            <input type="hidden" name="ReturnUrl" value="@back">
+            <button type="submit" class="secondary">@S["External.RegisterWith", provider.Name]</button>
+        </form>
+    }
+    @if (Model.Providers.Count > 0)
+    {
+        <p class="muted">@S["Register.OrEmail"]</p>
+    }
+    <form method="post" class="stack narrow">
+        <input type="hidden" name="ReturnUrl" value="@back">
+        <label for="name">@L["Field.Name"]</label>
+        <input id="name" name="Name" autocomplete="name" maxlength="200" required value="@Model.Name">
+        <label for="company">@S["Register.Company"]</label>
+        <input id="company" name="Company" autocomplete="organization" maxlength="200" value="@Model.Company">
+        <label for="email">@L["Field.Email"]</label>
+        <input id="email" name="Email" type="email" autocomplete="email" maxlength="320" required value="@Model.Email">
+        <label for="phone">@S["Register.Phone"]</label>
+        <input id="phone" name="Phone" type="tel" autocomplete="tel" maxlength="50" value="@Model.Phone">
+        @if (Model.Currencies.Count > 1)
+        {
+            <label for="currency">@S["Register.Currency"]</label>
+            <select id="currency" name="Currency">
+                @foreach (var code in Model.Currencies)
+                {
+                    <option value="@code" selected="@(code == Model.Currency)">@code</option>
+                }
+            </select>
+        }
+        else
+        {
+            <input type="hidden" name="Currency" value="@Model.Currency">
+        }
+        <p class="muted" id="password-rules">@S["Pwd.Hint", Model.MinLength]</p>
+        <label for="password">@L["Field.Password"]</label>
+        <input id="password" name="Password" type="password" autocomplete="new-password" minlength="@Model.MinLength" maxlength="128" aria-describedby="password-rules" required>
+        <label for="confirm">@L["Field.ConfirmPassword"]</label>
+        <input id="confirm" name="Confirm" type="password" autocomplete="new-password" minlength="@Model.MinLength" maxlength="128" required>
+        <p class="muted">@S["Register.VerifyHelp"]</p>
+        <partial name="_Challenge" model="Model.AntiBot" />
+        <button type="submit">@S["Register.Submit"]</button>
+    </form>
+    <p>@S["Register.HaveAccount"] <a href="/ingresar?ReturnUrl=@Uri.EscapeDataString(back)">@L["Nav.Login"]</a></p>
+}

@@ -1,0 +1,24 @@
+@page "/ingresar/externo/confirmar"
+@model ExternalConfirmModel
+@{
+    ViewData["Title"] = S["External.ConfirmTitle"];
+}
+<h1>@S["External.ConfirmTitle"]</h1>
+@if (Model.Done)
+{
+    <p class="notice" role="status">@S["External.Linked", Model.Provider ?? string.Empty]</p>
+    <p><a class="button" href="/ingresar">@L["Nav.Login"]</a></p>
+}
+else if (Model.Error is not null)
+{
+    <p class="alert" role="alert">@S[Model.Error]</p>
+    <p><a href="/ingresar">@L["Nav.Login"]</a></p>
+}
+else
+{
+    <p>@S["External.ConfirmHelp", Model.Provider ?? string.Empty]</p>
+    <form method="post" class="stack narrow">
+        <input type="hidden" name="T" value="@Model.T">
+        <button type="submit">@S["External.ConfirmSubmit"]</button>
+    </form>
+}

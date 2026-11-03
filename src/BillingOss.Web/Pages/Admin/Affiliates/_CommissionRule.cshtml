@@ -1,0 +1,14 @@
+@model BillingOss.Domain.Affiliates.CommissionRule
+@using BillingOss.Domain.Affiliates
+@switch (Model.Kind)
+{
+    case CommissionKind.None:
+        @L["Affiliates.NoCommission"]
+        break;
+    case CommissionKind.Percent:
+        @L[Model.Recurring ? "Affiliates.RulePercentRecurring" : "Affiliates.RulePercentOnce", Model.Value.ToString("0.##", CultureInfo.CurrentCulture)]
+        break;
+    default:
+        @L[Model.Recurring ? "Affiliates.RuleFixedRecurring" : "Affiliates.RuleFixedOnce", Ui.Money(Model.Value, Model.Currency!.Value)]
+        break;
+}

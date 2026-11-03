@@ -1,0 +1,87 @@
+@page "/admin/conocimiento/articulos/{id:long?}"
+@model ArticleModel
+@{
+    ViewData["Title"] = Model.Id is null ? C["Cms.NewArticle"] : C["Cms.EditArticle"];
+    var isNew = Model.Id is null;
+}
+<h1>@ViewData["Title"]</h1>
+<partial name="_Tabs" />
+<partial name="_Alerts" model="Model" />
+<nav class="ct-crumbs" aria-label="@C["Kb.Breadcrumb"]"><a href="/admin/conocimiento">@C["Cms.Help"]</a></nav>
+@if (!isNew)
+{
+    <dl class="facts">
+        <dt>@C["Cms.State"]</dt>
+        <dd><partial name="_Pill" model="ContentUi.PublishPill(Model.Status, C)" /></dd>
+        <dt>@C["Cms.Slug"]</dt>
+        <dd><code>@Model.Slug</code>@if (Model.Status == PublishState.Published) { <text> &middot; <a href="/conocimiento/@Model.Slug">@C["Cms.SeeOnSite"]</a></text> }</dd>
+        <dt>@C["Cms.Views"]</dt>
+        <dd>@Model.Views.ToString("N0", System.Globalization.CultureInfo.CurrentCulture)</dd>
+        <dt>@C["Cms.Votes"]</dt>
+        <dd>@C["Cms.VoteSummary", Model.Helpful, Model.Helpful + Model.Unhelpful]</dd>
+    </dl>
+}
+<form method="post" asp-page-handler="Save" asp-route-id="@Model.Id" class="ct-form">
+    <input type="hidden" name="Input.Revision" value="@Model.Input.Revision">
+    <fieldset>
+        <legend>@C["Cms.General"]</legend>
+        <label for="a-cat">@C["Cms.Category"]</label>
+        <select id="a-cat" name="Input.CategoryId" required>
+            <option value="">@C["Cms.Choose"]</option>
+            @foreach (var c in Model.Categories)
+            {
+                <option value="@c.Id" selected="@(Model.Input.CategoryId == c.Id)">@c.Name</option>
+            }
+        </select>
+        <label for="a-slug">@C["Cms.Slug"]</label>
+        <input id="a-slug" name="Input.Slug" value="@Model.Input.Slug" maxlength="100" aria-describedby="a-slug-help" autocomplete="off">
+        <p id="a-slug-help" class="muted">@C["Cms.SlugHelp"]</p>
+        <label for="a-order">@C["Cms.Order"]</label>
+        <input id="a-order" name="Input.SortOrder" type="number" value="@Model.Input.SortOrder" inputmode="numeric">
+        <label class="check"><input type="checkbox" name="Input.Featured" value="true" checked="@Model.Input.Featured"> @C["Cms.FeaturedHelp"]</label>
+    </fieldset>
+    <partial name="_Audience" model="Model.AudienceFields" />
+    <partial name="_Texts" model="Model.TextFields" />
+    <p class="ct-actions">
+        <button type="submit">@C["Cms.Save"]</button>
+        <a href="/admin/conocimiento">@C["Cms.Cancel"]</a>
+    </p>
+</form>
+@if (!isNew)
+{
+    <section aria-labelledby="publication">
+        <h2 id="publication">@C["Cms.Publication"]</h2>
+        <p class="muted">@C["Cms.ArticlePublicationHelp"]</p>
+        <div class="ct-actions">
+            @if (Model.Status != PublishState.Published)
+            {
+                <form method="post" asp-page-handler="Publish" asp-route-id="@Model.Id" class="inline">
+                    <input type="hidden" name="revision" value="@Model.Input.Revision">
+                    <button type="submit">@C["Cms.PublishArticle"]</button>
+                </form>
+            }
+            @if (Model.Status == PublishState.Published)
+            {
+                <form method="post" asp-page-handler="Unpublish" asp-route-id="@Model.Id" class="inline">
+                    <input type="hidden" name="revision" value="@Model.Input.Revision">
+                    <button type="submit" class="secondary">@C["Cms.Unpublish"]</button>
+                </form>
+            }
+            @if (Model.Status != PublishState.Archived)
+            {
+                <form method="post" asp-page-handler="Archive" asp-route-id="@Model.Id" class="inline">
+                    <input type="hidden" name="revision" value="@Model.Input.Revision">
+                    <button type="submit" class="secondary">@C["Cms.Archive"]</button>
+                </form>
+            }
+        </div>
+    </section>
+    <details>
+        <summary>@C["Cms.DeleteTitle"]</summary>
+        <form method="post" asp-page-handler="Delete" asp-route-id="@Model.Id" class="ct-form">
+            <p>@C["Cms.DeleteArticleHelp"]</p>
+            <label class="check"><input type="checkbox" name="confirm" value="true"> @C["Cms.DeleteConfirm"]</label>
+            <p><button type="submit" class="danger">@C["Cms.DeleteArticle"]</button></p>
+        </form>
+    </details>
+}

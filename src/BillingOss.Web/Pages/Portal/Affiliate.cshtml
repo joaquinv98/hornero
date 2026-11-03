@@ -1,0 +1,264 @@
+@page "/afiliados"
+@model AffiliateModel
+@using BillingOss.Domain.Affiliates
+@{
+    ViewData["Title"] = L["Affiliates.Title"];
+    var a = Model.Affiliate;
+}
+<div class="bo-head">
+    <h1>@L["Affiliates.Title"]</h1>
+    <p class="muted bo-lead">@L["Affiliates.Lead"]</p>
+</div>
+@if (Model.Accounts.Count > 1)
+{
+    <form method="get" class="search">
+        <label for="cuenta">@L["Field.Account"]</label>
+        <select id="cuenta" name="cuenta">
+            @foreach (var (id, name) in Model.Accounts)
+            {
+                <option value="@id" selected="@(id == Model.AccountId)">@name</option>
+            }
+        </select>
+        <button type="submit" class="secondary bo-btn bo-btn--secondary">@L["Affiliates.Choose"]</button>
+    </form>
+}
+@if (Model.Notice is { } notice)
+{
+    <div class="notice bo-alert" data-tone="ok" role="status"><p>@L[notice]</p></div>
+}
+@if (Model.Error is { } error)
+{
+    <div class="alert bo-alert" data-tone="danger" role="alert"><p>@L[error, Model.ErrorDetail ?? string.Empty]</p></div>
+}
+
+@if (a is null)
+{
+    @if (!Model.Program.Enabled)
+    {
+        <p>@L["Affiliates.Closed"]</p>
+    }
+    else
+    {
+        <section class="card bo-card" aria-labelledby="terms">
+            <h2 id="terms">@L["Affiliates.Terms"]</h2>
+            <ul>
+                @if (Model.DefaultRule is { Kind: CommissionKind.Percent } percent)
+                {
+                    <li>@L[percent.Recurring ? "Affiliates.TermPercentRecurring" : "Affiliates.TermPercentOnce", percent.Value.ToString("0.##", CultureInfo.CurrentCulture)]</li>
+                }
+                <li>@L["Affiliates.TermWindow", Model.Program.CookieDays]</li>
+                <li>@L["Affiliates.TermHold", Model.Program.HoldDays]</li>
+                @if (Model.Bonus is { } bonus)
+                {
+                    <li>@L[Model.Program.RequiresApproval ? "Affiliates.TermBonusApproval" : "Affiliates.TermBonus", Ui.Money(bonus.Amount, bonus.Currency)]</li>
+                }
+                <li>@L["Affiliates.TermPayout"]</li>
+            </ul>
+            @if (Model.Program.RequiresApproval)
+            {
+                <p class="muted bo-muted">@L["Affiliates.TermApproval"]</p>
+            }
+            @if (!Model.Acting)
+            {
+                <form method="post" asp-page-handler="Join" asp-route-cuenta="@Model.AccountParam">
+                    <button type="submit" class="bo-btn">@L["Affiliates.Join"]</button>
+                </form>
+            }
+        </section>
+    }
+}
+else if (a.Status == AffiliateStatus.Pending)
+{
+    <div class="notice bo-alert" data-tone="info" role="status"><p>@L["Affiliates.Pending"]</p></div>
+}
+else if (a.Status == AffiliateStatus.Rejected)
+{
+    <p>@L["Affiliates.Rejected"]</p>
+}
+else
+{
+    @if (a.Status == AffiliateStatus.Suspended)
+    {
+        <div class="alert bo-alert" data-tone="warn" role="status"><p>@L["Affiliates.Suspended"]</p></div>
+    }
+    <section class="card bo-card" aria-labelledby="link">
+        <h2 id="link">@L["Affiliates.Link"]</h2>
+        <label for="affiliate-link">@L["Affiliates.LinkHelp"]</label>
+        <input id="affiliate-link" type="text" readonly value="@Model.Link" class="bo-input bo-data">
+        <p class="muted bo-muted">@L["Affiliates.LinkPath"]</p>
+    </section>
+
+    @if (Model.Snippets.Count > 0)
+    {
+        @* El material lo escribe el operador y puede traer HTML: se muestra como texto para copiar, nunca se interpreta. *@
+        <section class="card bo-card" aria-labelledby="material">
+            <h2 id="material">@L["Affiliates.Material"]</h2>
+            <p class="muted bo-muted">@L["Affiliates.MaterialLead"]</p>
+            @for (var i = 0; i < Model.Snippets.Count; i++)
+            {
+                <label for="snippet-@i">@L["Affiliates.Snippet", i + 1]</label>
+                <textarea id="snippet-@i" readonly rows="3" class="bo-textarea bo-data">@Model.Snippets[i]</textarea>
+            }
+        </section>
+    }
+
+    <div class="cards bo-grid bo-grid--3">
+        <section class="card bo-card" aria-labelledby="clicks">
+            <h2 id="clicks">@L["Affiliates.Clicks"]</h2>
+            <p><span class="strong bo-strong">@Model.RecentClicks</span> @L["Affiliates.Last30"]</p>
+            <p class="muted bo-muted">@L["Affiliates.TotalClicks", Model.TotalClicks]</p>
+        </section>
+        <section class="card bo-card" aria-labelledby="signups">
+            <h2 id="signups">@L["Affiliates.Signups"]</h2>
+            <p><span class="strong bo-strong">@Model.Referrals.Count</span> @L["Affiliates.SignupsHelp"]</p>
+        </section>
+        <section class="card bo-card" aria-labelledby="balance">
+            <h2 id="balance">@L["Affiliates.Balance"]</h2>
+            @if (Model.Balances.Count == 0)
+            {
+                <p>@L["Affiliates.NoBalance"]</p>
+            }
+            else
+            {
+                <ul class="plain bo-list">
+                    @foreach (var b in Model.Balances)
+                    {
+                        <li>
+                            <span class="bo-money strong bo-strong">@Ui.Money(b.Available, b.Currency)</span> @L["Affiliates.Available"]
+                            @if (b.Held > 0m)
+                            {
+                                <span class="muted bo-muted">@L["Affiliates.HeldAmount", Ui.Money(b.Held, b.Currency)]</span>
+                            }
+                            @if (b.Withdrawn > 0m)
+                            {
+                                <span class="muted bo-muted">@L["Affiliates.WithdrawnAmount", Ui.Money(b.Withdrawn, b.Currency)]</span>
+                            }
+                        </li>
+                    }
+                </ul>
+            }
+        </section>
+    </div>
+
+    @if (a.Status == AffiliateStatus.Active && !Model.Acting && Model.Balances.Any(b => b.Available > 0m))
+    {
+        <div class="cards bo-grid">
+            <section class="card bo-card" aria-labelledby="credit">
+                <h2 id="credit">@L["Affiliates.ToCredit"]</h2>
+                <p class="muted bo-muted">@L["Affiliates.ToCreditHelp"]</p>
+                <form method="post" asp-page-handler="Credit" asp-route-cuenta="@Model.AccountParam" class="stack bo-form">
+                    <label for="credit-amount">@L["Affiliates.Amount"]</label>
+                    <input id="credit-amount" name="Amount" type="text" inputmode="decimal" autocomplete="off" required class="bo-input" value="@Model.Amount" aria-describedby="credit-amount-help">
+                    <p id="credit-amount-help" class="muted bo-help">@L["Affiliates.AmountHelp"]</p>
+                    <label for="credit-currency">@L["Admin.Currency"]</label>
+                    <select id="credit-currency" name="Currency" class="bo-select">
+                        @foreach (var b in Model.Balances.Where(b => b.Available > 0m))
+                        {
+                            <option value="@b.Currency.Code" selected="@(b.Currency.Code == Model.Currency)">@b.Currency.Code (@Ui.Money(b.Available, b.Currency))</option>
+                        }
+                    </select>
+                    <button type="submit" class="bo-btn">@L["Affiliates.ToCreditButton"]</button>
+                </form>
+            </section>
+            <section class="card bo-card" aria-labelledby="withdraw">
+                <h2 id="withdraw">@L["Affiliates.Withdraw"]</h2>
+                <p class="muted bo-muted">@L["Affiliates.WithdrawHelp"]</p>
+                <form method="post" asp-page-handler="Withdraw" asp-route-cuenta="@Model.AccountParam" class="stack bo-form">
+                    <label for="withdraw-amount">@L["Affiliates.Amount"]</label>
+                    <input id="withdraw-amount" name="Amount" type="text" inputmode="decimal" autocomplete="off" required class="bo-input" value="@Model.Amount" aria-describedby="withdraw-amount-help">
+                    <p id="withdraw-amount-help" class="muted bo-help">@L["Affiliates.AmountHelp"]</p>
+                    <label for="withdraw-currency">@L["Admin.Currency"]</label>
+                    <select id="withdraw-currency" name="Currency" class="bo-select">
+                        @foreach (var b in Model.Balances.Where(b => b.Available > 0m))
+                        {
+                            <option value="@b.Currency.Code" selected="@(b.Currency.Code == Model.Currency)">@b.Currency.Code (@Ui.Money(b.Available, b.Currency))</option>
+                        }
+                    </select>
+                    <label for="details">@L["Affiliates.Details"]</label>
+                    <textarea id="details" name="Details" maxlength="500" rows="3" class="bo-textarea" aria-describedby="details-help">@Model.Details</textarea>
+                    <p id="details-help" class="muted bo-help">@L["Affiliates.DetailsHelp"]</p>
+                    <button type="submit" class="bo-btn">@L["Affiliates.WithdrawButton"]</button>
+                </form>
+            </section>
+        </div>
+    }
+
+    <section aria-labelledby="commissions">
+        <h2 id="commissions">@L["Affiliates.Commissions"]</h2>
+        @if (Model.Commissions.Count == 0)
+        {
+            <p>@L["Affiliates.NoCommissions"]</p>
+        }
+        else
+        {
+            <div class="table bo-table-wrap">
+                <table class="bo-table">
+                    <thead><tr><th scope="col">@L["Admin.Date"]</th><th scope="col">@L["Services.Service"]</th><th scope="col" class="num">@L["Affiliates.Amount"]</th><th scope="col">@L["Field.Status"]</th></tr></thead>
+                    <tbody>
+                        @foreach (var row in Model.Commissions)
+                        {
+                            var c = row.Commission;
+                            <tr>
+                                <td><time datetime="@c.CreatedAt.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture)">@Ui.Date(DateOnly.FromDateTime(c.CreatedAt.UtcDateTime))</time></td>
+                                <td>@row.Product</td>
+                                <td class="num"><span class="bo-money">@Ui.Money(c.Remaining, c.Currency)</span></td>
+                                <td>
+                                    <partial name="_CommissionStatus" model="c" />
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
+    </section>
+
+    <section aria-labelledby="referrals">
+        <h2 id="referrals">@L["Affiliates.Signups"]</h2>
+        @if (Model.Referrals.Count == 0)
+        {
+            <p>@L["Affiliates.NoSignups"]</p>
+        }
+        else
+        {
+            <div class="table bo-table-wrap">
+                <table class="bo-table">
+                    <thead><tr><th scope="col">@L["Admin.Date"]</th><th scope="col">@L["Services.Service"]</th><th scope="col">@L["Field.Status"]</th></tr></thead>
+                    <tbody>
+                        @foreach (var r in Model.Referrals)
+                        {
+                            <tr>
+                                <td><time datetime="@r.CreatedAt.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture)">@Ui.Date(DateOnly.FromDateTime(r.CreatedAt.UtcDateTime))</time></td>
+                                <td>@r.Product</td>
+                                <td>@L["ServiceStatus." + r.Status]</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
+    </section>
+
+    @if (Model.Payouts.Count > 0)
+    {
+        <section aria-labelledby="payouts">
+            <h2 id="payouts">@L["Affiliates.Payouts"]</h2>
+            <div class="table bo-table-wrap">
+                <table class="bo-table">
+                    <thead><tr><th scope="col">@L["Admin.Date"]</th><th scope="col">@L["Affiliates.Method"]</th><th scope="col" class="num">@L["Affiliates.Amount"]</th><th scope="col">@L["Field.Status"]</th></tr></thead>
+                    <tbody>
+                        @foreach (var p in Model.Payouts)
+                        {
+                            <tr>
+                                <td><time datetime="@p.RequestedAt.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture)">@Ui.Date(DateOnly.FromDateTime(p.RequestedAt.UtcDateTime))</time></td>
+                                <td>@L["PayoutMethod." + p.Method]</td>
+                                <td class="num"><span class="bo-money">@Ui.Money(p.Amount, p.Currency)</span></td>
+                                <td>@L["PayoutStatus." + p.Status]</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </section>
+    }
+}

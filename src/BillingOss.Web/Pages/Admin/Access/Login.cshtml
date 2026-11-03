@@ -1,0 +1,24 @@
+@page "/admin/ingresar"
+@model StaffLoginModel
+@{
+    ViewData["Title"] = L["Login.Title"];
+}
+<h1>@L["Admin.LoginTitle"]</h1>
+@if (Model.Error is not null)
+{
+    <p class="alert" role="alert">@UiText.Get(L, S, Model.Error, Model.LockMinutes)</p>
+}
+@if (Model.OidcEnabled)
+{
+    <form method="post" asp-page-handler="Oidc">
+        <button type="submit">@L["Admin.LoginOidc"]</button>
+    </form>
+    <p class="muted">@L["Admin.OrPassword"]</p>
+}
+<form method="post" class="stack narrow">
+    <label for="email">@L["Field.Email"]</label>
+    <input id="email" name="Email" type="email" autocomplete="username" required value="@Model.Email">
+    <label for="password">@L["Field.Password"]</label>
+    <input id="password" name="Password" type="password" autocomplete="current-password" required>
+    <button type="submit">@L["Login.Submit"]</button>
+</form>

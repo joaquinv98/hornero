@@ -1,0 +1,57 @@
+@page "/admin/soporte/departamentos"
+@model BillingOss.Web.Pages.Admin.Tickets.DepartmentsModel
+@{
+    ViewData["Title"] = L["SupportAdmin.Departments"];
+}
+<p><a href="/admin/soporte">@L["Support.Back"]</a></p>
+<h1>@L["SupportAdmin.Departments"]</h1>
+<p class="bo-actions"><a class="button" href="/admin/soporte/departamentos/0">@L["SupportAdmin.NewDepartment"]</a></p>
+@if (Model.Departments.Count == 0)
+{
+    <p>@L["SupportAdmin.NoDepartments"]</p>
+}
+else
+{
+    <div class="table">
+        <table>
+            <caption class="bo-sr">@L["SupportAdmin.Departments"]</caption>
+            <thead>
+                <tr>
+                    <th scope="col">@L["Field.Name"]</th>
+                    <th scope="col">@L["SupportAdmin.Mailbox"]</th>
+                    <th scope="col">@L["SupportAdmin.Visibility"]</th>
+                    <th scope="col" class="num">@L["SupportAdmin.ViewWaiting"]</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var d in Model.Departments)
+                {
+                    <tr>
+                        <th scope="row"><a href="/admin/soporte/departamentos/@d.Id">@d.Name</a> <span class="muted">@d.Email</span></th>
+                        <td>
+                            @if (!d.MailEnabled)
+                            {
+                                <span class="bo-status" data-tone="neutral" data-shape="hollow">@L["SupportAdmin.MailOff"]</span>
+                            }
+                            else if (d.MailError is { Length: > 0 } error)
+                            {
+                                <span class="bo-status" data-tone="danger" data-shape="ring">@L["SupportAdmin.MailFailing"]</span>
+                                <span class="muted">@error</span>
+                            }
+                            else
+                            {
+                                <span class="bo-status" data-tone="ok">@L["SupportAdmin.MailOn"]</span>
+                                @if (d.MailCheckedAt is { } at)
+                                {
+                                    <span class="muted"><time datetime="@SupportUi.Iso(at)">@SupportUi.When(at, Model.Billing)</time></span>
+                                }
+                            }
+                        </td>
+                        <td>@(d.Hidden ? L["SupportAdmin.Hidden"] : L["SupportAdmin.Visible"])@(d.ClientsOnly ? " · " + L["SupportAdmin.ClientsOnly"].Value : string.Empty)</td>
+                        <td class="num">@Model.Waiting.GetValueOrDefault(d.Id)</td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+}

@@ -1,0 +1,87 @@
+@page "/admin/soporte/nuevo"
+@model BillingOss.Web.Pages.Admin.Tickets.StaffTicketNewModel
+@using BillingOss.App.Support
+@{
+    ViewData["Title"] = (Model.Problems.Count > 0 ? L["Support.ErrorPrefix"] + " " : string.Empty) + L["Support.New"];
+}
+<p><a href="/admin/soporte">@L["Support.Back"]</a></p>
+<h1>@L["Support.New"]</h1>
+<p class="muted">@L["SupportAdmin.NewHelp"]</p>
+@if (Model.Problems.Count > 0)
+{
+    <div class="alert" role="alert">
+        <p class="strong">@L["Support.FixBelow"]</p>
+        <ul>
+            @foreach (var (field, message) in Model.Problems)
+            {
+                <li>@if (field.Length > 0) { <a href="#@field">@message</a> } else { @message }</li>
+            }
+        </ul>
+    </div>
+}
+<form method="post" enctype="multipart/form-data" class="bo-form" novalidate>
+    <div class="bo-field">
+        <label for="AccountId">@L["SupportAdmin.AccountId"] <span class="muted">@L["Support.Optional"]</span></label>
+        <input id="AccountId" name="cuenta" value="@Model.AccountQuery" autocomplete="off" aria-describedby="cuenta-ayuda" aria-invalid="@(Model.Invalid("AccountId") ? "true" : null)">
+        <p class="bo-help" id="cuenta-ayuda">@(Model.AccountName ?? L["SupportAdmin.AccountHelp"].Value)</p>
+    </div>
+    <div class="bo-field">
+        <label for="RequesterName">@L["SupportAdmin.RequesterName"] <span class="muted">@L["Support.Optional"]</span></label>
+        <input id="RequesterName" name="RequesterName" value="@Model.RequesterName" autocomplete="off">
+    </div>
+    <div class="bo-field">
+        <label for="RequesterEmail">@L["SupportAdmin.RequesterEmail"]</label>
+        <input id="RequesterEmail" name="RequesterEmail" type="email" value="@Model.RequesterEmail" autocomplete="off" aria-describedby="correo-ayuda" aria-invalid="@(Model.Invalid("RequesterEmail") ? "true" : null)">
+        <p class="bo-help" id="correo-ayuda">@L["SupportAdmin.RequesterEmailHelp"]</p>
+    </div>
+    <div class="bo-field">
+        <label for="Cc">@L["SupportAdmin.Cc"] <span class="muted">@L["Support.Optional"]</span></label>
+        <input id="Cc" name="Cc" value="@Model.Cc" autocomplete="off" aria-describedby="copias-ayuda" aria-invalid="@(Model.Invalid("Cc") ? "true" : null)">
+        <p class="bo-help" id="copias-ayuda">@L["SupportAdmin.CcHelp"]</p>
+    </div>
+    <div class="bo-field">
+        <label for="DepartmentId">@L["Support.Department"]</label>
+        <select id="DepartmentId" name="DepartmentId" aria-invalid="@(Model.Invalid("DepartmentId") ? "true" : null)">
+            @foreach (var (id, name) in Model.Departments)
+            {
+                <option value="@id" selected="@(id == Model.DepartmentId)">@name</option>
+            }
+        </select>
+    </div>
+    @if (Model.Services.Count > 0)
+    {
+        <div class="bo-field">
+            <label for="ServiceId">@L["Support.Service"] <span class="muted">@L["Support.Optional"]</span></label>
+            <select id="ServiceId" name="ServiceId">
+                <option value="">@L["Support.NoService"]</option>
+                @foreach (var (id, name) in Model.Services)
+                {
+                    <option value="@id" selected="@(id == Model.ServiceId)">@name</option>
+                }
+            </select>
+        </div>
+    }
+    <div class="bo-field">
+        <label for="Priority">@L["Support.Priority"]</label>
+        <select id="Priority" name="Priority">
+            @foreach (var p in Enum.GetValues<TicketPriority>())
+            {
+                <option value="@p" selected="@(p == Model.Priority)">@L["TicketPriority." + p]</option>
+            }
+        </select>
+    </div>
+    <div class="bo-field">
+        <label for="Subject">@L["Support.Subject"]</label>
+        <input id="Subject" name="Subject" value="@Model.Subject" maxlength="@TicketService.MaxSubject" autocomplete="off" aria-invalid="@(Model.Invalid("Subject") ? "true" : null)">
+    </div>
+    <div class="bo-field">
+        <label for="Message">@L["Support.Message"]</label>
+        <textarea id="Message" name="Message" rows="8" aria-invalid="@(Model.Invalid("Message") ? "true" : null)">@Model.Message</textarea>
+    </div>
+    <div class="bo-field">
+        <label for="Files">@L["Support.Files"] <span class="muted">@L["Support.Optional"]</span></label>
+        <input id="Files" name="Files" type="file" multiple accept="@SupportUi.Accept(Model.Options)">
+    </div>
+    <label class="check"><input type="checkbox" name="Quiet" value="true" checked="@Model.Quiet"> @L["SupportAdmin.QuietHelp"]</label>
+    <div><button type="submit">@L["SupportAdmin.Open"]</button></div>
+</form>

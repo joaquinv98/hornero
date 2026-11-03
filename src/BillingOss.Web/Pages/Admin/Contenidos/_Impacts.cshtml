@@ -1,0 +1,26 @@
+@model ImpactFields
+@* Los servidores y servicios que toca un evento. En un incidente cada uno lleva su impacto. En un mantenimiento solo se eligen. *@
+<fieldset>
+    <legend>@C[Model.WithImpact ? "Cms.NetAffected" : "Cms.NetAffectedMaintenance"]</legend>
+    @for (var i = 0; i < Model.Components.Count; i++)
+    {
+        var c = Model.Components[i];
+        var pick = Model.Picks.FirstOrDefault(p => p.ComponentId == c.Id);
+        var name = $"{Model.Prefix}[{i}]";
+        var id = $"{Model.Prefix.Replace('.', '_')}_{i}";
+        <div class="ct-impact">
+            <input type="hidden" name="@(name).ComponentId" value="@c.Id">
+            <label class="check" for="@(id)_on"><input id="@(id)_on" type="checkbox" name="@(name).Selected" value="true" checked="@(pick?.Selected == true)"> @c.Name</label>
+            @if (Model.WithImpact)
+            {
+                var impact = pick?.Impact ?? nameof(ComponentStatus.Degraded);
+                <label class="ct-sr" for="@(id)_impact">@C["Cms.NetImpactOf", c.Name]</label>
+                <select id="@(id)_impact" name="@(name).Impact">
+                    <option value="Degraded" selected="@(impact == "Degraded")">@C["Net.Degraded"]</option>
+                    <option value="PartialOutage" selected="@(impact == "PartialOutage")">@C["Net.PartialOutage"]</option>
+                    <option value="MajorOutage" selected="@(impact == "MajorOutage")">@C["Net.MajorOutage"]</option>
+                </select>
+            }
+        </div>
+    }
+</fieldset>

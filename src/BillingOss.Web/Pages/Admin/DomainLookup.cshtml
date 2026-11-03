@@ -1,0 +1,80 @@
+@page "/admin/dominios/consulta"
+@model BillingOss.Web.Pages.Admin.DomainLookupModel
+@{
+    ViewData["Title"] = L["Nav.DomainLookup"];
+}
+<div class="bo-head">
+    <h1>@L["Nav.DomainLookup"]</h1>
+    <p class="bo-lead">@L["DomainLookup.Lead"]</p>
+</div>
+
+<form method="get" class="search" role="search">
+    <label for="q">@L["DomainLookup.Label"]</label>
+    <input id="q" name="q" value="@Model.Q" autocomplete="off" spellcheck="false" placeholder="ejemplo.com.ar" required>
+    <button type="submit">@L["Admin.SearchButton"]</button>
+</form>
+
+@if (Model.Error is not null)
+{
+    <p class="bo-alert" data-tone="danger" role="alert">@L[Model.Error]</p>
+}
+
+@if (Model.Name is { } name)
+{
+    var a = Model.Availability!;
+    var r = Model.Registry!;
+    var (tone, label) = a.Available switch
+    {
+        true when a.Premium => ("warn", "DomainNew.Premium"),
+        true => ("ok", "DomainNew.Free"),
+        false => ("neutral", a.Source == "core" ? "DomainNew.InSystemShort" : "DomainNew.Taken"),
+        null => ("warn", "DomainNew.Unconfirmed"),
+    };
+    <section class="bo-card" aria-labelledby="resultado">
+        <div class="bo-card__head"><h2 id="resultado" class="bo-data">@name</h2><span class="bo-status" data-tone="@tone">@L[label]</span></div>
+        <dl class="bo-facts">
+            <dt>@L["DomainLookup.AnsweredBy"]</dt>
+            <dd>@L[Ui.Key("DomainLookupSource", a.Source)]@if (a.Reason is { } reason) { <span class="bo-small bo-muted bo-data"> @reason</span> }</dd>
+            <dt>@L["DomainLookup.Registry"]</dt>
+            <dd>
+                @(r.Registered switch { true => L["DomainLookup.Registered"], false => L["DomainLookup.NotRegistered"], null => L["DomainLookup.NoAnswer"] })
+                <span class="bo-small bo-muted bo-data">@L[Ui.Key("DomainLookupSource", r.Source)]@(r.Reason is { } why ? " " + why : "")</span>
+            </dd>
+            @if (r.ExpiresOn is { } expires)
+            {
+                <dt>@L["Domain.ExpiresOn"]</dt>
+                <dd><time datetime="@Ui.Iso(expires)">@Ui.Date(expires)</time></dd>
+            }
+            @if (r.Statuses is { Count: > 0 } statuses)
+            {
+                <dt>@L["DomainLookup.Statuses"]</dt>
+                <dd class="bo-data">@string.Join(", ", statuses)</dd>
+            }
+            @if (a.Offer is { } offer)
+            {
+                <dt>@L["DomainNew.FirstYear"]</dt>
+                <dd>@(offer.Register is { } register ? Ui.Money(register, offer.Currency) : L["DomainNew.NotSold"].Value)</dd>
+            }
+        </dl>
+    </section>
+
+    <section class="bo-card" aria-labelledby="sistema">
+        <div class="bo-card__head"><h2 id="sistema">@L["DomainLookup.InSystem"]</h2></div>
+        @if (Model.InSystem.Count == 0)
+        {
+            <p class="bo-muted">@L["DomainLookup.NotInSystem"]</p>
+        }
+        else
+        {
+            <ul class="bo-list">
+                @foreach (var row in Model.InSystem)
+                {
+                    <li>
+                        <div class="bo-list__main"><a href="/admin/dominios/@row.Id">#@row.Id</a><span class="bo-small">@row.Account <span class="bo-muted">#@row.AccountId</span></span></div>
+                        <partial name="_DomainStatus" model="row.Status" />
+                    </li>
+                }
+            </ul>
+        }
+    </section>
+}

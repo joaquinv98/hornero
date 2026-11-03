@@ -1,0 +1,90 @@
+# Integración continua de billing-oss (D-20, pasos A2, A5 y A8).
+#
+# Cada PR y cada empuje a main y a release/x.y restaura con los archivos de bloqueo, compila sin advertencias, mira
+# que el modelo no tenga cambios sin migración, corre todas las pruebas contra un PostgreSQL de verdad y frena con una
+# CVE crítica que ya tiene arreglo. main y release/* se protegen en Forgejo con esta CI obligatoria: un PR en rojo no
+# se fusiona. Guía: docs/versiones/README.md.
+#
+# Las acciones y las imágenes van por etiqueta hasta el primer PR de Renovate, que las fija por SHA y por digest
+# (renovate.json5). Este trabajo no tiene ningún secreto: corre el código del PR.
+name: ci
+
+on:
+  pull_request:
+  push:
+    branches: [main, 'release/**']
+
+env:
+  DOTNET_CLI_TELEMETRY_OPTOUT: '1'
+  DOTNET_NOLOGO: '1'
+  # PostgreSQL efímero del trabajo, sin contraseña: solo lo ve este trabajo.
+  BILLINGOSS_TEST_PG: Host=postgres;Port=5432;Username=postgres;Database=postgres;Maximum Pool Size=20
+
+jobs:
+  pruebas:
+    runs-on: docker
+    services:
+      postgres:
+        image: postgres:18
+        env:
+          POSTGRES_HOST_AUTH_METHOD: trust
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          global-json-file: global.json
+      - name: Restaurar con los archivos de bloqueo
+        run: dotnet restore BillingOss.slnx --locked-mode
+      - name: Compilar (las advertencias son error, salvo los avisos de NuGetAudit)
+        run: dotnet build BillingOss.slnx --no-restore -c Release
+      - name: El modelo no tiene cambios sin migración (A8)
+        run: |
+          dotnet tool restore
+          dotnet ef migrations has-pending-model-changes --project src/BillingOss.App --startup-project src/BillingOss.Web --no-build --configuration Release
+      - name: Pruebas, proyecto por proyecto
+        run: |
+          fallas=0
+          for proyecto in tests/*/*.csproj; do
+            dotnet test "$proyecto" --no-build -c Release || fallas=1
+          done
+          exit $fallas
+      - name: Ninguna CVE crítica con arreglo en las dependencias (A5)
+        uses: docker://aquasec/trivy:0.69.3
+        with:
+          args: fs --scanners vuln --severity CRITICAL --ignore-unfixed --exit-code 1 --skip-dirs tests .
+
+  # A8: la versión anterior de la línea corre sus pruebas contra el esquema que dejan las migraciones nuevas, con sus
+  # trabajos y sus datos (sección 7.4 de D-20). Así una migración que borra o endurece algo que la anterior usa hace
+  # fallar la CI. Sin una versión anterior publicada, no hay nada que comparar.
+  version-anterior:
+    runs-on: docker
+    services:
+      postgres:
+        image: postgres:18
+        env:
+          POSTGRES_HOST_AUTH_METHOD: trust
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Versión anterior de la línea
+        id: anterior
+        run: echo "etiqueta=$(git describe --tags --abbrev=0 --match 'v[0-9]*' 2>/dev/null || true)" >> "$GITHUB_OUTPUT"
+      - uses: actions/setup-dotnet@v4
+        if: steps.anterior.outputs.etiqueta != ''
+        with:
+          global-json-file: global.json
+      - name: Base plantilla con las migraciones de este commit
+        if: steps.anterior.outputs.etiqueta != ''
+        env:
+          Role: web
+          ConnectionStrings__Main: Host=postgres;Port=5432;Username=postgres;Database=billing_oss_plantilla
+        run: dotnet run --project src/BillingOss.Web -c Release -- migrate
+      - name: Pruebas de la versión anterior sobre bases que nacen de la plantilla
+        if: steps.anterior.outputs.etiqueta != ''
+        env:
+          BILLINGOSS_TEST_TEMPLATE: billing_oss_plantilla
+        run: |
+          git worktree add ../anterior "${{ steps.anterior.outputs.etiqueta }}"
+          cd ../anterior
+          dotnet test tests/BillingOss.App.Tests/BillingOss.App.Tests.csproj -c Release

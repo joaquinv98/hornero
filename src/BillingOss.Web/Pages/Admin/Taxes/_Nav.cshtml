@@ -1,0 +1,10 @@
+@model string
+@{
+    (string Path, string Key)[] pages = [("/admin/impuestos", "Taxes.Today"), ("/admin/impuestos/empezar", "Taxes.Start"), ("/admin/impuestos/reglas", "Taxes.Rules"), ("/admin/impuestos/precios", "Taxes.Prices")];
+}
+<ul class="subnav" aria-label="@L["Taxes.Title"]">
+    @foreach (var (path, key) in pages)
+    {
+        <li><a href="@path" aria-current="@(path == Model ? "page" : null)">@L[key]</a></li>
+    }
+</ul>

@@ -1,0 +1,73 @@
+@page "/admin/facturas"
+@model BillingOss.Web.Pages.Admin.Billing.InvoicesModel
+@using BillingOss.Domain.Billing
+@{
+    ViewData["Title"] = L["Billing.Invoices"];
+}
+<h1>@L["Billing.Invoices"]</h1>
+<div class="bo-actions">
+    <a class="button" href="/admin/facturas/nueva@(Model.AccountId is { } a ? "?cuenta=" + a : "")">@L["Billing.NewInvoice"]</a>
+</div>
+<form method="get" class="search" role="search">
+    <label>@L["Field.Status"]
+        <select name="estado">
+            @foreach (var s in BillingOss.Web.Pages.Admin.Billing.InvoicesModel.States)
+            {
+                <option value="@s" selected="@(Model.State == s || (s.Length == 0 && Model.State is null))">@L["Billing.State." + (s.Length == 0 ? "all" : s)]</option>
+            }
+        </select>
+    </label>
+    <label>@L["Billing.Kind"]
+        <select name="tipo">
+            <option value="">@L["Billing.State.all"]</option>
+            @foreach (var (value, kind) in BillingOss.Web.Pages.Admin.Billing.InvoicesModel.Kinds)
+            {
+                <option value="@value" selected="@(Model.Kind == value)">@L["DocumentKind." + kind]</option>
+            }
+        </select>
+    </label>
+    <label>@L["Billing.Account"] <input name="cuenta" type="number" min="1" value="@Model.AccountId"></label>
+    <label>@L["Billing.Number"] <input name="numero" type="number" min="1" value="@Model.Number"></label>
+    <button type="submit">@L["Admin.SearchButton"]</button>
+</form>
+@if (Model.Rows.Count == 0)
+{
+    <p>@L["Admin.NoResults"]</p>
+}
+else
+{
+    <div class="table">
+        <table>
+            <thead>
+                <tr>
+                    <th scope="col">@L["Invoices.Document"]</th>
+                    <th scope="col">@L["Billing.Account"]</th>
+                    <th scope="col">@L["Invoices.Date"]</th>
+                    <th scope="col">@L["Invoices.Due"]</th>
+                    <th scope="col" class="num">@L["Invoices.Total"]</th>
+                    <th scope="col" class="num">@L["Invoices.Pending"]</th>
+                    <th scope="col">@L["Field.Status"]</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var r in Model.Rows)
+                {
+                    var d = r.Document;
+                    <tr>
+                        <td><a href="/admin/facturas/@d.Id">@L["DocumentKind." + d.Kind] @(d.Number?.ToString(CultureInfo.InvariantCulture) ?? L["Billing.DraftNumber", d.Id])</a></td>
+                        <td><a href="/admin/cuentas/@d.AccountId">@r.Account</a></td>
+                        <td>@Ui.Date(d.IssueDate)</td>
+                        <td>@Ui.Date(d.DueDate)</td>
+                        <td class="num bo-money">@(d.IsIssued ? Ui.Money(d.Total, d.Currency) : string.Empty)</td>
+                        <td class="num bo-money">@(d.IsIssued ? Ui.Money(d.Pending, d.Currency) : string.Empty)</td>
+                        <td><span class="status i-@d.Status.ToString().ToLowerInvariant()">@L["InvoiceStatus." + d.Status]</span></td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+    @if (Model.Rows.Count == BillingOss.Web.Pages.Admin.Billing.InvoicesModel.Limit)
+    {
+        <p class="muted">@L["Billing.Limited", BillingOss.Web.Pages.Admin.Billing.InvoicesModel.Limit]</p>
+    }
+}

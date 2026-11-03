@@ -1,0 +1,4 @@
+Your domain {{ domain }} has expired
+<p>Hi {{ account_name }},</p>
+<p>Your domain <strong>{{ domain }}</strong> expired on {{ expires_on }}. You can still renew it until {{ grace_until }}: after that the registry may release it and someone else may register it.</p>
+<p>Renewing it costs {{ amount }}.{% if portal_url %} You can do it from <a href="{{ portal_url }}">your account</a>.{% endif %}</p>

@@ -1,0 +1,76 @@
+# PostgreSQL 18 de la receta chica, en el mismo host que el núcleo. Se suma a compose.yaml (COMPOSE_FILE en .env).
+# TLS obligatorio: pg_hba solo acepta hostssl con scram-sha-256, y el núcleo valida el certificado (VerifyFull).
+# La base, el rol dueño (migraciones) y el rol de la aplicación se crean la primera vez que arranca el volumen.
+
+services:
+  postgres:
+    image: ${POSTGRES_IMAGE:-postgres:18}
+    restart: unless-stopped
+    shm_size: 256mb
+    environment:
+      POSTGRES_PASSWORD_FILE: /run/secrets/pg_superusuario
+      POSTGRES_INITDB_ARGS: --encoding=UTF8 --locale=C.UTF-8
+    command:
+      - postgres
+      - -c
+      - ssl=on
+      - -c
+      - ssl_cert_file=/run/secrets/pg_servidor_crt
+      - -c
+      - ssl_key_file=/run/secrets/pg_servidor_key
+      - -c
+      - ssl_min_protocol_version=TLSv1.3
+      - -c
+      - hba_file=/etc/billing/pg_hba.conf
+    # El actualizador (D-20) corre en el host y llega a la base por acá, con TLS y el rol dueño. Solo en 127.0.0.1.
+    ports:
+      - 127.0.0.1:${BILLING_PG_PUERTO:-5432}:5432
+    secrets:
+      - pg_superusuario
+      - pg_dueno
+      - pg_app
+      - pg_servidor_crt
+      - pg_servidor_key
+    volumes:
+      # Desde la 18, la imagen guarda los datos en /var/lib/postgresql/18/docker.
+      - postgres-datos:/var/lib/postgresql
+      - ./postgres/pg_hba.conf:/etc/billing/pg_hba.conf:ro
+      - ./postgres/10-roles.sh:/docker-entrypoint-initdb.d/10-roles.sh:ro
+      - ../sql/roles.sql:/etc/billing/roles.sql:ro
+    healthcheck:
+      # Por TCP, así no da sano el servidor temporal que la imagen levanta mientras crea la base.
+      test: [CMD, pg_isready, -h, 127.0.0.1, -U, postgres]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks: [nucleo]
+
+  web:
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  worker:
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  migrate:
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+volumes:
+  postgres-datos: {}
+
+secrets:
+  pg_superusuario:
+    file: ./secrets/pg_superusuario
+  pg_dueno:
+    file: ./secrets/pg_dueno
+  pg_app:
+    file: ./secrets/pg_app
+  pg_servidor_crt:
+    file: ./secrets/tls/postgres.crt
+  pg_servidor_key:
+    file: ./secrets/tls/postgres.key

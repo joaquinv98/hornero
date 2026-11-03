@@ -1,0 +1,90 @@
+@page "/admin/afiliados"
+@model BillingOss.Web.Pages.Admin.Affiliates.AffiliatesIndexModel
+@using BillingOss.Domain.Affiliates
+@{
+    ViewData["Title"] = L["Affiliates.Title"];
+}
+<h1>@L["Affiliates.Title"]</h1>
+<partial name="_AffiliatesNav" />
+<ul class="plain bo-row">
+    <li><a href="/admin/afiliados?estado=Pending">@L["Affiliates.PendingCount", Model.Pending]</a></li>
+    <li><a href="/admin/afiliados/retiros">@L["Affiliates.RequestedPayouts", Model.RequestedPayouts]</a></li>
+</ul>
+@if (Model.Error is { } error)
+{
+    <div class="alert bo-alert" data-tone="danger" role="alert"><p>@error</p></div>
+}
+<form method="get" class="search">
+    <label for="estado">@L["Field.Status"]</label>
+    <select id="estado" name="estado">
+        <option value="">@L["Affiliates.AllStatuses"]</option>
+        @foreach (var s in Enum.GetValues<AffiliateStatus>())
+        {
+            <option value="@s" selected="@(Model.Status == s)">@L["AffiliateStatus." + s]</option>
+        }
+    </select>
+    <button type="submit" class="bo-btn bo-btn--secondary secondary">@L["Admin.SearchButton"]</button>
+</form>
+@if (Model.Rows.Count == 0)
+{
+    <p>@L["Affiliates.None"]</p>
+}
+else
+{
+    <div class="table bo-table-wrap">
+        <table class="bo-table">
+            <thead>
+                <tr>
+                    <th scope="col">#</th>
+                    <th scope="col">@L["Field.Account"]</th>
+                    <th scope="col">@L["Affiliates.Code"]</th>
+                    <th scope="col">@L["Field.Status"]</th>
+                    <th scope="col" class="num">@L["Affiliates.Clicks"]</th>
+                    <th scope="col" class="num">@L["Affiliates.Signups"]</th>
+                    <th scope="col" class="num">@L["Affiliates.Balance"]</th>
+                    <th scope="col" class="num">@L["Affiliates.Withdrawn"]</th>
+                    @if (Model.CanManage)
+                    {
+                        <th scope="col"><span class="bo-sr">@L["Affiliates.Actions"]</span></th>
+                    }
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var r in Model.Rows)
+                {
+                    var a = r.Affiliate;
+                    <tr>
+                        <td><a href="/admin/afiliados/@a.Id">@a.Id</a></td>
+                        <td><a href="/admin/cuentas/@a.AccountId">@r.Account</a></td>
+                        <td><code class="bo-data">@a.Code</code></td>
+                        <td><partial name="_AffiliateStatus" model="a.Status" /></td>
+                        <td class="num">@r.Clicks</td>
+                        <td class="num">@r.Referrals</td>
+                        <td class="num">
+                            @foreach (var b in r.Balances)
+                            {
+                                <div class="bo-money">@Ui.Money(b.Available, b.Currency)</div>
+                            }
+                        </td>
+                        <td class="num">
+                            @foreach (var b in r.Balances.Where(b => b.Withdrawn > 0m))
+                            {
+                                <div class="bo-money">@Ui.Money(b.Withdrawn, b.Currency)</div>
+                            }
+                        </td>
+                        @if (Model.CanManage)
+                        {
+                            <td>
+                                @if (a.Status == AffiliateStatus.Pending)
+                                {
+                                    <form method="post" asp-page-handler="Approve" asp-route-id="@a.Id" class="inline"><button type="submit" class="bo-btn">@L["Affiliates.Approve"]</button></form>
+                                    <form method="post" asp-page-handler="Reject" asp-route-id="@a.Id" class="inline"><button type="submit" class="secondary bo-btn bo-btn--secondary">@L["Affiliates.Reject"]</button></form>
+                                }
+                            </td>
+                        }
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+}

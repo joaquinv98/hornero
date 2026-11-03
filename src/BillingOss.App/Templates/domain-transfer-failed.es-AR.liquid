@@ -1,0 +1,5 @@
+No se pudo completar la transferencia de {{ domain }}
+<p>Hola, {{ account_name }}:</p>
+<p>La transferencia de <strong>{{ domain }}</strong> no se pudo completar.</p>
+{% if reason == "invalid_auth_code" %}<p>El registro rechazó el código de autorización (EPP). Pedile uno nuevo a tu proveedor actual y reintentá la transferencia desde el dominio, en {% if portal_url %}<a href="{{ portal_url }}">tu cuenta</a>{% else %}tu cuenta{% endif %}.</p>{% else %}<p>La estamos revisando y te escribimos con los pasos a seguir. Si tenés un código de autorización (EPP) nuevo, podés reintentarla desde el dominio, en tu cuenta.</p>{% endif %}
+<p>Reintentarla no se vuelve a cobrar.</p>

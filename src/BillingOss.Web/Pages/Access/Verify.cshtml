@@ -1,0 +1,24 @@
+@page "/cuenta/verificar"
+@model VerifyModel
+@{
+    ViewData["Title"] = S["Mail.VerifyTitle"];
+}
+<h1>@S["Mail.VerifyTitle"]</h1>
+@if (Model.Done)
+{
+    <p class="notice" role="status">@S["Mail.Verified"]</p>
+    <p><a class="button" href="/">@L["Nav.Home"]</a></p>
+}
+else if (Model.Failed)
+{
+    <p class="alert" role="alert">@S["Mail.VerifyFailed"]</p>
+}
+else
+{
+    <p>@S["Mail.VerifyHelp"]</p>
+    <form method="post" class="stack narrow">
+        <input type="hidden" name="U" value="@Model.U">
+        <input type="hidden" name="T" value="@Model.T">
+        <button type="submit">@S["Mail.VerifySubmit"]</button>
+    </form>
+}

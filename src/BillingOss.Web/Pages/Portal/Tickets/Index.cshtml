@@ -1,0 +1,49 @@
+@page "/soporte"
+@model BillingOss.Web.Pages.Portal.Tickets.TicketListModel
+@using BillingOss.Web.Pages.Portal.Tickets
+@{
+    ViewData["Title"] = L["Support.Title"];
+}
+<h1>@L["Support.Title"]</h1>
+@if (Model.CanWrite)
+{
+    <p class="bo-actions"><a class="button" href="/soporte/nuevo">@L["Support.New"]</a></p>
+}
+<nav class="bo-filters" aria-label="@L["Support.Filter"]">
+    @foreach (var (value, label) in TicketListModel.Views)
+    {
+        <a href="/soporte?ver=@value" aria-current="@(Model.View == value ? "page" : null)">@L[label] <span class="bo-count">@Model.Counts[value]</span></a>
+    }
+</nav>
+@if (Model.Rows.Count == 0)
+{
+    <p>@(Model.View == "abiertas" ? L["Support.NoneOpen"] : L["Support.None"])</p>
+}
+else
+{
+    <div class="table">
+        <table>
+            <caption class="bo-sr">@L["Support.Title"]</caption>
+            <thead>
+                <tr>
+                    <th scope="col">@L["Support.Request"]</th>
+                    <th scope="col">@L["Support.Department"]</th>
+                    <th scope="col">@L["Field.Status"]</th>
+                    <th scope="col">@L["Support.LastActivity"]</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var r in Model.Rows)
+                {
+                    var (tone, shape) = SupportUi.Status(r.Status, staff: false);
+                    <tr>
+                        <th scope="row"><a href="/soporte/@r.Id">@r.Subject</a> <span class="muted">@L["Support.Number", r.Number]</span></th>
+                        <td>@r.Department</td>
+                        <td><span class="bo-status" data-tone="@tone" data-shape="@shape">@L["SupportStatus." + r.Status]</span></td>
+                        <td><time datetime="@SupportUi.Iso(r.LastMessageAt)">@SupportUi.When(r.LastMessageAt, Model.Billing)</time></td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+}

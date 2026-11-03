@@ -1,0 +1,33 @@
+// Renovate para Hornero (D-20). Conviene correrlo desde un repo aparte, con
+// su propio token: en este repo quien empuja una rama puede correr cualquier workflow, y el build de cada PR corre el
+// código de los paquetes nuevos. Cubre Directory.Packages.props con los packages.lock.json, global.json,
+// dotnet-tools.json, los FROM del Dockerfile, las imágenes de Compose y las acciones de .forgejo/workflows.
+// Se valida con renovate-config-validator, y la prueba WorkflowTests mira las reglas que importan para la seguridad.
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  // Imágenes por etiqueta más digest y acciones por SHA: el primer PR las fija todas y después las mueve.
+  "extends": ["config:recommended", "docker:pinDigests", "helpers:pinGitHubActionDigests"],
+  "baseBranchPatterns": ["main", "/^release\\/.*/"],
+  // OSV solo ve las dependencias directas: las transitivas y el runtime de .NET los cubre el vigía diario.
+  "osvVulnerabilityAlerts": true,
+  "dependencyDashboardOSVVulnerabilitySummary": "unresolved",
+  // Una versión secuestrada suele durar horas (sección 11): lo que no es de seguridad espera 3 días.
+  "minimumReleaseAge": "3 days",
+  "lockFileMaintenance": { "enabled": true },
+  "packageRules": [
+    // Todo el servicing de .NET en un solo PR por rama: SDK, paquetes, dotnet-ef y la imagen base.
+    {
+      "groupName": ".NET servicing",
+      "matchUpdateTypes": ["patch", "digest"],
+      "matchPackageNames": ["Microsoft.**", "System.**", "Npgsql**", "EFCore.**", "dotnet-ef", "mcr.microsoft.com/dotnet/**"],
+    },
+    { "groupName": ".NET servicing", "matchDepTypes": ["dotnet-sdk"] },
+    // El salto de .NET es una migración planeada (D-01) y el de PostgreSQL pide pg_upgrade (sección 4).
+    { "matchPackageNames": ["mcr.microsoft.com/dotnet/**", "postgres"], "matchUpdateTypes": ["major"], "enabled": false },
+    // En las ramas de versión, solo parches y digests, y siempre fusiona una persona.
+    { "matchBaseBranches": ["/^release\\/.*/"], "matchUpdateTypes": ["minor", "major"], "enabled": false },
+    { "matchBaseBranches": ["main"], "matchUpdateTypes": ["patch", "digest"], "automerge": true },
+    // Lo que corre donde se firma nunca se fusiona solo (sección 11).
+    { "matchPackageNames": ["/cosign/"], "automerge": false },
+  ],
+}

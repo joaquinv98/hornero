@@ -1,0 +1,855 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="Cms.Actions" xml:space="preserve">
+    <value>Actions</value>
+  </data>
+  <data name="Cms.All" xml:space="preserve">
+    <value>All</value>
+  </data>
+  <data name="Cms.AnnouncementPublicationHelp" xml:space="preserve">
+    <value>Save your changes before publishing. With a future date the announcement is scheduled and starts showing by itself at that time.</value>
+  </data>
+  <data name="Cms.Archive" xml:space="preserve">
+    <value>Archive</value>
+  </data>
+  <data name="Cms.Areas" xml:space="preserve">
+    <value>Content areas</value>
+  </data>
+  <data name="Cms.ArticleCount" xml:space="preserve">
+    <value>{0} articles</value>
+  </data>
+  <data name="Cms.ArticlePublicationHelp" xml:space="preserve">
+    <value>Save your changes before publishing. A published article needs a title and body in at least one language.</value>
+  </data>
+  <data name="Cms.Articles" xml:space="preserve">
+    <value>Articles</value>
+  </data>
+  <data name="Cms.Audience" xml:space="preserve">
+    <value>Who sees it</value>
+  </data>
+  <data name="Cms.AudienceCustomers" xml:space="preserve">
+    <value>Signed-in customers</value>
+  </data>
+  <data name="Cms.AudienceHelp" xml:space="preserve">
+    <value>A targeted item is seen by customers with a live service of any chosen product, or with an account in any chosen group.</value>
+  </data>
+  <data name="Cms.AudiencePublic" xml:space="preserve">
+    <value>Anyone, without signing in</value>
+  </data>
+  <data name="Cms.AudienceTargeted" xml:space="preserve">
+    <value>Customers with certain products or groups</value>
+  </data>
+  <data name="Cms.AudienceWho" xml:space="preserve">
+    <value>Audience</value>
+  </data>
+  <data name="Cms.BadDate" xml:space="preserve">
+    <value>We could not read the date. Pick it with the date and time selector.</value>
+  </data>
+  <data name="Cms.Body" xml:space="preserve">
+    <value>Body</value>
+  </data>
+  <data name="Cms.Cancel" xml:space="preserve">
+    <value>Cancel</value>
+  </data>
+  <data name="Cms.Categories" xml:space="preserve">
+    <value>Categories</value>
+  </data>
+  <data name="Cms.Category" xml:space="preserve">
+    <value>Category</value>
+  </data>
+  <data name="Cms.Choose" xml:space="preserve">
+    <value>Choose an option</value>
+  </data>
+  <data name="Cms.ChooseFile" xml:space="preserve">
+    <value>File</value>
+  </data>
+  <data name="Cms.Delete" xml:space="preserve">
+    <value>Delete</value>
+  </data>
+  <data name="Cms.DeleteAnnouncement" xml:space="preserve">
+    <value>Delete the announcement</value>
+  </data>
+  <data name="Cms.DeleteAnnouncementHelp" xml:space="preserve">
+    <value>The announcement is deleted for good. If you only want to withdraw it, archive it.</value>
+  </data>
+  <data name="Cms.DeleteArticle" xml:space="preserve">
+    <value>Delete the article</value>
+  </data>
+  <data name="Cms.DeleteArticleHelp" xml:space="preserve">
+    <value>The article is deleted for good, with its texts and votes. If you only want to withdraw it, archive it.</value>
+  </data>
+  <data name="Cms.DeleteCategory" xml:space="preserve">
+    <value>Delete the category</value>
+  </data>
+  <data name="Cms.DeleteCategoryHelp" xml:space="preserve">
+    <value>A category with subcategories or content cannot be deleted: move or delete them first.</value>
+  </data>
+  <data name="Cms.DeleteConfirm" xml:space="preserve">
+    <value>I understand it is deleted for good</value>
+  </data>
+  <data name="Cms.DeleteDownload" xml:space="preserve">
+    <value>Delete the download</value>
+  </data>
+  <data name="Cms.DeleteDownloadHelp" xml:space="preserve">
+    <value>The download is deleted for good, with its file. If you only want to withdraw it, archive it.</value>
+  </data>
+  <data name="Cms.DeleteNeedsConfirm" xml:space="preserve">
+    <value>Tick the box to confirm that you want to delete it.</value>
+  </data>
+  <data name="Cms.DeleteTitle" xml:space="preserve">
+    <value>Delete</value>
+  </data>
+  <data name="Cms.Description" xml:space="preserve">
+    <value>Description</value>
+  </data>
+  <data name="Cms.DownloadPublicationHelp" xml:space="preserve">
+    <value>A download cannot be published without a file. Upload the file, save your changes and then publish it.</value>
+  </data>
+  <data name="Cms.Downloaded" xml:space="preserve">
+    <value>Downloads</value>
+  </data>
+  <data name="Cms.Downloads" xml:space="preserve">
+    <value>Downloads</value>
+  </data>
+  <data name="Cms.EditAnnouncement" xml:space="preserve">
+    <value>Edit the announcement</value>
+  </data>
+  <data name="Cms.EditArticle" xml:space="preserve">
+    <value>Edit the article</value>
+  </data>
+  <data name="Cms.EditCategory" xml:space="preserve">
+    <value>Edit the category</value>
+  </data>
+  <data name="Cms.EditDownload" xml:space="preserve">
+    <value>Edit the download</value>
+  </data>
+  <data name="Cms.ExpiresAt" xml:space="preserve">
+    <value>Expires</value>
+  </data>
+  <data name="Cms.ExpiresHelp" xml:space="preserve">
+    <value>Optional. After that time the announcement stops showing by itself. Times are in {0}.</value>
+  </data>
+  <data name="Cms.Featured" xml:space="preserve">
+    <value>Featured</value>
+  </data>
+  <data name="Cms.FeaturedHelp" xml:space="preserve">
+    <value>Show it among the featured articles on the knowledge base home</value>
+  </data>
+  <data name="Cms.File" xml:space="preserve">
+    <value>File</value>
+  </data>
+  <data name="Cms.Filter" xml:space="preserve">
+    <value>Filter</value>
+  </data>
+  <data name="Cms.Filters" xml:space="preserve">
+    <value>Filters</value>
+  </data>
+  <data name="Cms.General" xml:space="preserve">
+    <value>General</value>
+  </data>
+  <data name="Cms.GetFile" xml:space="preserve">
+    <value>Download the file</value>
+  </data>
+  <data name="Cms.GetFileHelp" xml:space="preserve">
+    <value>It does not count as a download.</value>
+  </data>
+  <data name="Cms.Groups" xml:space="preserve">
+    <value>Customer groups</value>
+  </data>
+  <data name="Cms.Help" xml:space="preserve">
+    <value>Knowledge base</value>
+  </data>
+  <data name="Cms.Hidden" xml:space="preserve">
+    <value>Hidden</value>
+  </data>
+  <data name="Cms.HiddenHelp" xml:space="preserve">
+    <value>Hide the category: customers do not see it</value>
+  </data>
+  <data name="Cms.Incident" xml:space="preserve">
+    <value>Incident</value>
+  </data>
+  <data name="Cms.KindGroup" xml:space="preserve">
+    <value>Group</value>
+  </data>
+  <data name="Cms.KindServer" xml:space="preserve">
+    <value>Server</value>
+  </data>
+  <data name="Cms.KindService" xml:space="preserve">
+    <value>Service</value>
+  </data>
+  <data name="Cms.Languages" xml:space="preserve">
+    <value>Languages</value>
+  </data>
+  <data name="Cms.Maintenance" xml:space="preserve">
+    <value>Maintenance</value>
+  </data>
+  <data name="Cms.MarkdownHelp" xml:space="preserve">
+    <value>Written in Markdown: headings with #, lists with -, **bold**, links and tables. HTML is not accepted.</value>
+  </data>
+  <data name="Cms.Menu" xml:space="preserve">
+    <value>Content</value>
+  </data>
+  <data name="Cms.Message" xml:space="preserve">
+    <value>Message</value>
+  </data>
+  <data name="Cms.Name" xml:space="preserve">
+    <value>Name</value>
+  </data>
+  <data name="Cms.NetAffected" xml:space="preserve">
+    <value>What it affects and how much</value>
+  </data>
+  <data name="Cms.NetAffectedMaintenance" xml:space="preserve">
+    <value>What it affects</value>
+  </data>
+  <data name="Cms.NetCancel" xml:space="preserve">
+    <value>Cancel the maintenance</value>
+  </data>
+  <data name="Cms.NetComplete" xml:space="preserve">
+    <value>Mark as completed now</value>
+  </data>
+  <data name="Cms.NetConfirmed" xml:space="preserve">
+    <value>Confirmed</value>
+  </data>
+  <data name="Cms.NetDeleteComponent" xml:space="preserve">
+    <value>Delete the component</value>
+  </data>
+  <data name="Cms.NetDeleteComponentHelp" xml:space="preserve">
+    <value>A component with history or children cannot be deleted: hide it instead.</value>
+  </data>
+  <data name="Cms.NetEditComponent" xml:space="preserve">
+    <value>Edit the component</value>
+  </data>
+  <data name="Cms.NetFirstState" xml:space="preserve">
+    <value>Initial state</value>
+  </data>
+  <data name="Cms.NetFixTitle" xml:space="preserve">
+    <value>Fix the title</value>
+  </data>
+  <data name="Cms.NetFixTitleButton" xml:space="preserve">
+    <value>Save the title</value>
+  </data>
+  <data name="Cms.NetFixTitleHelp" xml:space="preserve">
+    <value>Fixes the event title. It is not an update and nobody is notified.</value>
+  </data>
+  <data name="Cms.NetGroup" xml:space="preserve">
+    <value>Group</value>
+  </data>
+  <data name="Cms.NetHiddenHelp" xml:space="preserve">
+    <value>Hide it from the public page. A component with history is hidden instead of deleted.</value>
+  </data>
+  <data name="Cms.NetImpactOf" xml:space="preserve">
+    <value>Impact on {0}</value>
+  </data>
+  <data name="Cms.NetIncident" xml:space="preserve">
+    <value>Incident details</value>
+  </data>
+  <data name="Cms.NetMonth" xml:space="preserve">
+    <value>Month</value>
+  </data>
+  <data name="Cms.NetNeedComponents" xml:space="preserve">
+    <value>First add at least one server or service.</value>
+  </data>
+  <data name="Cms.NetNewComponent" xml:space="preserve">
+    <value>New component</value>
+  </data>
+  <data name="Cms.NetNewEvent" xml:space="preserve">
+    <value>New incident</value>
+  </data>
+  <data name="Cms.NetNewEventIntro" xml:space="preserve">
+    <value>An incident reports something happening now. A maintenance window announces work on a set date and time. Both ask for the servers or services they affect.</value>
+  </data>
+  <data name="Cms.NetNewState" xml:space="preserve">
+    <value>New state</value>
+  </data>
+  <data name="Cms.NetNoEventsView" xml:space="preserve">
+    <value>There are no events in this view.</value>
+  </data>
+  <data name="Cms.NetNoOpenEvents" xml:space="preserve">
+    <value>There are no open incidents or maintenance windows.</value>
+  </data>
+  <data name="Cms.NetOpenEvents" xml:space="preserve">
+    <value>Open incidents and maintenance</value>
+  </data>
+  <data name="Cms.NetOpenIncident" xml:space="preserve">
+    <value>Open an incident</value>
+  </data>
+  <data name="Cms.NetOpenIncidentButton" xml:space="preserve">
+    <value>Open the incident and notify</value>
+  </data>
+  <data name="Cms.NetPastEvents" xml:space="preserve">
+    <value>Past events</value>
+  </data>
+  <data name="Cms.NetPendingConfirm" xml:space="preserve">
+    <value>Not confirmed</value>
+  </data>
+  <data name="Cms.NetPostUpdate" xml:space="preserve">
+    <value>Post an update</value>
+  </data>
+  <data name="Cms.NetPostUpdateButton" xml:space="preserve">
+    <value>Post the update and notify</value>
+  </data>
+  <data name="Cms.NetPostUpdateIncidentHelp" xml:space="preserve">
+    <value>Each update goes into the history and subscribers are notified. You can change the state and the affected components. Once resolved, the incident no longer affects the components and is not reopened.</value>
+  </data>
+  <data name="Cms.NetPostUpdateMaintenanceHelp" xml:space="preserve">
+    <value>The update goes into the maintenance history and subscribers are notified.</value>
+  </data>
+  <data name="Cms.NetProducts" xml:space="preserve">
+    <value>Products it affects</value>
+  </data>
+  <data name="Cms.NetProductsHelp" xml:space="preserve">
+    <value>Optional. Customers with a service of these products see this component's problems on their service card and when opening a ticket.</value>
+  </data>
+  <data name="Cms.NetSchedule" xml:space="preserve">
+    <value>Schedule maintenance</value>
+  </data>
+  <data name="Cms.NetScheduleButton" xml:space="preserve">
+    <value>Schedule and notify</value>
+  </data>
+  <data name="Cms.NetSearchMonth" xml:space="preserve">
+    <value>Search</value>
+  </data>
+  <data name="Cms.NetSince" xml:space="preserve">
+    <value>Since</value>
+  </data>
+  <data name="Cms.NetSubscribers" xml:space="preserve">
+    <value>Subscribers</value>
+  </data>
+  <data name="Cms.NetSubscribersCount" xml:space="preserve">
+    <value>{0} confirmed and {1} waiting to confirm.</value>
+  </data>
+  <data name="Cms.NetViewAll" xml:space="preserve">
+    <value>All</value>
+  </data>
+  <data name="Cms.NetViewOpen" xml:space="preserve">
+    <value>Open</value>
+  </data>
+  <data name="Cms.NetViewResolved" xml:space="preserve">
+    <value>Resolved</value>
+  </data>
+  <data name="Cms.NetViewScheduled" xml:space="preserve">
+    <value>Scheduled</value>
+  </data>
+  <data name="Cms.NetViews" xml:space="preserve">
+    <value>Event views</value>
+  </data>
+  <data name="Cms.NetWindow" xml:space="preserve">
+    <value>Schedule</value>
+  </data>
+  <data name="Cms.Network" xml:space="preserve">
+    <value>Network status</value>
+  </data>
+  <data name="Cms.NetworkNow" xml:space="preserve">
+    <value>Status right now:</value>
+  </data>
+  <data name="Cms.NewAnnouncement" xml:space="preserve">
+    <value>New announcement</value>
+  </data>
+  <data name="Cms.NewArticle" xml:space="preserve">
+    <value>New article</value>
+  </data>
+  <data name="Cms.NewCategory" xml:space="preserve">
+    <value>New category</value>
+  </data>
+  <data name="Cms.NewDownload" xml:space="preserve">
+    <value>New download</value>
+  </data>
+  <data name="Cms.News" xml:space="preserve">
+    <value>Announcements</value>
+  </data>
+  <data name="Cms.NoAnnouncements" xml:space="preserve">
+    <value>There are no announcements with that filter.</value>
+  </data>
+  <data name="Cms.NoArticles" xml:space="preserve">
+    <value>There are no articles with those filters.</value>
+  </data>
+  <data name="Cms.NoCategories" xml:space="preserve">
+    <value>There are no categories yet.</value>
+  </data>
+  <data name="Cms.NoDownloads" xml:space="preserve">
+    <value>There are no downloads with those filters.</value>
+  </data>
+  <data name="Cms.NoFileChosen" xml:space="preserve">
+    <value>Choose a file to upload.</value>
+  </data>
+  <data name="Cms.NoParent" xml:space="preserve">
+    <value>None (top level)</value>
+  </data>
+  <data name="Cms.None" xml:space="preserve">
+    <value>None</value>
+  </data>
+  <data name="Cms.Order" xml:space="preserve">
+    <value>Order</value>
+  </data>
+  <data name="Cms.Parent" xml:space="preserve">
+    <value>Parent category</value>
+  </data>
+  <data name="Cms.PhaseExpired" xml:space="preserve">
+    <value>Expired</value>
+  </data>
+  <data name="Cms.PhaseLive" xml:space="preserve">
+    <value>Live</value>
+  </data>
+  <data name="Cms.PhaseScheduled" xml:space="preserve">
+    <value>Scheduled</value>
+  </data>
+  <data name="Cms.Pinned" xml:space="preserve">
+    <value>Pinned</value>
+  </data>
+  <data name="Cms.PinnedHelp" xml:space="preserve">
+    <value>Pin it above the others while it is current</value>
+  </data>
+  <data name="Cms.Products" xml:space="preserve">
+    <value>Products</value>
+  </data>
+  <data name="Cms.Publication" xml:space="preserve">
+    <value>Publication</value>
+  </data>
+  <data name="Cms.PublishAnnouncement" xml:space="preserve">
+    <value>Publish the announcement</value>
+  </data>
+  <data name="Cms.PublishArticle" xml:space="preserve">
+    <value>Publish the article</value>
+  </data>
+  <data name="Cms.PublishAt" xml:space="preserve">
+    <value>Publication date</value>
+  </data>
+  <data name="Cms.PublishDownload" xml:space="preserve">
+    <value>Publish the download</value>
+  </data>
+  <data name="Cms.PublishOn" xml:space="preserve">
+    <value>Publish on (empty: now)</value>
+  </data>
+  <data name="Cms.ReplaceFile" xml:space="preserve">
+    <value>Replace the file</value>
+  </data>
+  <data name="Cms.Reschedule" xml:space="preserve">
+    <value>Reschedule</value>
+  </data>
+  <data name="Cms.Save" xml:space="preserve">
+    <value>Save changes</value>
+  </data>
+  <data name="Cms.Saved" xml:space="preserve">
+    <value>Done, the changes were saved.</value>
+  </data>
+  <data name="Cms.SearchArticles" xml:space="preserve">
+    <value>Search by title, tag or number</value>
+  </data>
+  <data name="Cms.SeeOnSite" xml:space="preserve">
+    <value>See on the site</value>
+  </data>
+  <data name="Cms.Slug" xml:space="preserve">
+    <value>Short address</value>
+  </data>
+  <data name="Cms.SlugHelp" xml:space="preserve">
+    <value>Built from the title if you leave it empty. Lowercase letters, numbers and hyphens.</value>
+  </data>
+  <data name="Cms.State" xml:space="preserve">
+    <value>State</value>
+  </data>
+  <data name="Cms.StateArchived" xml:space="preserve">
+    <value>Archived</value>
+  </data>
+  <data name="Cms.StateDraft" xml:space="preserve">
+    <value>Draft</value>
+  </data>
+  <data name="Cms.StatePublished" xml:space="preserve">
+    <value>Published</value>
+  </data>
+  <data name="Cms.SumDraftArticles" xml:space="preserve">
+    <value>Draft articles</value>
+  </data>
+  <data name="Cms.SumDraftDownloads" xml:space="preserve">
+    <value>Draft downloads</value>
+  </data>
+  <data name="Cms.SumLiveAnnouncements" xml:space="preserve">
+    <value>Live announcements</value>
+  </data>
+  <data name="Cms.SumOpenIncidents" xml:space="preserve">
+    <value>Open incidents</value>
+  </data>
+  <data name="Cms.SumPending" xml:space="preserve">
+    <value>{0} not confirmed</value>
+  </data>
+  <data name="Cms.SumPublishedArticles" xml:space="preserve">
+    <value>Published articles</value>
+  </data>
+  <data name="Cms.SumScheduledAnnouncements" xml:space="preserve">
+    <value>Scheduled announcements</value>
+  </data>
+  <data name="Cms.SumSubscribers" xml:space="preserve">
+    <value>Confirmed subscribers</value>
+  </data>
+  <data name="Cms.SumUpcomingMaintenances" xml:space="preserve">
+    <value>Upcoming maintenance</value>
+  </data>
+  <data name="Cms.SumWithoutFile" xml:space="preserve">
+    <value>Downloads without a file</value>
+  </data>
+  <data name="Cms.Summary" xml:space="preserve">
+    <value>Summary</value>
+  </data>
+  <data name="Cms.SummaryIntro" xml:space="preserve">
+    <value>What is ready to publish, what expires and what is missing.</value>
+  </data>
+  <data name="Cms.Tags" xml:space="preserve">
+    <value>Tags (comma separated)</value>
+  </data>
+  <data name="Cms.TimeZoneHelp" xml:space="preserve">
+    <value>Times are in {0}.</value>
+  </data>
+  <data name="Cms.Title" xml:space="preserve">
+    <value>Title</value>
+  </data>
+  <data name="Cms.Type" xml:space="preserve">
+    <value>Type</value>
+  </data>
+  <data name="Cms.Unpublish" xml:space="preserve">
+    <value>Unpublish</value>
+  </data>
+  <data name="Cms.Updated" xml:space="preserve">
+    <value>Updated</value>
+  </data>
+  <data name="Cms.UploadFile" xml:space="preserve">
+    <value>Upload the file</value>
+  </data>
+  <data name="Cms.UploadHelp" xml:space="preserve">
+    <value>Limit of {0}. Allowed extensions: {1}. Uploading a new one replaces the old one and does not reset the counter.</value>
+  </data>
+  <data name="Cms.UploadTitle" xml:space="preserve">
+    <value>Download file</value>
+  </data>
+  <data name="Cms.Views" xml:space="preserve">
+    <value>Views</value>
+  </data>
+  <data name="Cms.Visibility" xml:space="preserve">
+    <value>Visibility</value>
+  </data>
+  <data name="Cms.Visible" xml:space="preserve">
+    <value>Visible</value>
+  </data>
+  <data name="Cms.VoteSummary" xml:space="preserve">
+    <value>{0} of {1} voters found it helpful</value>
+  </data>
+  <data name="Cms.Votes" xml:space="preserve">
+    <value>Votes</value>
+  </data>
+  <data name="Cms.WithoutFile" xml:space="preserve">
+    <value>No file</value>
+  </data>
+  <data name="Common.OtherLanguage" xml:space="preserve">
+    <value>This content is not translated into your language yet. We are showing it in {0}.</value>
+  </data>
+  <data name="ContentNav.Downloads" xml:space="preserve">
+    <value>Downloads</value>
+  </data>
+  <data name="ContentNav.Help" xml:space="preserve">
+    <value>Knowledge base</value>
+  </data>
+  <data name="ContentNav.News" xml:space="preserve">
+    <value>Announcements</value>
+  </data>
+  <data name="ContentNav.Status" xml:space="preserve">
+    <value>Network status</value>
+  </data>
+  <data name="Downloads.Count" xml:space="preserve">
+    <value>Downloads</value>
+  </data>
+  <data name="Downloads.Download" xml:space="preserve">
+    <value>Download the file</value>
+  </data>
+  <data name="Downloads.Empty" xml:space="preserve">
+    <value>There are no downloads available for you.</value>
+  </data>
+  <data name="Downloads.File" xml:space="preserve">
+    <value>File</value>
+  </data>
+  <data name="Downloads.Intro" xml:space="preserve">
+    <value>Programs and files for your services. After downloading a file, check its SHA-256.</value>
+  </data>
+  <data name="Downloads.Size" xml:space="preserve">
+    <value>Size</value>
+  </data>
+  <data name="Downloads.Title" xml:space="preserve">
+    <value>Downloads</value>
+  </data>
+  <data name="Downloads.Updated" xml:space="preserve">
+    <value>Updated</value>
+  </data>
+  <data name="Kb.Articles" xml:space="preserve">
+    <value>Articles</value>
+  </data>
+  <data name="Kb.Breadcrumb" xml:space="preserve">
+    <value>Breadcrumb</value>
+  </data>
+  <data name="Kb.Categories" xml:space="preserve">
+    <value>Categories</value>
+  </data>
+  <data name="Kb.Empty" xml:space="preserve">
+    <value>There are no published articles yet.</value>
+  </data>
+  <data name="Kb.Featured" xml:space="preserve">
+    <value>Featured</value>
+  </data>
+  <data name="Kb.Intro" xml:space="preserve">
+    <value>Answers to the most common questions about your services.</value>
+  </data>
+  <data name="Kb.Latest" xml:space="preserve">
+    <value>Latest articles</value>
+  </data>
+  <data name="Kb.No" xml:space="preserve">
+    <value>No, it did not</value>
+  </data>
+  <data name="Kb.NoArticles" xml:space="preserve">
+    <value>This category has no articles yet.</value>
+  </data>
+  <data name="Kb.NoResults" xml:space="preserve">
+    <value>We found no articles for “{0}”.</value>
+  </data>
+  <data name="Kb.Related" xml:space="preserve">
+    <value>More articles in this category</value>
+  </data>
+  <data name="Kb.Results" xml:space="preserve">
+    <value>Results ({0})</value>
+  </data>
+  <data name="Kb.SearchButton" xml:space="preserve">
+    <value>Search</value>
+  </data>
+  <data name="Kb.SearchLabel" xml:space="preserve">
+    <value>Search the knowledge base</value>
+  </data>
+  <data name="Kb.SeeAll" xml:space="preserve">
+    <value>See all categories</value>
+  </data>
+  <data name="Kb.Subcategories" xml:space="preserve">
+    <value>Subcategories</value>
+  </data>
+  <data name="Kb.Tags" xml:space="preserve">
+    <value>Tags</value>
+  </data>
+  <data name="Kb.Title" xml:space="preserve">
+    <value>Knowledge base</value>
+  </data>
+  <data name="Kb.Updated" xml:space="preserve">
+    <value>Updated on {0}</value>
+  </data>
+  <data name="Kb.VoteCount" xml:space="preserve">
+    <value>{0} of {1} people found it helpful.</value>
+  </data>
+  <data name="Kb.VoteThanks" xml:space="preserve">
+    <value>Thanks for letting us know.</value>
+  </data>
+  <data name="Kb.WasHelpful" xml:space="preserve">
+    <value>Was this article helpful?</value>
+  </data>
+  <data name="Kb.Yes" xml:space="preserve">
+    <value>Yes, it helped</value>
+  </data>
+  <data name="Net.Active" xml:space="preserve">
+    <value>Right now</value>
+  </data>
+  <data name="Net.Affects" xml:space="preserve">
+    <value>Affects</value>
+  </data>
+  <data name="Net.AllIfNone" xml:space="preserve">
+    <value>If you pick none, we notify you of everything.</value>
+  </data>
+  <data name="Net.AllOperational" xml:space="preserve">
+    <value>All systems are operating normally.</value>
+  </data>
+  <data name="Net.BackToStatus" xml:space="preserve">
+    <value>Back to the network status</value>
+  </data>
+  <data name="Net.Components" xml:space="preserve">
+    <value>Servers and services</value>
+  </data>
+  <data name="Net.ConfirmedText" xml:space="preserve">
+    <value>From now on we will email you about incidents and maintenance.</value>
+  </data>
+  <data name="Net.ConfirmedTitle" xml:space="preserve">
+    <value>Subscription confirmed</value>
+  </data>
+  <data name="Net.Degraded" xml:space="preserve">
+    <value>Degraded</value>
+  </data>
+  <data name="Net.Email" xml:space="preserve">
+    <value>Email</value>
+  </data>
+  <data name="Net.From" xml:space="preserve">
+    <value>From</value>
+  </data>
+  <data name="Net.FromTo" xml:space="preserve">
+    <value>From {0} to {1}</value>
+  </data>
+  <data name="Net.History" xml:space="preserve">
+    <value>History</value>
+  </data>
+  <data name="Net.Keep" xml:space="preserve">
+    <value>No, keep me subscribed</value>
+  </data>
+  <data name="Net.KnownIssues" xml:space="preserve">
+    <value>Known incidents and maintenance</value>
+  </data>
+  <data name="Net.KnownIssuesIntro" xml:space="preserve">
+    <value>This may affect your services. We are telling you in case you notice it.</value>
+  </data>
+  <data name="Net.KnownIssuesSee" xml:space="preserve">
+    <value>See the network status</value>
+  </data>
+  <data name="Net.Language" xml:space="preserve">
+    <value>Language of the notices</value>
+  </data>
+  <data name="Net.Maintenance" xml:space="preserve">
+    <value>Under maintenance</value>
+  </data>
+  <data name="Net.MajorOutage" xml:space="preserve">
+    <value>Major outage</value>
+  </data>
+  <data name="Net.Months" xml:space="preserve">
+    <value>Months</value>
+  </data>
+  <data name="Net.NextMonth" xml:space="preserve">
+    <value>Next month</value>
+  </data>
+  <data name="Net.NoComponents" xml:space="preserve">
+    <value>No servers or services have been added yet.</value>
+  </data>
+  <data name="Net.NoEventsMonth" xml:space="preserve">
+    <value>There were no events this month.</value>
+  </data>
+  <data name="Net.NoRecent" xml:space="preserve">
+    <value>There were no incidents or maintenance windows.</value>
+  </data>
+  <data name="Net.NoUpdates" xml:space="preserve">
+    <value>There are no updates yet.</value>
+  </data>
+  <data name="Net.Operational" xml:space="preserve">
+    <value>Operational</value>
+  </data>
+  <data name="Net.Overall" xml:space="preserve">
+    <value>Overall status</value>
+  </data>
+  <data name="Net.PartialOutage" xml:space="preserve">
+    <value>Partial outage</value>
+  </data>
+  <data name="Net.PhaseCancelled" xml:space="preserve">
+    <value>Cancelled</value>
+  </data>
+  <data name="Net.PhaseCompleted" xml:space="preserve">
+    <value>Completed</value>
+  </data>
+  <data name="Net.PhaseInProgress" xml:space="preserve">
+    <value>In progress</value>
+  </data>
+  <data name="Net.PhaseUpcoming" xml:space="preserve">
+    <value>Upcoming</value>
+  </data>
+  <data name="Net.PreviousMonth" xml:space="preserve">
+    <value>Previous month</value>
+  </data>
+  <data name="Net.Recent" xml:space="preserve">
+    <value>Last {0} days</value>
+  </data>
+  <data name="Net.ResolvedAt" xml:space="preserve">
+    <value>Resolved on {0}</value>
+  </data>
+  <data name="Net.ResolvedLabel" xml:space="preserve">
+    <value>Resolved</value>
+  </data>
+  <data name="Net.SeeHistory" xml:space="preserve">
+    <value>See the full history</value>
+  </data>
+  <data name="Net.Since" xml:space="preserve">
+    <value>Since {0}</value>
+  </data>
+  <data name="Net.SomeIssues" xml:space="preserve">
+    <value>Some systems have problems or are under maintenance. Details below.</value>
+  </data>
+  <data name="Net.StartedAt" xml:space="preserve">
+    <value>Started</value>
+  </data>
+  <data name="Net.StateIdentified" xml:space="preserve">
+    <value>Identified</value>
+  </data>
+  <data name="Net.StateInvestigating" xml:space="preserve">
+    <value>Investigating</value>
+  </data>
+  <data name="Net.StateMonitoring" xml:space="preserve">
+    <value>Monitoring</value>
+  </data>
+  <data name="Net.StateResolved" xml:space="preserve">
+    <value>Resolved</value>
+  </data>
+  <data name="Net.Subscribe" xml:space="preserve">
+    <value>Get notices by email</value>
+  </data>
+  <data name="Net.SubscribeButton" xml:space="preserve">
+    <value>Subscribe</value>
+  </data>
+  <data name="Net.SubscribeDone" xml:space="preserve">
+    <value>Done. If that address can receive notices, we sent a link to confirm the subscription.</value>
+  </data>
+  <data name="Net.SubscribeHelp" xml:space="preserve">
+    <value>Enter your email and we will send you a link to confirm. You get nothing until you open it.</value>
+  </data>
+  <data name="Net.SubscribeIntro" xml:space="preserve">
+    <value>We write to you when an incident opens, when it is updated and when it is resolved, and before each maintenance window.</value>
+  </data>
+  <data name="Net.SubscribeSend" xml:space="preserve">
+    <value>Subscribe</value>
+  </data>
+  <data name="Net.Title" xml:space="preserve">
+    <value>Network status</value>
+  </data>
+  <data name="Net.To" xml:space="preserve">
+    <value>To</value>
+  </data>
+  <data name="Net.UnsubscribeAsk" xml:space="preserve">
+    <value>Do you want to stop receiving network status notices at this address?</value>
+  </data>
+  <data name="Net.UnsubscribeButton" xml:space="preserve">
+    <value>Yes, unsubscribe me</value>
+  </data>
+  <data name="Net.UnsubscribeDone" xml:space="preserve">
+    <value>Done. You will not receive more notices at that address.</value>
+  </data>
+  <data name="Net.UnsubscribeTitle" xml:space="preserve">
+    <value>Stop receiving notices</value>
+  </data>
+  <data name="Net.Upcoming" xml:space="preserve">
+    <value>Scheduled maintenance</value>
+  </data>
+  <data name="Net.Updates" xml:space="preserve">
+    <value>Event updates</value>
+  </data>
+  <data name="Net.WhichComponents" xml:space="preserve">
+    <value>What to follow</value>
+  </data>
+  <data name="News.Empty" xml:space="preserve">
+    <value>There are no announcements right now.</value>
+  </data>
+  <data name="News.Intro" xml:space="preserve">
+    <value>Notices about our services.</value>
+  </data>
+  <data name="News.Pinned" xml:space="preserve">
+    <value>Pinned</value>
+  </data>
+  <data name="News.Rss" xml:space="preserve">
+    <value>Subscribe by RSS</value>
+  </data>
+  <data name="News.Title" xml:space="preserve">
+    <value>Announcements</value>
+  </data>
+</root>

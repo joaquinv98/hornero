@@ -1,0 +1,29 @@
+@page "/admin/facturas/nueva"
+@model BillingOss.Web.Pages.Admin.Billing.NewInvoiceModel
+@using BillingOss.Web.Pages.Admin.Billing
+@{
+    ViewData["Title"] = L["Billing.NewInvoice"];
+}
+<p><a href="/admin/facturas">@L["Billing.BackToInvoices"]</a></p>
+<h1>@L["Billing.NewInvoice"]</h1>
+@if (Model.Error is not null)
+{
+    <p class="alert" role="alert">@Model.Error</p>
+}
+<form method="post" class="stack">
+    <div class="bo-actions">
+        <label>@L["Billing.Account"] <input name="cuenta" type="number" min="1" value="@Model.AccountId" required></label>
+        @if (Model.Account is { } a)
+        {
+            <a href="/admin/cuentas/@a.Id">@a.Name</a>
+        }
+        <label>@L["Admin.Currency"] <input name="Currency" value="@Model.Currency" maxlength="3" size="4"></label>
+        <label>@L["Invoices.Due"] <input name="DueDate" type="date" value="@Model.DueDate?.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture)"></label>
+    </div>
+    <partial name="_Lines" model="new LinesEditor(Model.Lines)" />
+    <div class="bo-actions">
+        <button type="submit" asp-page-handler="Issue">@L["Billing.Issue"]</button>
+        <button type="submit" asp-page-handler="Draft" class="secondary">@L["Billing.SaveDraft"]</button>
+    </div>
+    <p class="muted">@L["Billing.NewInvoiceHelp"]</p>
+</form>

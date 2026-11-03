@@ -1,0 +1,11 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+  <PropertyGroup>
+    <RootNamespace>BillingOss.Module.Registrars</RootNamespace>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="../../BillingOss.Modules.Sdk/BillingOss.Modules.Sdk.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <InternalsVisibleTo Include="BillingOss.Module.Registrars.Tests" />
+  </ItemGroup>
+</Project>

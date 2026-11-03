@@ -1,0 +1,71 @@
+@page "/admin/soporte/respuestas"
+@model BillingOss.Web.Pages.Admin.Tickets.SavedRepliesModel
+@{
+    ViewData["Title"] = (Model.Problems.Count > 0 ? L["Support.ErrorPrefix"] + " " : string.Empty) + L["SupportAdmin.SavedReplies"];
+}
+<p><a href="/admin/soporte">@L["Support.Back"]</a></p>
+<h1>@L["SupportAdmin.SavedReplies"]</h1>
+@if (Model.Replies.Count == 0)
+{
+    <p>@L["SupportAdmin.NoSavedReplies"]</p>
+}
+else
+{
+    <div class="table">
+        <table>
+            <caption class="bo-sr">@L["SupportAdmin.SavedReplies"]</caption>
+            <thead>
+                <tr>
+                    <th scope="col">@L["Field.Name"]</th>
+                    <th scope="col">@L["SupportAdmin.Category"]</th>
+                    <th scope="col"><span class="bo-sr">@L["SupportAdmin.Actions"]</span></th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var r in Model.Replies)
+                {
+                    <tr>
+                        <th scope="row"><a href="/admin/soporte/respuestas?id=@r.Id">@r.Name</a></th>
+                        <td>@r.Category</td>
+                        <td>
+                            <form method="post" asp-page-handler="Delete" class="inline">
+                                <input type="hidden" name="remove" value="@r.Id">
+                                <button type="submit" class="link">@L["SupportAdmin.Delete"]</button>
+                            </form>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+}
+
+<section aria-labelledby="editar">
+    <h2 id="editar">@(Model.Id > 0 ? L["SupportAdmin.EditSavedReply"] : L["SupportAdmin.NewSavedReply"])</h2>
+    @if (Model.Problems.Count > 0)
+    {
+        <div class="alert" role="alert">
+            <ul>
+                @foreach (var problem in Model.Problems)
+                {
+                    <li>@problem</li>
+                }
+            </ul>
+        </div>
+    }
+    <form method="post" action="/admin/soporte/respuestas?id=@Model.Id" class="bo-form" asp-antiforgery="true" novalidate>
+        <div class="bo-field">
+            <label for="Name">@L["Field.Name"]</label>
+            <input id="Name" name="Name" value="@Model.Name" maxlength="200">
+        </div>
+        <div class="bo-field">
+            <label for="Category">@L["SupportAdmin.Category"] <span class="muted">@L["Support.Optional"]</span></label>
+            <input id="Category" name="Category" value="@Model.Category" maxlength="200">
+        </div>
+        <div class="bo-field">
+            <label for="Body">@L["Support.Message"]</label>
+            <textarea id="Body" name="Body" rows="8">@Model.Body</textarea>
+        </div>
+        <div><button type="submit">@L["SupportAdmin.Save"]</button></div>
+    </form>
+</section>

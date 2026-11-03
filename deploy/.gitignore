@@ -1,0 +1,3 @@
+# Secretos y valores de cada instalación: nunca al repo. Solo van los .example.
+compose/secrets/
+compose/.env

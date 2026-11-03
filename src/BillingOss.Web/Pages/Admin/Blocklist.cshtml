@@ -1,0 +1,92 @@
+@page "/admin/seguridad/bloqueos"
+@using BillingOss.App.Identity
+@model BlocklistModel
+@inject Microsoft.Extensions.Options.IOptions<BillingOss.App.BillingOptions> Billing
+@{
+    ViewData["Title"] = S["Block.Title"];
+}
+<h1>@S["Block.Title"]</h1>
+<p><a href="/admin/seguridad">@S["Admin.SecurityTitle"]</a></p>
+<p class="muted">@S["Block.Help"]</p>
+@if (Model.Error is not null)
+{
+    <p class="alert" role="alert">@UiText.Get(L, S, Model.Error)</p>
+}
+
+<section aria-labelledby="add">
+    <h2 id="add">@S["Block.Add"]</h2>
+    <form method="post" asp-page-handler="Add" class="stack narrow">
+        <label for="kind">@S["Block.Kind"]</label>
+        <select id="kind" name="Kind">
+            @foreach (var kind in Enum.GetValues<BlockKind>())
+            {
+                <option value="@kind" selected="@(Model.Kind == kind ? "selected" : null)">@S["BlockKind." + kind]</option>
+            }
+        </select>
+        <label for="value">@S["Block.Value"]</label>
+        <input id="value" name="Value" value="@Model.Value" maxlength="320" aria-describedby="value-help" required>
+        <p class="muted" id="value-help">@S["Block.ValueHelp"]</p>
+        <label for="reason">@S["Block.Reason"]</label>
+        <input id="reason" name="Reason" value="@Model.Reason" maxlength="300" required>
+        <label for="hours">@S["Block.Hours"]</label>
+        <input id="hours" name="Hours" type="number" min="1" max="8760" value="@Model.Hours" aria-describedby="hours-help">
+        <p class="muted" id="hours-help">@S["Block.HoursHelp"]</p>
+        <button type="submit">@S["Block.Submit"]</button>
+    </form>
+</section>
+
+<section aria-labelledby="entries">
+    <h2 id="entries">@S["Block.Entries"]</h2>
+    @if (Model.Entries.Count == 0)
+    {
+        <p class="muted">@S["Block.Empty"]</p>
+    }
+    else
+    {
+        <div class="table">
+            <table>
+                <thead>
+                    <tr>
+                        <th scope="col">@S["Block.Kind"]</th>
+                        <th scope="col">@S["Block.Value"]</th>
+                        <th scope="col">@S["Block.Reason"]</th>
+                        <th scope="col">@S["Block.Source"]</th>
+                        <th scope="col">@S["Block.Expires"]</th>
+                        <th scope="col"><span class="skip">@S["Block.Remove"]</span></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var e in Model.Entries)
+                    {
+                        var expired = e.ExpiresAt is { } until && until <= Model.Now;
+                        <tr>
+                            <td>@S["BlockKind." + e.Kind]</td>
+                            <td><code>@e.Value</code></td>
+                            <td>@e.Reason</td>
+                            <td>@S["BlockSource." + e.Source] <span class="muted">@e.CreatedBy</span></td>
+                            <td>
+                                @if (e.ExpiresAt is { } at)
+                                {
+                                    <time datetime="@at.ToString("O", CultureInfo.InvariantCulture)">@UiText.When(at, Billing.Value.TimeZone)</time>
+                                    @if (expired)
+                                    {
+                                        <span class="status" data-tone="neutral">@S["Block.Expired"]</span>
+                                    }
+                                }
+                                else
+                                {
+                                    @S["Block.Permanent"]
+                                }
+                            </td>
+                            <td>
+                                <form method="post" asp-page-handler="Remove" asp-route-id="@e.Id">
+                                    <button type="submit" class="link">@S["Block.Remove"]</button>
+                                </form>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
+</section>

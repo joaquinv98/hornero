@@ -1,0 +1,15 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <IsPackable>false</IsPackable>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="../../src/modules/BillingOss.Module.CPanel/BillingOss.Module.CPanel.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="../BillingOss.Modules.Hosting.Tests/ModuleHost.cs" Link="ModuleHost.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="MSTest" />
+    <PackageReference Include="Microsoft.AspNetCore.TestHost" />
+  </ItemGroup>
+</Project>

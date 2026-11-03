@@ -1,0 +1,177 @@
+@model BillingOss.Web.Pages.DomainDnsPage
+@{
+    var d = Model.Domain!;
+    var list = Model.DomainUrl[..Model.DomainUrl.LastIndexOf('/')];
+    var dns = Model.Capabilities.Contains("registrar.dns");
+    var forwarding = Model.Capabilities.Contains("registrar.email_forwarding");
+}
+<div class="bo-head">
+    <ol class="bo-crumbs"><li><a href="@list">@L["Nav.Domains"]</a></li><li><a href="@Model.DomainUrl">@d.Name</a></li><li aria-current="page">@L["DomainDns.Title"]</li></ol>
+    <h1>@L["DomainDns.Heading", d.Name]</h1>
+</div>
+
+@if (Model.Notice is not null)
+{
+    <p class="bo-alert" data-tone="ok" role="status">@L[Model.Notice]</p>
+}
+@if (Model.Error is not null)
+{
+    <p class="bo-alert" data-tone="danger" role="alert">@L[Model.Error]</p>
+}
+
+@if (!Model.Live)
+{
+    <p class="bo-card">@L["DomainDns.NotLive"]</p>
+}
+else if (!dns && !forwarding)
+{
+    <p class="bo-card">@L["DomainDns.NotSupported"]</p>
+}
+
+@if (dns && Model.Live)
+{
+    <section class="bo-card" aria-labelledby="zona">
+        <div class="bo-card__head"><h2 id="zona">@L["DomainDns.Zone"]</h2></div>
+        <p id="zonaHelp" class="bo-help">@L["DomainDns.ZoneHelp"]</p>
+        @if (Model.ZoneLocked is { } zoneOption)
+        {
+            <p class="bo-alert" data-tone="info" role="status">@L["DomainDns.ZoneLocked", Ui.Money(zoneOption.Price, d.Currency)] <a href="@(Model.DomainUrl)#opciones">@L["DomainDns.GoToOptions"]</a></p>
+        }
+        else if (Model.ZonePending)
+        {
+            <p class="bo-alert" data-tone="info" role="status">@L["DomainDns.ZonePending"]</p>
+        }
+        @if (Model.ZoneUnavailable)
+        {
+            <p class="bo-alert" data-tone="warn" role="status">@L["DomainDns.ZoneUnavailable"]</p>
+        }
+        else if (Model.ZoneLocked is null)
+        {
+            <form method="post" asp-page-handler="Zone">
+                <fieldset class="bo-stack bo-stack--sm" disabled="@(!Model.CanChange)">
+                    <div class="bo-table-wrap">
+                        <table class="bo-table dns-table">
+                            <caption class="bo-sr">@L["DomainDns.Zone"]</caption>
+                            <thead>
+                                <tr>
+                                    <th scope="col">@L["DomainDns.Name"]</th>
+                                    <th scope="col">@L["DomainDns.Type"]</th>
+                                    <th scope="col">@L["DomainDns.Value"]</th>
+                                    <th scope="col">@L["DomainDns.Ttl"]</th>
+                                    <th scope="col">@L["DomainDns.Priority"]</th>
+                                    <th scope="col">@L["DomainDns.Remove"]</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @for (var i = 0; i < Model.Records.Count; i++)
+                                {
+                                    var r = Model.Records[i];
+                                    var bad = Model.InvalidRecords.Contains(i) ? "true" : null;
+                                    var n = i + 1;
+                                    <tr>
+                                        <td><input class="bo-input bo-data" name="Records[@i].Name" value="@r.Name" placeholder="@@" autocomplete="off" spellcheck="false" maxlength="253" aria-invalid="@bad" aria-label="@L["DomainDns.RowField", L["DomainDns.Name"], n]"></td>
+                                        <td>
+                                            <select class="bo-select" name="Records[@i].Type" aria-label="@L["DomainDns.RowField", L["DomainDns.Type"], n]">
+                                                @foreach (var type in BillingOss.Modules.Protocol.DnsRecords.Types)
+                                                {
+                                                    <option value="@type" selected="@(string.Equals(r.Type, type, StringComparison.OrdinalIgnoreCase))">@type</option>
+                                                }
+                                            </select>
+                                        </td>
+                                        <td><input class="bo-input bo-data" name="Records[@i].Value" value="@r.Value" autocomplete="off" spellcheck="false" maxlength="2048" aria-invalid="@bad" aria-label="@L["DomainDns.RowField", L["DomainDns.Value"], n]"></td>
+                                        <td><input class="bo-input bo-data" type="number" name="Records[@i].Ttl" value="@r.Ttl" min="60" max="86400" placeholder="3600" aria-label="@L["DomainDns.RowField", L["DomainDns.Ttl"], n]"></td>
+                                        <td><input class="bo-input bo-data" type="number" name="Records[@i].Priority" value="@r.Priority" min="0" max="65535" aria-label="@L["DomainDns.RowField", L["DomainDns.Priority"], n]"></td>
+                                        <td>
+                                            @if (bad is not null)
+                                            {
+                                                <span class="bo-status" data-tone="danger" data-shape="ring">@L["DomainDns.Check"]</span>
+                                            }
+                                            @if (!r.Blank)
+                                            {
+                                                <label class="bo-check"><input type="checkbox" name="Records[@i].Remove" value="true" checked="@r.Remove"><span class="bo-sr">@L["DomainDns.RowField", L["DomainDns.Remove"], n]</span></label>
+                                            }
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                    @if (Model.CanChange)
+                    {
+                        <div><button type="submit" class="bo-btn">@L["DomainDns.SaveZone"]</button></div>
+                    }
+                </fieldset>
+            </form>
+        }
+    </section>
+}
+
+@if (forwarding && Model.Live)
+{
+    <section class="bo-card" aria-labelledby="reenvios">
+        <div class="bo-card__head"><h2 id="reenvios">@L["DomainDns.Forwards"]</h2></div>
+        <p class="bo-help">@L["DomainDns.ForwardsHelp"]</p>
+        @if (Model.ForwardsLocked is { } forwardsOption)
+        {
+            <p class="bo-alert" data-tone="info" role="status">@L["DomainDns.ForwardsLocked", Ui.Money(forwardsOption.Price, d.Currency)] <a href="@(Model.DomainUrl)#opciones">@L["DomainDns.GoToOptions"]</a></p>
+        }
+        else if (Model.ForwardsPending)
+        {
+            <p class="bo-alert" data-tone="info" role="status">@L["DomainDns.ForwardsPending"]</p>
+        }
+        @if (Model.ForwardsUnavailable)
+        {
+            <p class="bo-alert" data-tone="warn" role="status">@L["DomainDns.ForwardsUnavailable"]</p>
+        }
+        else if (Model.ForwardsLocked is null)
+        {
+            <form method="post" asp-page-handler="Forwards">
+                <fieldset class="bo-stack bo-stack--sm" disabled="@(!Model.CanChange)">
+                    <div class="bo-table-wrap">
+                        <table class="bo-table">
+                            <caption class="bo-sr">@L["DomainDns.Forwards"]</caption>
+                            <thead>
+                                <tr>
+                                    <th scope="col">@L["DomainDns.Mailbox"]</th>
+                                    <th scope="col">@L["DomainDns.To"]</th>
+                                    <th scope="col">@L["DomainDns.Remove"]</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @for (var i = 0; i < Model.Forwards.Count; i++)
+                                {
+                                    var f = Model.Forwards[i];
+                                    var bad = Model.InvalidForwards.Contains(i) ? "true" : null;
+                                    var n = i + 1;
+                                    <tr>
+                                        <td>
+                                            <span class="bo-row">
+                                                <input class="bo-input bo-data" name="Forwards[@i].Mailbox" value="@f.Mailbox" autocomplete="off" spellcheck="false" maxlength="64" aria-invalid="@bad" aria-label="@L["DomainDns.RowField", L["DomainDns.Mailbox"], n]">
+                                                <span class="bo-data bo-muted">@@@d.Name</span>
+                                            </span>
+                                        </td>
+                                        <td><input class="bo-input" type="email" name="Forwards[@i].To" value="@f.To" autocomplete="off" spellcheck="false" maxlength="254" aria-invalid="@bad" aria-label="@L["DomainDns.RowField", L["DomainDns.To"], n]"></td>
+                                        <td>
+                                            @if (bad is not null)
+                                            {
+                                                <span class="bo-status" data-tone="danger" data-shape="ring">@L["DomainDns.Check"]</span>
+                                            }
+                                            @if (!f.Blank)
+                                            {
+                                                <label class="bo-check"><input type="checkbox" name="Forwards[@i].Remove" value="true" checked="@f.Remove"><span class="bo-sr">@L["DomainDns.RowField", L["DomainDns.Remove"], n]</span></label>
+                                            }
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                    @if (Model.CanChange)
+                    {
+                        <div><button type="submit" class="bo-btn">@L["DomainDns.SaveForwards"]</button></div>
+                    }
+                </fieldset>
+            </form>
+        }
+    </section>
+}

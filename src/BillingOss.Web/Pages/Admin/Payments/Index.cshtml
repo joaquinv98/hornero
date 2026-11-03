@@ -1,0 +1,120 @@
+@page "/admin/cobros"
+@model PaymentsIndexModel
+@{
+    ViewData["Title"] = L["Gateways.Title"];
+}
+<div class="bo-stack">
+    <div class="bo-head">
+        <h1>@L["Gateways.Title"]</h1>
+        <p class="bo-muted">@L["Gateways.Intro"]</p>
+    </div>
+
+    @if (!Model.Ready)
+    {
+        <div class="bo-alert" data-tone="warn"><p>@L["Gateways.NoKeys"]</p></div>
+    }
+    @if (Model.Error is not null)
+    {
+        <div class="bo-error-summary" role="alert"><h2>@L["Pay.ErrorTitle"]</h2><p>@Model.Error</p></div>
+    }
+    @foreach (var currency in Model.Uncovered)
+    {
+        <div class="bo-alert" data-tone="warn"><p>@L["Gateways.Uncovered", currency]</p></div>
+    }
+
+    @if (Model.Modules.Count == 0)
+    {
+        <p class="bo-muted">@L["Gateways.NoModules"]</p>
+    }
+    @foreach (var m in Model.Modules)
+    {
+        <section class="bo-card" aria-labelledby="modulo-@m.Id">
+            <div class="bo-card__head">
+                <h2 id="modulo-@m.Id">@m.Name</h2>
+                <span class="bo-small bo-muted">@m.Version</span>
+            </div>
+            @if (m.PendingManifest)
+            {
+                <div class="bo-alert" data-tone="warn">
+                    <p class="bo-alert__title">@L["Gateways.PendingManifestTitle"]</p>
+                    <p>@L["Gateways.PendingManifest"]</p>
+                    <form method="post" asp-page-handler="Approve">
+                        <input type="hidden" name="installation" value="@m.Id">
+                        <button type="submit" class="bo-btn bo-btn--secondary">@L["Gateways.Approve"]</button>
+                    </form>
+                </div>
+            }
+            @if (m.Instances.Count == 0)
+            {
+                <p class="bo-muted">@L["Gateways.NoInstances"]</p>
+            }
+            else
+            {
+                <ul class="bo-list">
+                    @foreach (var i in m.Instances)
+                    {
+                        <li>
+                            <div class="bo-list__main">
+                                <a href="/admin/cobros/@i.Id">@i.Name</a>
+                                @if (i.Message is { Length: > 0 } message)
+                                {
+                                    <span class="bo-small bo-muted">@message</span>
+                                }
+                                @if (i.NoVerifiedWebhook)
+                                {
+                                    <span class="bo-small">@L["Gateways.NoWebhookYet"]</span>
+                                }
+                            </div>
+                            <div class="bo-list__side">
+                                @switch (i.State)
+                                {
+                                    case GatewayState.Live:
+                                        <span class="bo-status" data-tone="ok">@L["Gateways.StateLive"]</span>
+                                        break;
+                                    case GatewayState.Ready:
+                                        <span class="bo-status" data-tone="warn" data-shape="hollow">@L["Gateways.StateReady"]</span>
+                                        break;
+                                    case GatewayState.Test:
+                                        <span class="bo-status" data-tone="info" data-shape="hollow">@L["Gateways.StateTest"]</span>
+                                        break;
+                                    case GatewayState.Error:
+                                        <span class="bo-status" data-tone="danger" data-shape="ring">@L["Gateways.StateError"]</span>
+                                        break;
+                                    case GatewayState.New:
+                                        <span class="bo-status" data-tone="neutral" data-shape="hollow">@L["Gateways.StateNew"]</span>
+                                        break;
+                                    default:
+                                        <span class="bo-status" data-tone="neutral">@L["Gateways.StateLegacy"]</span>
+                                        break;
+                                }
+                            </div>
+                        </li>
+                    }
+                </ul>
+            }
+            @if (Model.Ready)
+            {
+                <div class="bo-row">
+                    <form method="post" asp-page-handler="Create">
+                        <input type="hidden" name="installation" value="@m.Id">
+                        <input type="hidden" name="environment" value="test">
+                        <button type="submit" class="bo-btn bo-btn--secondary">@L["Gateways.CreateTest"]</button>
+                    </form>
+                    <form method="post" asp-page-handler="Create">
+                        <input type="hidden" name="installation" value="@m.Id">
+                        <input type="hidden" name="environment" value="live">
+                        <button type="submit" class="bo-btn bo-btn--secondary">@L["Gateways.CreateLive"]</button>
+                    </form>
+                </div>
+            }
+        </section>
+    }
+
+    <section class="bo-card" aria-labelledby="transferencias">
+        <div class="bo-card__head">
+            <h2 id="transferencias">@L["Pay.Transfer"]</h2>
+            <a href="/admin/cobros/cuentas-para-transferir">@L["Transfers.Accounts"]</a>
+        </div>
+        <p>@L["Transfers.Summary", Model.Unmatched, Model.OpenNotices] <a href="/admin/cobros/transferencias">@L["Transfers.Open"]</a></p>
+    </section>
+</div>

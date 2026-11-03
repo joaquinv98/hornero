@@ -1,0 +1,5 @@
+Your domain {{ domain }} is registered
+<p>Hi {{ account_name }},</p>
+<p>We registered <strong>{{ domain }}</strong>. It expires on {{ expires_on }}.</p>
+{% if auto_renew %}<p>It renews automatically: you will get the renewal invoice for {{ amount }} before it expires.</p>{% else %}<p>Automatic renewal is off: remember to renew it before {{ expires_on }}.</p>{% endif %}
+<p>You can change its nameservers, transfer lock and registrant details from {% if portal_url %}<a href="{{ portal_url }}">your account</a>{% else %}your account{% endif %}.</p>

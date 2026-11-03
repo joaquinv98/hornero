@@ -1,0 +1,85 @@
+@page "/admin/soporte/escalamiento"
+@model BillingOss.Web.Pages.Admin.Tickets.EscalationsModel
+@{
+    ViewData["Title"] = L["Escalation.Title"];
+}
+<h1>@L["Escalation.Title"]</h1>
+<p class="muted">@L["Escalation.Help"]</p>
+<p class="bo-actions"><a class="button" href="/admin/soporte/escalamiento/0">@L["Escalation.New"]</a></p>
+@if (Model.Rules.Count == 0)
+{
+    <p>@L["Escalation.None"]</p>
+}
+else
+{
+    <div class="table">
+        <table>
+            <caption class="bo-sr">@L["Escalation.Title"]</caption>
+            <thead>
+                <tr>
+                    <th scope="col">@L["Field.Name"]</th>
+                    <th scope="col">@L["Escalation.When"]</th>
+                    <th scope="col">@L["Escalation.Then"]</th>
+                    <th scope="col" class="num">@L["Escalation.Applied"]</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var r in Model.Rules)
+                {
+                    <tr>
+                        <th scope="row">
+                            <a href="/admin/soporte/escalamiento/@r.Id">@r.Name</a>
+                            @if (!r.Enabled)
+                            {
+                                <span class="bo-status" data-tone="neutral" data-shape="hollow">@L["Escalation.Off"]</span>
+                            }
+                        </th>
+                        <td>
+                            @L["Escalation.AfterMinutesShort", r.AfterMinutes]
+                            <span class="muted">· @string.Join(", ", r.EffectiveStatuses.Select(s => L["TicketStatus." + s].Value))</span>
+                            @if (r.Priorities.Length > 0)
+                            {
+                                <span class="muted">· @string.Join(", ", r.Priorities.Select(p => L["TicketPriority." + p].Value))</span>
+                            }
+                            @if (r.DepartmentIds.Length > 0)
+                            {
+                                <span class="muted">· @string.Join(", ", r.DepartmentIds.Select(d => Model.Departments.GetValueOrDefault(d, "#" + d)))</span>
+                            }
+                        </td>
+                        <td>
+                            @if (r.NewDepartmentId is { } department)
+                            {
+                                <span>@L["Escalation.MovesTo", Model.Departments.GetValueOrDefault(department, "#" + department)]</span>
+                            }
+                            @if (r.NewPriority is { } priority)
+                            {
+                                <span>@L["Escalation.PriorityTo", L["TicketPriority." + priority].Value]</span>
+                            }
+                            @if (r.NewStatus is { } status)
+                            {
+                                <span>@L["Escalation.StatusTo", L["TicketStatus." + status].Value]</span>
+                            }
+                            @if (r.AssignStaffId is not null)
+                            {
+                                <span>@L["Escalation.Assigns"]</span>
+                            }
+                            @if (r.Notify || r.NotifyStaffIds.Length > 0)
+                            {
+                                <span>@L["Escalation.Notifies"]</span>
+                            }
+                            @if (r.Note is not null)
+                            {
+                                <span>@L["Escalation.LeavesNote"]</span>
+                            }
+                            @if (r.Reply is not null)
+                            {
+                                <span>@L["Escalation.Replies"]</span>
+                            }
+                        </td>
+                        <td class="num">@Model.Applied.GetValueOrDefault(r.Id)</td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+}

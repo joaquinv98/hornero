@@ -1,0 +1,50 @@
+@model BillingOss.Web.Pages.Admin.Billing.LinesEditor
+@using BillingOss.Web.Pages.Admin.Billing
+<div class="table">
+    <table class="bo-lines">
+        <caption>@L["Billing.Lines"] <span class="muted">@L["Billing.LinesHelp"]</span></caption>
+        <thead>
+            <tr>
+                <th scope="col">@L["Billing.Description"]</th>
+                @if (Model.Plans is not null)
+                {
+                    <th scope="col">@L["Billing.Plan"]</th>
+                }
+                <th scope="col" class="num">@L["Billing.Quantity"]</th>
+                <th scope="col" class="num">@L["Billing.UnitPrice"]</th>
+                <th scope="col">@L["Billing.Treatment"]</th>
+            </tr>
+        </thead>
+        <tbody>
+            @for (var i = 0; i < Model.Rows.Count; i++)
+            {
+                var r = Model.Rows[i];
+                <tr>
+                    <td><input name="Lines[@i].Description" value="@r.Description" maxlength="500" aria-label="@L["Billing.Description"] @(i + 1)"></td>
+                    @if (Model.Plans is { } plans)
+                    {
+                        <td>
+                            <select name="Lines[@i].PlanId" aria-label="@L["Billing.Plan"] @(i + 1)">
+                                <option value="">@L["Billing.NoPlan"]</option>
+                                @foreach (var p in plans)
+                                {
+                                    <option value="@p.Id" selected="@(r.PlanId == p.Id)">@p.Name</option>
+                                }
+                            </select>
+                        </td>
+                    }
+                    <td><input name="Lines[@i].Quantity" value="@(r.Quantity ?? "1")" inputmode="decimal" class="num" aria-label="@L["Billing.Quantity"] @(i + 1)"></td>
+                    <td><input name="Lines[@i].UnitPrice" value="@r.UnitPrice" inputmode="decimal" class="num" aria-label="@L["Billing.UnitPrice"] @(i + 1)"></td>
+                    <td>
+                        <select name="Lines[@i].Treatment" aria-label="@L["Billing.Treatment"] @(i + 1)">
+                            @foreach (var t in BillingForm.Treatments)
+                            {
+                                <option value="@t" selected="@(r.Treatment == t)">@L["TaxTreatment." + t]</option>
+                            }
+                        </select>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+</div>

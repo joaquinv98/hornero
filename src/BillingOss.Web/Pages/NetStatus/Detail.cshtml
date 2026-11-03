@@ -1,0 +1,80 @@
+@page "/estado-red/{id:long}"
+@model DetailModel
+@section Head {
+    <link rel="stylesheet" href="~/css/contenidos.css" asp-append-version="true">
+}
+@{
+    var e = Model.Item!;
+    ViewData["Title"] = e.Title;
+}
+<nav aria-label="@C["Kb.Breadcrumb"]" class="ct-crumbs">
+    <a href="/estado-red">@C["Net.Title"]</a>
+</nav>
+<h1 lang="@e.Language">@e.Title</h1>
+<p><partial name="_Pill" model="ContentUi.EventPill(e, C)" /></p>
+@if (e.Fallback)
+{
+    <partial name="_OtherLanguage" model="e.Language" />
+}
+<dl class="facts">
+    @if (e.Kind == StatusEventKind.Maintenance)
+    {
+        <dt>@C["Net.From"]</dt>
+        <dd><time datetime="@e.StartsAt.ToString("O")">@ContentUi.When(e.StartsAt, Model.Zone)</time></dd>
+        <dt>@C["Net.To"]</dt>
+        <dd><time datetime="@e.EndsAt!.Value.ToString("O")">@ContentUi.When(e.EndsAt.Value, Model.Zone)</time></dd>
+    }
+    else
+    {
+        <dt>@C["Net.StartedAt"]</dt>
+        <dd><time datetime="@e.StartsAt.ToString("O")">@ContentUi.When(e.StartsAt, Model.Zone)</time></dd>
+        @if (e.EndsAt is { } end)
+        {
+            <dt>@C["Net.ResolvedLabel"]</dt>
+            <dd><time datetime="@end.ToString("O")">@ContentUi.When(end, Model.Zone)</time></dd>
+        }
+    }
+</dl>
+@if (!string.IsNullOrWhiteSpace(e.Description))
+{
+    <div class="ct-body" lang="@e.Language">@Html.Raw(e.Description)</div>
+}
+@if (e.Components.Count > 0)
+{
+    <section aria-labelledby="affected">
+        <h2 id="affected">@C["Net.Affects"]</h2>
+        <ul class="ct-components">
+            @foreach (var c in e.Components)
+            {
+                <li>
+                    <div class="ct-row">
+                        <span class="ct-name">@c.Name</span>
+                        @if (e.Kind == StatusEventKind.Incident)
+                        {
+                            <partial name="_Pill" model="ContentUi.ComponentPill(c.Impact, C)" />
+                        }
+                    </div>
+                </li>
+            }
+        </ul>
+    </section>
+}
+<section aria-labelledby="updates">
+    <h2 id="updates">@C["Net.Updates"]</h2>
+    @if (e.Updates.Count == 0)
+    {
+        <p>@C["Net.NoUpdates"]</p>
+    }
+    else
+    {
+        <ol class="ct-timeline reversed" reversed>
+            @foreach (var u in e.Updates.Reverse())
+            {
+                <li>
+                    <p class="muted"><time datetime="@u.PostedAt.ToString("O")">@ContentUi.When(u.PostedAt, Model.Zone)</time> &middot; <partial name="_Pill" model="ContentUi.IncidentPill(u.State, C)" /></p>
+                    <div class="ct-body" lang="@u.Language">@Html.Raw(u.Html)</div>
+                </li>
+            }
+        </ol>
+    }
+</section>

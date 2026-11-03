@@ -1,0 +1,16 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <IsPackable>false</IsPackable>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="../../src/BillingOss.App/BillingOss.App.csproj" />
+    <ProjectReference Include="../../src/BillingOss.Modules.Sdk/BillingOss.Modules.Sdk.csproj" />
+    <ProjectReference Include="../../src/BillingOss.Updater/BillingOss.Updater.csproj" />
+    <ProjectReference Include="../../src/BillingOss.Web/BillingOss.Web.csproj" />
+    <ProjectReference Include="../../src/modules/BillingOss.Module.OneTrial/BillingOss.Module.OneTrial.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="MSTest" />
+    <PackageReference Include="Microsoft.AspNetCore.TestHost" />
+  </ItemGroup>
+</Project>

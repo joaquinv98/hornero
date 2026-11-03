@@ -1,0 +1,19 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!--
+    El actualizador (D-20, sección 7.3): un proceso por nodo, como servicio de systemd en el host. Lee el canal firmado y
+    los pedidos de la base, y aplica solo versiones del canal verificado con la variante de Compose. No escucha en
+    ningún puerto. Se publica autocontenido, en un solo archivo: billing-oss-actualizador.
+  -->
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <AssemblyName>billing-oss-actualizador</AssemblyName>
+    <RootNamespace>BillingOss.Updater</RootNamespace>
+    <InvariantGlobalization>true</InvariantGlobalization>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="../BillingOss.Updates/BillingOss.Updates.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="Npgsql" />
+  </ItemGroup>
+</Project>

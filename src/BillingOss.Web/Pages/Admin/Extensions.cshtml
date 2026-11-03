@@ -1,0 +1,64 @@
+@page "/admin/complementos/extensiones"
+@model ExtensionsModel
+@{
+    ViewData["Title"] = L["Extensions.Title"];
+}
+<h1>@L["Extensions.Title"]</h1>
+<p>@L["Extensions.Intro"]</p>
+
+<section aria-labelledby="list">
+    <h2 id="list">@L["Extensions.List"]</h2>
+    @if (Model.Rows.Count == 0)
+    {
+        <p>@L["Extensions.Empty"]</p>
+    }
+    else
+    {
+        <div class="table">
+            <table>
+                <thead>
+                    <tr>
+                        <th scope="col">@L["Extensions.Name"]</th>
+                        <th scope="col">@L["Extensions.Module"]</th>
+                        <th scope="col">@L["Extensions.Events"]</th>
+                        <th scope="col">@L["Extensions.ValidatesOrders"]</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var row in Model.Rows)
+                    {
+                        var events = row.Hooks.Where(h => h.Event != BillingOss.App.Platform.PublicEvents.ValidateOrder).Select(h => h.Event).ToList();
+                        <tr>
+                            <td><a href="/admin/complementos/extensiones/@row.InstanceId">@row.Name</a> <span class="muted">@row.Url</span></td>
+                            <td><code>@row.Manifest["id"]</code> @row.Manifest["version"]</td>
+                            <td>@(events.Count == 0 ? L["Extensions.None"] : string.Join(", ", events))</td>
+                            <td>@(row.Hooks.Any(h => h.Event == BillingOss.App.Platform.PublicEvents.ValidateOrder) ? L["Extensions.Yes"] : L["Extensions.No"])</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
+</section>
+
+<section aria-labelledby="add">
+    <h2 id="add">@L["Extensions.Add"]</h2>
+    @if (Model.Error is { } error)
+    {
+        <p class="alert" role="alert" tabindex="-1" autofocus>@L["Webhooks.ErrorPrefix"]: @error</p>
+    }
+    <form method="post" class="stack narrow">
+        <label for="name">@L["Extensions.Name"]</label>
+        <input id="name" name="Name" value="@Model.Name" required maxlength="100" autocomplete="off">
+        <label for="url">@L["Extensions.Url"]</label>
+        <input id="url" name="ModuleUrl" type="url" value="@Model.ModuleUrl" required maxlength="500" aria-describedby="url-help" autocomplete="off">
+        <small id="url-help" class="muted">@L["Webhooks.UrlHelp"]</small>
+        <label for="secret">@L["Extensions.Secret"]</label>
+        <input id="secret" name="SigningSecret" type="password" required minlength="16" autocomplete="new-password" aria-describedby="secret-help">
+        <small id="secret-help" class="muted">@L["Extensions.SecretHelp"]</small>
+        <label for="config">@L["Extensions.Config"]</label>
+        <textarea id="config" name="Config" rows="5" aria-describedby="config-help" spellcheck="false">@Model.Config</textarea>
+        <small id="config-help" class="muted">@L["Extensions.ConfigHelp"]</small>
+        <button type="submit">@L["Extensions.AddButton"]</button>
+    </form>
+</section>

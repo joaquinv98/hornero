@@ -1,0 +1,56 @@
+@page "/admin/estado-red/nueva"
+@model NewEventModel
+@{
+    ViewData["Title"] = C["Cms.NetNewEvent"];
+    var incidentTexts = new TextsFields("Incident.Texts", Model.Incident.Texts, Summary: false, Body: true, BodyKey: "Cms.Message");
+    var incidentImpacts = new ImpactFields("Incident.Components", Model.Incident.Components, Model.Choices, true);
+    var maintenanceTexts = new TextsFields("Maintenance.Texts", Model.Maintenance.Texts, Summary: false, Body: false);
+    var maintenanceImpacts = new ImpactFields("Maintenance.Components", Model.Maintenance.Components, Model.Choices, false);
+}
+<h1>@ViewData["Title"]</h1>
+<partial name="_Tabs" />
+<partial name="_Alerts" model="Model" />
+<nav class="ct-crumbs" aria-label="@C["Kb.Breadcrumb"]"><a href="/admin/estado-red">@C["Cms.Network"]</a></nav>
+<p class="muted">@C["Cms.NetNewEventIntro"]</p>
+
+@if (Model.Choices.Count == 0)
+{
+    <p>@C["Cms.NetNeedComponents"] <a href="/admin/estado-red/componentes">@C["Cms.NetNewComponent"]</a></p>
+}
+else
+{
+    <section aria-labelledby="open-incident">
+        <h2 id="open-incident">@C["Cms.NetOpenIncident"]</h2>
+        <form method="post" asp-page-handler="OpenIncident" class="ct-form">
+            <fieldset>
+                <legend>@C["Cms.NetIncident"]</legend>
+                <label for="i-state">@C["Cms.NetFirstState"]</label>
+                <select id="i-state" name="Incident.State">
+                    <option value="Investigating" selected="@(Model.Incident.State is not "Identified" and not "Monitoring")">@C["Net.StateInvestigating"]</option>
+                    <option value="Identified" selected="@(Model.Incident.State == "Identified")">@C["Net.StateIdentified"]</option>
+                    <option value="Monitoring" selected="@(Model.Incident.State == "Monitoring")">@C["Net.StateMonitoring"]</option>
+                </select>
+            </fieldset>
+            <partial name="_Texts" model="incidentTexts" />
+            <partial name="_Impacts" model="incidentImpacts" />
+            <p class="ct-actions"><button type="submit">@C["Cms.NetOpenIncidentButton"]</button></p>
+        </form>
+    </section>
+
+    <section aria-labelledby="schedule">
+        <h2 id="schedule">@C["Cms.NetSchedule"]</h2>
+        <form method="post" asp-page-handler="Schedule" class="ct-form">
+            <partial name="_Texts" model="maintenanceTexts" />
+            <fieldset>
+                <legend>@C["Cms.NetWindow"]</legend>
+                <label for="m-starts">@C["Net.From"]</label>
+                <input id="m-starts" name="Maintenance.StartsText" type="datetime-local" value="@Model.Maintenance.StartsText" required>
+                <label for="m-ends">@C["Net.To"]</label>
+                <input id="m-ends" name="Maintenance.EndsText" type="datetime-local" value="@Model.Maintenance.EndsText" required aria-describedby="m-help">
+                <p id="m-help" class="muted">@C["Cms.TimeZoneHelp", Model.Zone.Id]</p>
+            </fieldset>
+            <partial name="_Impacts" model="maintenanceImpacts" />
+            <p class="ct-actions"><button type="submit">@C["Cms.NetScheduleButton"]</button></p>
+        </form>
+    </section>
+}

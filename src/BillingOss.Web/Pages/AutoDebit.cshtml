@@ -1,0 +1,37 @@
+@page "/debito-automatico"
+@model AutoDebitModel
+@inject Microsoft.Extensions.Configuration.IConfiguration Config
+@{
+    ViewData["Title"] = L["AutoDebit.Title"];
+    var brand = Config["Ui:Brand"] ?? "billing-oss";
+}
+<div class="bo-stack bo-wrap--narrow">
+    <div class="bo-head">
+        <h1>@L["AutoDebit.Title"]</h1>
+        <p class="bo-muted">@L["AutoDebit.Intro", brand]</p>
+    </div>
+    <section class="bo-card" aria-labelledby="cuando">
+        <h2 id="cuando">@L["AutoDebit.WhenTitle"]</h2>
+        <p>@L["AutoDebit.When", Model.Hour]</p>
+        <ul>
+            @foreach (var day in Model.Days)
+            {
+                <li>@(day < 0 ? L["AutoDebit.DayBefore", -day] : day == 0 ? L["AutoDebit.DayOf"] : L["AutoDebit.DayAfter", day])</li>
+            }
+        </ul>
+        <p>@L["AutoDebit.Retries"]</p>
+    </section>
+    <section class="bo-card" aria-labelledby="importe">
+        <h2 id="importe">@L["AutoDebit.AmountTitle"]</h2>
+        <p>@L["AutoDebit.Amount"]</p>
+    </section>
+    <section class="bo-card" aria-labelledby="avisos">
+        <h2 id="avisos">@L["AutoDebit.NoticesTitle"]</h2>
+        <p>@L["AutoDebit.Notices"]</p>
+    </section>
+    <section class="bo-card" aria-labelledby="revocar">
+        <h2 id="revocar">@L["AutoDebit.RevokeTitle"]</h2>
+        <p>@L["AutoDebit.Revoke"]</p>
+        <p>@L["AutoDebit.Data"]</p>
+    </section>
+</div>

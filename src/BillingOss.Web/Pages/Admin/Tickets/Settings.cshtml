@@ -1,0 +1,66 @@
+@page "/admin/soporte/ajustes"
+@model BillingOss.Web.Pages.Admin.Tickets.SupportSettingsModel
+@using BillingOss.Web.Pages.Admin.Tickets
+@{
+    ViewData["Title"] = (Model.Problems.Count > 0 ? L["Support.ErrorPrefix"] + " " : string.Empty) + L["SupportSettings.Title"];
+}
+<p><a href="/admin/soporte">@L["Support.Back"]</a></p>
+<h1>@L["SupportSettings.Title"]</h1>
+<p class="muted">@L["SupportSettings.Help"]</p>
+@if (Model.Saved && Model.Problems.Count == 0)
+{
+    <p class="notice" role="status">@L["SupportSettings.Saved"]</p>
+}
+@if (Model.Problems.Count > 0)
+{
+    <div class="alert" role="alert">
+        <p class="strong">@L["Support.FixBelow"]</p>
+        <ul>
+            @foreach (var (field, message) in Model.Problems)
+            {
+                <li>@if (field.Length > 0) { <a href="#@field">@message</a> } else { @message }</li>
+            }
+        </ul>
+    </div>
+}
+<form method="post" class="bo-form" novalidate>
+    <input type="hidden" name="Version" value="@Model.Version">
+    <fieldset class="bo-fieldset">
+        <legend>@L["Support.Files"]</legend>
+        <div class="bo-field">
+            <label for="AllowedExtensions">@L["SupportSettings.AllowedExtensionsLabel"]</label>
+            <input id="AllowedExtensions" name="AllowedExtensions" value="@Model.AllowedExtensions" autocomplete="off" aria-describedby="extensiones-ayuda" aria-invalid="@(Model.Invalid("AllowedExtensions") ? "true" : null)">
+            <p class="bo-help" id="extensiones-ayuda">@L["SupportSettings.AllowedExtensionsHelp"]</p>
+        </div>
+        <div class="bo-field">
+            <label for="MaxAttachmentMb">@L["SupportSettings.MaxAttachmentMbLabel"]</label>
+            <input id="MaxAttachmentMb" name="MaxAttachmentMb" type="number" min="1" max="25" inputmode="numeric" value="@SupportSettingsModel.Text(Model.MaxAttachmentMb)" aria-invalid="@(Model.Invalid("MaxAttachmentMb") ? "true" : null)">
+        </div>
+        <div class="bo-field">
+            <label for="MaxAttachments">@L["SupportSettings.MaxAttachmentsLabel"]</label>
+            <input id="MaxAttachments" name="MaxAttachments" type="number" min="1" max="10" inputmode="numeric" value="@SupportSettingsModel.Text(Model.MaxAttachments)" aria-invalid="@(Model.Invalid("MaxAttachments") ? "true" : null)">
+        </div>
+    </fieldset>
+    <fieldset class="bo-fieldset">
+        <legend>@L["SupportSettings.AutoClose"]</legend>
+        <div class="bo-field">
+            <label for="AutoCloseHours">@L["SupportSettings.AutoCloseHoursLabel"] <span class="muted">@L["Support.Optional"]</span></label>
+            <input id="AutoCloseHours" name="AutoCloseHours" type="number" min="1" max="8760" inputmode="numeric" value="@(Model.AutoCloseHours is { } hours ? SupportSettingsModel.Text(hours) : string.Empty)" aria-describedby="cierre-ayuda" aria-invalid="@(Model.Invalid("AutoCloseHours") ? "true" : null)">
+            <p class="bo-help" id="cierre-ayuda">@L["SupportSettings.AutoCloseHoursHelp"]</p>
+        </div>
+    </fieldset>
+    <fieldset class="bo-fieldset">
+        <legend>@L["SupportAdmin.Mail"]</legend>
+        <div class="bo-field">
+            <label for="MaxEmailMb">@L["SupportSettings.MaxEmailMbLabel"]</label>
+            <input id="MaxEmailMb" name="MaxEmailMb" type="number" min="1" max="50" inputmode="numeric" value="@SupportSettingsModel.Text(Model.MaxEmailMb)" aria-invalid="@(Model.Invalid("MaxEmailMb") ? "true" : null)">
+        </div>
+        <div class="bo-field">
+            <label for="MaxEmailsPerSenderPerHour">@L["SupportSettings.MaxEmailsPerSenderPerHourLabel"]</label>
+            <input id="MaxEmailsPerSenderPerHour" name="MaxEmailsPerSenderPerHour" type="number" min="1" max="1000" inputmode="numeric" value="@SupportSettingsModel.Text(Model.MaxEmailsPerSenderPerHour)" aria-describedby="tope-ayuda" aria-invalid="@(Model.Invalid("MaxEmailsPerSenderPerHour") ? "true" : null)">
+            <p class="bo-help" id="tope-ayuda">@L["SupportSettings.MaxEmailsPerSenderPerHourHelp"]</p>
+        </div>
+        <label class="check"><input type="checkbox" name="EmailCc" value="true" checked="@Model.EmailCc"> @L["SupportSettings.EmailCcHelp"]</label>
+    </fieldset>
+    <div><button type="submit">@L["SupportAdmin.Save"]</button></div>
+</form>

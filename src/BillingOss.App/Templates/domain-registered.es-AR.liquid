@@ -1,0 +1,5 @@
+Tu dominio {{ domain }} ya está registrado
+<p>Hola, {{ account_name }}:</p>
+<p>Registramos <strong>{{ domain }}</strong>. Vence el {{ expires_on }}.</p>
+{% if auto_renew %}<p>Se renueva solo: antes del vencimiento te llega la factura de la renovación, por {{ amount }}.</p>{% else %}<p>No tiene la renovación automática: acordate de renovarlo antes del {{ expires_on }}.</p>{% endif %}
+<p>Los servidores DNS, el bloqueo de transferencia y los datos del titular se cambian desde {% if portal_url %}<a href="{{ portal_url }}">tu cuenta</a>{% else %}tu cuenta{% endif %}.</p>

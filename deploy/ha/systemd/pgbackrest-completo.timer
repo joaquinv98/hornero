@@ -1,0 +1,11 @@
+# Respaldo completo semanal de billing-oss, el domingo de madrugada en la hora de Argentina.
+[Unit]
+Description=Respaldo completo semanal de billing-oss
+
+[Timer]
+OnCalendar=Sun *-*-* 03:30:00 America/Argentina/Buenos_Aires
+Persistent=true
+Unit=pgbackrest-respaldo@full.service
+
+[Install]
+WantedBy=timers.target

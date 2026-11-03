@@ -1,0 +1,11 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+  <PropertyGroup>
+    <RootNamespace>BillingOss.Module.Pterodactyl</RootNamespace>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="../../BillingOss.Modules.Sdk/BillingOss.Modules.Sdk.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <InternalsVisibleTo Include="BillingOss.Module.Pterodactyl.Tests" />
+  </ItemGroup>
+</Project>

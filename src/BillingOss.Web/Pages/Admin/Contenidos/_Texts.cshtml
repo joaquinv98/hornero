@@ -1,0 +1,39 @@
+@model TextsFields
+@* Un bloque por idioma. El idioma de base es es-AR; si falta otro, quien lee ve el de base y la página avisa. *@
+@for (var i = 0; i < Model.Texts.Count; i++)
+{
+    var t = Model.Texts[i];
+    var p = $"{Model.Prefix}[{i}]";
+    var id = $"{Model.Prefix.Replace('.', '_')}_{i}";
+    <fieldset lang="@t.Language">
+        <legend>@(t.Language == "en" ? "English" : "Español (es-AR)")</legend>
+        <input type="hidden" name="@(p).Language" value="@t.Language">
+        <label for="@(id)_title">@C[Model.TitleKey]</label>
+        <input id="@(id)_title" name="@(p).Title" value="@t.Title" maxlength="200">
+        @if (Model.Summary)
+        {
+            <label for="@(id)_summary">@C[Model.SummaryKey]</label>
+            <textarea id="@(id)_summary" name="@(p).Summary" rows="2" maxlength="2000">@t.Summary</textarea>
+        }
+        @if (Model.Body)
+        {
+            <label for="@(id)_body">@C[Model.BodyKey]</label>
+            @if (Model.Preview && Model.PreviewUrl is { } url)
+            {
+                <textarea id="@(id)_body" name="@(p).Body" rows="12" hx-post="@url" hx-vals='{"which": @i}' hx-include="closest form" hx-trigger="input changed delay:600ms" hx-target="#@(id)_preview" hx-swap="innerHTML">@t.Body</textarea>
+                <p class="muted">@C["Cms.MarkdownHelp"]</p>
+                <div class="ct-preview" id="@(id)_preview" aria-live="polite"></div>
+            }
+            else
+            {
+                <textarea id="@(id)_body" name="@(p).Body" rows="8">@t.Body</textarea>
+                <p class="muted">@C["Cms.MarkdownHelp"]</p>
+            }
+        }
+        @if (Model.Tags)
+        {
+            <label for="@(id)_tags">@C["Cms.Tags"]</label>
+            <input id="@(id)_tags" name="@(p).Tags" value="@t.Tags" maxlength="1000">
+        }
+    </fieldset>
+}

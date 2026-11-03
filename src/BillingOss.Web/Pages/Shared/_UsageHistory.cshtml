@@ -1,0 +1,51 @@
+@using BillingOss.App.UseCases
+@model UsageView
+@* Las ventanas ya cortadas, con lo que se facturó. El cliente va a la factura, el staff la ve por número. *@
+@{
+    var staff = ViewData["Staff"] is true;
+}
+@if (Model.Charges.Count > 0)
+{
+    <div class="table">
+        <table>
+            <caption>@L["Usage.History"]</caption>
+            <thead>
+                <tr>
+                    <th scope="col">@L["Usage.Metric"]</th>
+                    <th scope="col">@L["Usage.Period"]</th>
+                    <th scope="col" class="num">@L["Usage.Measured"]</th>
+                    <th scope="col" class="num">@L["Usage.Included"]</th>
+                    <th scope="col" class="num">@L["Usage.Excess"]</th>
+                    <th scope="col" class="num">@L["Invoice.Amount"]</th>
+                    <th scope="col">@L["Invoices.Document"]</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var c in Model.Charges)
+                {
+                    <tr>
+                        <td>@c.Name</td>
+                        <td>@L["Usage.PeriodRange", Ui.Date(c.Start), Ui.Date(c.End.AddDays(-1))]</td>
+                        <td class="num">@UsageBilling.Amount(c.Measured, c.Unit, CultureInfo.CurrentCulture)</td>
+                        <td class="num">@UsageBilling.Amount(c.Included, c.Unit, CultureInfo.CurrentCulture)</td>
+                        <td class="num">@UsageBilling.Amount(c.Excess, c.Unit, CultureInfo.CurrentCulture)</td>
+                        <td class="num">@(c.Amount is { } amount ? Ui.Money(amount, Model.Currency) : L["Usage.NotBilled"])</td>
+                        <td>
+                            @if (c.DocumentId is { } document)
+                            {
+                                @if (staff)
+                                {
+                                    <span>@L["DocumentKind.Invoice"] @c.DocumentNumber</span>
+                                }
+                                else
+                                {
+                                    <a href="/facturas/@document">@L["DocumentKind.Invoice"] @c.DocumentNumber</a>
+                                }
+                            }
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+}

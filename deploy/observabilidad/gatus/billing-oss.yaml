@@ -1,0 +1,34 @@
+# Chequeos externos de billing-oss para Gatus. Se suman a la lista "endpoints" de la configuración de Gatus.
+# Miran el nombre público tal como lo ve un cliente o una pasarela, con proxy y certificado incluidos. Lo de adentro
+# (la cola, la base, cada nodo) lo mira Zabbix. Guía: docs/observabilidad/README.md.
+endpoints:
+  - name: billing-oss listo
+    group: billing-oss
+    url: "https://billing.example.com/health/ready"
+    interval: 1m
+    conditions:
+      - "[STATUS] == 200"
+      - "[BODY] == Healthy"
+      - "[RESPONSE_TIME] < 3000"
+      - "[CERTIFICATE_EXPIRATION] > 336h"
+    alerts:
+      - type: email
+        failure-threshold: 3
+        success-threshold: 2
+        send-on-resolved: true
+
+  # La ruta de avisos tiene que responder aunque el pedido sea inválido: 404 para una instancia que no existe
+  # prueba que el proxy la deja pasar y que la aplicación atiende, sin guardar nada.
+  - name: billing-oss avisos de pasarela
+    group: billing-oss
+    url: "https://billing.example.com/webhooks/0"
+    method: POST
+    body: "{}"
+    interval: 5m
+    conditions:
+      - "[STATUS] == 404"
+      - "[RESPONSE_TIME] < 3000"
+    alerts:
+      - type: email
+        failure-threshold: 2
+        send-on-resolved: true

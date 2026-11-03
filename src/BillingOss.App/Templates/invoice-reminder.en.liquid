@@ -1,0 +1,5 @@
+Reminder: {% if debit_note %}debit note{% else %}invoice{% endif %} #{{ number }} is due on {{ due_date }}
+<p>Hi {{ account_name }},</p>
+<p>This is a reminder that {% if debit_note %}debit note{% else %}invoice{% endif %} #{{ number }} is due on {{ due_date }} with a balance of <strong>{{ pending }}</strong>.</p>
+{% if portal_url %}<p>You can pay it from <a href="{{ portal_url }}">your account</a>.</p>{% endif %}
+<p>If you have already paid it, there is nothing else to do.</p>

@@ -1,0 +1,128 @@
+@page "/admin/soporte/escalamiento/{id:long}"
+@model BillingOss.Web.Pages.Admin.Tickets.EscalationModel
+@using BillingOss.App.Support
+@{
+    var title = Model.IsNew ? L["Escalation.New"].Value : Model.Name;
+    ViewData["Title"] = (Model.Problems.Count > 0 ? L["Support.ErrorPrefix"] + " " : string.Empty) + title;
+}
+<p><a href="/admin/soporte/escalamiento">@L["Support.Back"]</a></p>
+<h1>@title</h1>
+@if (Model.Problems.Count > 0)
+{
+    <div class="alert" role="alert">
+        <p class="strong">@L["Support.FixBelow"]</p>
+        <ul>
+            @foreach (var (field, message) in Model.Problems)
+            {
+                <li>@if (field.Length > 0) { <a href="#@field">@message</a> } else { @message }</li>
+            }
+        </ul>
+    </div>
+}
+<form method="post" class="bo-form" novalidate>
+    <div class="bo-field">
+        <label for="Name">@L["Field.Name"]</label>
+        <input id="Name" name="Name" value="@Model.Name" maxlength="200" aria-invalid="@(Model.Invalid("Name") ? "true" : null)">
+    </div>
+    <label class="check"><input type="checkbox" name="Enabled" value="true" checked="@Model.Enabled"> @L["Escalation.EnabledHelp"]</label>
+
+    <fieldset class="bo-fieldset">
+        <legend>@L["Escalation.When"]</legend>
+        <div class="bo-field">
+            <label for="AfterMinutes">@L["Escalation.AfterMinutes"]</label>
+            <input id="AfterMinutes" name="AfterMinutes" type="number" min="1" max="@EscalationModel.MaxMinutes" value="@Model.AfterMinutes" inputmode="numeric" aria-describedby="minutos-ayuda" aria-invalid="@(Model.Invalid("AfterMinutes") ? "true" : null)">
+            <p class="bo-help" id="minutos-ayuda">@L["Escalation.AfterMinutesHelp"]</p>
+        </div>
+        <fieldset class="bo-fieldset">
+            <legend>@L["Escalation.Statuses"]</legend>
+            @foreach (var s in Enum.GetValues<TicketStatus>().Where(s => s != TicketStatus.Closed))
+            {
+                <label class="check"><input type="checkbox" name="Statuses" value="@s" checked="@Model.Statuses.Contains(s)"> @L["TicketStatus." + s]</label>
+            }
+            <p class="bo-help">@L["Escalation.StatusesHelp"]</p>
+        </fieldset>
+        <fieldset class="bo-fieldset">
+            <legend>@L["Escalation.Priorities"]</legend>
+            @foreach (var p in Enum.GetValues<TicketPriority>())
+            {
+                <label class="check"><input type="checkbox" name="Priorities" value="@p" checked="@Model.Priorities.Contains(p)"> @L["TicketPriority." + p]</label>
+            }
+            <p class="bo-help">@L["Escalation.AllHelp"]</p>
+        </fieldset>
+        <fieldset class="bo-fieldset">
+            <legend>@L["SupportAdmin.Departments"]</legend>
+            @foreach (var (departmentId, departmentName) in Model.AllDepartments)
+            {
+                <label class="check"><input type="checkbox" name="Departments" value="@departmentId" checked="@Model.Departments.Contains(departmentId)"> @departmentName</label>
+            }
+            <p class="bo-help">@L["Escalation.AllHelp"]</p>
+        </fieldset>
+    </fieldset>
+
+    <fieldset class="bo-fieldset">
+        <legend>@L["Escalation.Then"]</legend>
+        <div class="bo-field">
+            <label for="NewDepartmentId">@L["Support.Department"]</label>
+            <select id="NewDepartmentId" name="NewDepartmentId">
+                <option value="">@L["Escalation.NoChange"]</option>
+                @foreach (var (departmentId, departmentName) in Model.AllDepartments)
+                {
+                    <option value="@departmentId" selected="@(departmentId == Model.NewDepartmentId)">@departmentName</option>
+                }
+            </select>
+        </div>
+        <div class="bo-field">
+            <label for="NewPriority">@L["Support.Priority"]</label>
+            <select id="NewPriority" name="NewPriority">
+                <option value="">@L["Escalation.NoChange"]</option>
+                @foreach (var p in Enum.GetValues<TicketPriority>())
+                {
+                    <option value="@p" selected="@(p == Model.NewPriority)">@L["TicketPriority." + p]</option>
+                }
+            </select>
+        </div>
+        <div class="bo-field">
+            <label for="NewStatus">@L["Field.Status"]</label>
+            <select id="NewStatus" name="NewStatus">
+                <option value="">@L["Escalation.NoChange"]</option>
+                @foreach (var s in Enum.GetValues<TicketStatus>())
+                {
+                    <option value="@s" selected="@(s == Model.NewStatus)">@L["TicketStatus." + s]</option>
+                }
+            </select>
+        </div>
+        <div class="bo-field">
+            <label for="AssignStaffId">@L["SupportAdmin.Assigned"]</label>
+            <select id="AssignStaffId" name="AssignStaffId">
+                <option value="">@L["Escalation.NoChange"]</option>
+                @foreach (var (staffId, staffName) in Model.Staff)
+                {
+                    <option value="@staffId" selected="@(staffId == Model.AssignStaffId)">@staffName</option>
+                }
+            </select>
+        </div>
+        <label class="check"><input id="Notify" type="checkbox" name="Notify" value="true" checked="@Model.Notify"> @L["Escalation.NotifyHelp"]</label>
+        @if (Model.Staff.Count > 0)
+        {
+            <fieldset class="bo-fieldset">
+                <legend>@L["Escalation.NotifyStaff"]</legend>
+                @foreach (var (staffId, staffName) in Model.Staff)
+                {
+                    <label class="check"><input type="checkbox" name="NotifyStaff" value="@staffId" checked="@Model.NotifyStaff.Contains(staffId)"> @staffName</label>
+                }
+                <p class="bo-help">@L["Escalation.NotifyStaffHelp"]</p>
+            </fieldset>
+        }
+        <div class="bo-field">
+            <label for="Note">@L["Escalation.Note"] <span class="muted">@L["Support.Optional"]</span></label>
+            <textarea id="Note" name="Note" rows="3" aria-describedby="nota-ayuda">@Model.Note</textarea>
+            <p class="bo-help" id="nota-ayuda">@L["Escalation.NoteHelp"]</p>
+        </div>
+        <div class="bo-field">
+            <label for="Reply">@L["Escalation.Reply"] <span class="muted">@L["Support.Optional"]</span></label>
+            <textarea id="Reply" name="Reply" rows="3" aria-describedby="respuesta-ayuda" aria-invalid="@(Model.Invalid("Reply") ? "true" : null)">@Model.Reply</textarea>
+            <p class="bo-help" id="respuesta-ayuda">@L["Escalation.ReplyHelp"]</p>
+        </div>
+    </fieldset>
+    <div><button type="submit">@L["SupportAdmin.Save"]</button></div>
+</form>

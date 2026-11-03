@@ -1,0 +1,4 @@
+Tu tarjeta del débito automático vence pronto
+<p>Hola, {{ account_name }}:</p>
+<p>La {{ method }} que usás para el débito automático vence el {{ expires }}. Después de esa fecha no vamos a poder debitar tus facturas con ella.</p>
+<p>Si tu banco te manda una tarjeta nueva, puede que se actualice sola. Si no, pagá tu próxima factura con la tarjeta nueva y guardala para el débito{% if methods_url %}, o revisá tus medios en <a href="{{ methods_url }}">Medios de pago</a>{% endif %}.</p>

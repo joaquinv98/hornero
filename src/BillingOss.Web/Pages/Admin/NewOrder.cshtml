@@ -1,0 +1,180 @@
+@page "/admin/pedidos/nuevo"
+@model NewOrderModel
+@{
+    var title = L["Nav.AddOrder"].Value;
+    ViewData["Title"] = title;
+    string CycleOption(string code) => L["CycleOption." + code] is { ResourceNotFound: false } text ? text.Value : code;
+    var cuenta = HttpContext.Request.Query["cuenta"].ToString();
+}
+<h1>@title</h1>
+@if (Model.Account is not { } account)
+{
+    @if (cuenta.Length > 0)
+    {
+        <div class="alert" role="alert" tabindex="-1" autofocus><p>@L["NewOrder.NoAccount", cuenta]</p></div>
+    }
+    <form method="get" class="search">
+        <label for="cuenta">@L["NewOrder.AccountNumber"]</label>
+        <input id="cuenta" name="cuenta" type="number" min="1" value="@cuenta" aria-describedby="cuenta-help" required>
+        <button type="submit" class="secondary">@L["NewOrder.Choose"]</button>
+    </form>
+    <p id="cuenta-help" class="muted">@L["NewOrder.ChooseHelp"]</p>
+}
+else
+{
+    var currency = account.Currency;
+    <nav aria-label="@L["Catalog.Breadcrumb"]"><a href="/admin/cuentas/@account.Id">@account.Name</a></nav>
+    @if (Model.Done is { } done)
+    {
+        <div class="notice" role="status">
+            <p>
+                @L["NewOrder.Done", done.Id]
+                @if (Model.DoneInvoice is { } invoice)
+                {
+                    @L["NewOrder.DoneInvoice", invoice.Number ?? invoice.Id, Ui.Money(invoice.Total, invoice.Currency)]
+                }
+                @if (done.Status == BillingOss.Domain.Orders.OrderStatus.Accepted)
+                {
+                    @L["NewOrder.DoneAccepted"]
+                }
+            </p>
+            <p><a href="@NewOrderModel.Link(account.Id)">@L["NewOrder.Another"]</a></p>
+        </div>
+    }
+    <form method="get" class="search" action="/admin/pedidos/nuevo">
+        <input type="hidden" name="cuenta" value="@account.Id">
+        <label for="producto">@L["Catalog.Product"]</label>
+        <select id="producto" name="producto" aria-describedby="producto-help">
+            @foreach (var (id, name, visible) in Model.Products)
+            {
+                <option value="@id" selected="@(id == Model.Product?.Id)">@name @(visible ? "" : L["NewOrder.HiddenMark"].Value)</option>
+            }
+        </select>
+        <button type="submit" class="secondary">@L["NewOrder.ShowProduct"]</button>
+    </form>
+    <p id="producto-help" class="muted">@L["NewOrder.ProductHelp"]</p>
+
+    @if (Model.Product is { } p)
+    {
+        @if (Model.Changed)
+        {
+            <div class="alert" role="alert" tabindex="-1" autofocus><p>@L["NewOrder.Changed"]</p></div>
+        }
+        @if (Model.Error is { } error)
+        {
+            <div class="alert" role="alert" tabindex="-1" autofocus><p><strong>@L["NewOrder.ErrorTitle"]</strong> @error</p></div>
+        }
+        @if (Model.Plans.Count == 0)
+        {
+            <p>@L["NewOrder.NoPrice", p.Name, currency.Code]</p>
+        }
+        else if (p.Addon && Model.Parents.Count == 0)
+        {
+            <p>@L["NewOrder.NoParent"]</p>
+        }
+        else
+        {
+            <form method="post" class="stack">
+                <input type="hidden" asp-for="Input.AccountId">
+                <input type="hidden" asp-for="Input.ProductId">
+                <input type="hidden" asp-for="Input.Reference">
+                @* El total del cálculo va tal cual: asp-for mostraría el que llegó en el pedido anterior. *@
+                <input type="hidden" name="Input.Total" value="@Model.Input.Total">
+                <fieldset class="card">
+                    <legend>@L["NewOrder.Configure", p.Name]</legend>
+                    <div class="grid">
+                        <div class="field">
+                            <label for="plan">@L["Shop.Cycle"]</label>
+                            <select id="plan" name="Input.PlanId">
+                                @foreach (var (plan, price) in Model.Plans)
+                                {
+                                    <option value="@plan.Id" selected="@(plan.Id == Model.Input.PlanId)">@CycleOption(plan.Cycle.Code) · @Ui.Money(price.Amount, currency)@(price.SetupFee > 0m ? " " + L["Shop.PlusSetup", Ui.Money(price.SetupFee, currency)].Value : "")</option>
+                                }
+                            </select>
+                        </div>
+                        @if (p.AllowQuantity)
+                        {
+                            <div class="field">
+                                <label for="quantity">@L["NewOrder.Quantity"]</label>
+                                <input id="quantity" type="number" min="1" asp-for="Input.Quantity">
+                            </div>
+                        }
+                        @if (p.Addon)
+                        {
+                            <div class="field">
+                                <label for="parent">@L["Shop.Parent"]</label>
+                                <select id="parent" name="Input.ParentServiceId">
+                                    @foreach (var (id, name) in Model.Parents)
+                                    {
+                                        <option value="@id" selected="@(id == Model.Input.ParentServiceId)">@name</option>
+                                    }
+                                </select>
+                            </div>
+                        }
+                        else
+                        {
+                            <div class="field">
+                                <label for="label">@L["Shop.Label"]</label>
+                                <input id="label" asp-for="Input.Label" maxlength="255" autocomplete="off">
+                            </div>
+                        }
+                        <partial name="_OptionChoices" model="new OptionChoices(Model.Options!, Model.Input.Choices, currency, Model.Cycle, ShowHidden: true)" />
+                        <div class="field">
+                            <label for="coupon">@L["Shop.Coupon"]</label>
+                            <input id="coupon" asp-for="Input.Coupon" maxlength="100" autocomplete="off">
+                        </div>
+                    </div>
+                    <label class="check"><input asp-for="Input.Accept" aria-describedby="accept-help"> @L["NewOrder.Accept"]</label>
+                    <small id="accept-help" class="muted">@L["NewOrder.AcceptHelp"]</small>
+                </fieldset>
+                <p class="actions">
+                    <button type="submit" asp-page-handler="Quote" class="secondary">@L["Shop.Quote"]</button>
+                    @if (Model.Quote is not null)
+                    {
+                        <button type="submit" asp-page-handler="Confirm">@L["NewOrder.Confirm"]</button>
+                    }
+                </p>
+            </form>
+
+            @if (Model.Quote is { } q)
+            {
+                <section class="card" aria-labelledby="quote" role="status">
+                    <h2 id="quote">@L["NewOrder.QuoteTitle"]</h2>
+                    @foreach (var line in q.Lines)
+                    {
+                        <dl class="facts">
+                            <dt>@L["Catalog.Product"]</dt>
+                            <dd>@line.Description</dd>
+                            <dt>@L["Shop.Price"]</dt>
+                            <dd>
+                                @if (line.DiscountedUnitPrice < line.UnitPrice)
+                                {
+                                    <s>@Ui.Money(line.UnitPrice * line.Quantity, currency)</s>
+                                }
+                                @Ui.Money(line.DiscountedUnitPrice * line.Quantity, currency) @(L["Cycle." + line.Cycle] is { ResourceNotFound: false } cycle ? cycle.Value : line.Cycle)
+                                @if (line.DiscountCycles is { } cycles && line.DiscountedUnitPrice < line.UnitPrice)
+                                {
+                                    <span class="muted">@L["Shop.DiscountCycles", cycles]</span>
+                                }
+                            </dd>
+                            @if (line.SetupFee > 0m)
+                            {
+                                <dt>@L["Shop.Setup"]</dt>
+                                <dd>@Ui.Money(line.SetupFee, currency)</dd>
+                            }
+                            @if (line.TrialEndsOn is { } trial)
+                            {
+                                <dt>@L["Shop.TrialTitle"]</dt>
+                                <dd>@L["Shop.TrialUntil", Ui.Date(trial)]</dd>
+                            }
+                        </dl>
+                    }
+                    <p class="strong">
+                        @(q.Total > 0m ? L["NewOrder.WillInvoice", Ui.Money(q.Total, currency), Ui.Money(q.Tax, currency)].Value : L["NewOrder.NothingToPay"].Value)
+                    </p>
+                    <p class="muted">@L["NewOrder.ConfirmHelp"]</p>
+                </section>
+            }
+        }
+    }
+}

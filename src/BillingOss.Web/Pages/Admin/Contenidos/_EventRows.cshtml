@@ -1,0 +1,31 @@
+@model EventList
+@* Los incidentes y mantenimientos para el staff, cada uno con su enlace a la página donde se actualiza. *@
+<div class="table">
+    <table>
+        <thead>
+            <tr>
+                <th scope="col">#</th>
+                <th scope="col">@C["Cms.Title"]</th>
+                <th scope="col">@C["Cms.Type"]</th>
+                <th scope="col">@C["Cms.State"]</th>
+                <th scope="col">@C["Net.From"]</th>
+                <th scope="col">@C["Net.To"]</th>
+                <th scope="col">@C["Net.Affects"]</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var e in Model.Items)
+            {
+                <tr>
+                    <td>@e.Id</td>
+                    <td><a href="/admin/estado-red/eventos/@e.Id" lang="@e.Language">@e.Title</a></td>
+                    <td>@(e.Kind == StatusEventKind.Maintenance ? C["Cms.Maintenance"] : C["Cms.Incident"])</td>
+                    <td><partial name="_Pill" model="ContentUi.EventPill(e, C)" /></td>
+                    <td><time datetime="@e.StartsAt.ToString("O")">@ContentUi.When(e.StartsAt, Model.Zone)</time></td>
+                    <td>@if (e.EndsAt is { } end) { <time datetime="@end.ToString("O")">@ContentUi.When(end, Model.Zone)</time> }</td>
+                    <td>@string.Join(", ", e.Components.Select(c => c.Name))</td>
+                </tr>
+            }
+        </tbody>
+    </table>
+</div>

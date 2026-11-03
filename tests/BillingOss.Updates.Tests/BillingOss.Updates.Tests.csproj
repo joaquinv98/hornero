@@ -1,0 +1,16 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <IsPackable>false</IsPackable>
+  </PropertyGroup>
+  <ItemGroup>
+    <!-- Kestrel para los sistemas falsos de las pruebas: fuente de avisos, canal, binarios y la API de Forgejo. -->
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="MSTest" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="../../src/BillingOss.Releases/BillingOss.Releases.csproj" />
+    <ProjectReference Include="../../src/BillingOss.Updates/BillingOss.Updates.csproj" />
+  </ItemGroup>
+</Project>

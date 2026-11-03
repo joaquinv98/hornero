@@ -1,0 +1,58 @@
+@page "/admin/complementos/extensiones/{id:long}"
+@model ExtensionModel
+@{
+    ViewData["Title"] = Model.Name;
+}
+<p><a href="/admin/complementos/extensiones">@L["Extensions.Title"]</a></p>
+<h1>@Model.Name</h1>
+
+@if (Model.Saved)
+{
+    <p class="notice" role="status">@L["Extensions.Saved"]</p>
+}
+@if (Model.Error is { } error)
+{
+    <p class="alert" role="alert" tabindex="-1" autofocus>@L["Webhooks.ErrorPrefix"]: @error</p>
+}
+
+<dl class="facts">
+    <dt>@L["Extensions.Module"]</dt>
+    <dd><code>@Model.Manifest["id"]</code> @Model.Manifest["name"] @Model.Manifest["version"]</dd>
+    <dt>@L["Extensions.Url"]</dt>
+    <dd>@Model.BaseUrl</dd>
+    <dt>@L["Extensions.Capabilities"]</dt>
+    <dd>@string.Join(", ", (Model.Manifest["capabilities"] as System.Text.Json.Nodes.JsonArray ?? []).Select(c => c?.ToString()))</dd>
+    <dt>@L["Extensions.Pending"]</dt>
+    <dd>@Model.Queue.Pending</dd>
+    <dt>@L["Extensions.Dead"]</dt>
+    <dd>@Model.Queue.Dead</dd>
+</dl>
+
+<section aria-labelledby="hooks">
+    <h2 id="hooks">@L["Extensions.Hooks"]</h2>
+    <form method="post" asp-page-handler="Save" class="stack narrow">
+        @if (Model.ReceivesEvents)
+        {
+            <partial name="_EventChoices" model="(IReadOnlyCollection<string>)Model.Events" />
+        }
+        else
+        {
+            <p class="muted">@L["Extensions.NoEvents"]</p>
+        }
+        @if (Model.ValidatesOrders)
+        {
+            <label class="check"><input type="checkbox" name="ValidateOrders" value="true" checked="@Model.ValidateOrders"> @L["Extensions.ValidateOrders"]</label>
+            <label class="check"><input type="checkbox" name="Required" value="true" checked="@Model.Required" aria-describedby="required-help"> @L["Extensions.Required"]</label>
+            <small id="required-help" class="muted">@L["Extensions.RequiredHelp"]</small>
+        }
+        <button type="submit">@L["Extensions.Save"]</button>
+    </form>
+</section>
+
+<section aria-labelledby="remove">
+    <h2 id="remove">@L["Extensions.Remove"]</h2>
+    <form method="post" asp-page-handler="Remove" class="stack narrow">
+        <p class="muted">@L["Extensions.RemoveHelp"]</p>
+        <button type="submit" class="secondary">@L["Extensions.Remove"]</button>
+    </form>
+</section>

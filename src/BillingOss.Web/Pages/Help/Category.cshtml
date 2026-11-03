@@ -1,0 +1,40 @@
+@page "/conocimiento/c/{slug}"
+@model CategoryModel
+@section Head {
+    <link rel="stylesheet" href="~/css/contenidos.css" asp-append-version="true">
+}
+@{
+    var data = Model.Data!;
+    ViewData["Title"] = data.Category.Name;
+}
+<nav aria-label="@C["Kb.Breadcrumb"]" class="ct-crumbs">
+    <a href="/conocimiento">@C["Kb.Title"]</a>
+    @foreach (var crumb in data.Crumbs.Take(data.Crumbs.Count - 1))
+    {
+        <span aria-hidden="true">/</span>
+        <a href="/conocimiento/c/@crumb.Slug">@crumb.Name</a>
+    }
+</nav>
+<h1>@data.Category.Name</h1>
+@if (!string.IsNullOrWhiteSpace(data.Category.Description))
+{
+    <p class="muted">@data.Category.Description</p>
+}
+@if (data.Category.Children.Count > 0)
+{
+    <section aria-labelledby="subcategories">
+        <h2 id="subcategories">@C["Kb.Subcategories"]</h2>
+        <partial name="_Categories" model="data.Category.Children" />
+    </section>
+}
+<section aria-labelledby="articles">
+    <h2 id="articles">@C["Kb.Articles"]</h2>
+    @if (data.Articles.Count == 0)
+    {
+        <p>@C["Kb.NoArticles"]</p>
+    }
+    else
+    {
+        <partial name="_Cards" model="data.Articles" />
+    }
+</section>

@@ -1,0 +1,17 @@
+@model IReadOnlyList<CategoryNode>
+<ul class="ct-tree">
+    @foreach (var n in Model)
+    {
+        <li>
+            <a href="/conocimiento/c/@n.Slug">@n.Name</a> <span class="muted">(@n.Count)</span>
+            @if (!string.IsNullOrWhiteSpace(n.Description))
+            {
+                <p class="muted">@n.Description</p>
+            }
+            @if (n.Children.Count > 0)
+            {
+                <partial name="_Categories" model="n.Children" />
+            }
+        </li>
+    }
+</ul>

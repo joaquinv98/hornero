@@ -1,0 +1,190 @@
+@page "/admin/soporte"
+@model BillingOss.Web.Pages.Admin.Tickets.QueueModel
+@using BillingOss.Web.Pages.Admin.Tickets
+@{
+    var title = Model.AccountName is { } accountName ? L["SupportAdmin.AccountTickets", accountName].Value : L["Menu.Tickets"].Value;
+    ViewData["Title"] = title;
+    var columns = new[]
+    {
+        ("numero", "Support.NumberShort"), ("asunto", "Support.Subject"), ("cliente", "SupportAdmin.Customer"), ("area", "Support.Department"),
+        ("prioridad", "Support.Priority"), ("estado", "Field.Status"), ("actividad", "Support.LastActivity"), ("asignado", "SupportAdmin.Assigned"),
+    };
+    var (heading, help, button) = Model.Action switch
+    {
+        QueueModel.AssignToMe => (L["SupportAdmin.AssignConfirm", Model.Confirm.Count], L["SupportAdmin.AssignConfirmHelp"], L["SupportAdmin.AssignToMe"]),
+        QueueModel.SpamThem => (L["SupportAdmin.SpamConfirm", Model.Confirm.Count], L["SupportAdmin.SpamConfirmHelp"], L["SupportAdmin.SpamThem"]),
+        QueueModel.MergeThem => (L["SupportAdmin.MergeConfirm", Model.Confirm.Count, Model.MergeTarget?.Number ?? string.Empty], L["SupportAdmin.MergeConfirmHelp"], L["SupportAdmin.MergeThem"]),
+        _ => (L["SupportAdmin.CloseConfirm", Model.Confirm.Count], L["SupportAdmin.CloseConfirmHelp"], L["SupportAdmin.CloseThem"]),
+    };
+}
+<h1>@title</h1>
+<p class="bo-actions"><a class="button" href="/admin/soporte/nuevo@(Model.Account is { } id ? "?cuenta=" + id : string.Empty)">@L["Menu.OpenTicket"]</a></p>
+@if (Model.Done is { } done)
+{
+    <p class="notice" role="status">@L["SupportAdmin.BulkDone", done]</p>
+}
+<form method="get" action="@Request.Path" role="search" class="bo-listbar">
+    <div class="bo-field bo-grow">
+        <label for="q">@L["SupportAdmin.Search"]</label>
+        <input id="q" name="q" type="search" value="@Model.Q" autocomplete="off">
+    </div>
+    <div class="bo-field">
+        <label for="estado">@L["Field.Status"]</label>
+        <select id="estado" name="estado">
+            @foreach (var (value, label, _, _) in QueueModel.States)
+            {
+                <option value="@value" selected="@(Model.StateValue == value)">@L[label]</option>
+            }
+        </select>
+    </div>
+    <div class="bo-field">
+        <label for="departamento">@L["Support.Department"]</label>
+        <select id="departamento" name="departamento">
+            <option value="">@L["SupportAdmin.AllDepartments"]</option>
+            @foreach (var (departmentId, name) in Model.Departments)
+            {
+                <option value="@departmentId" selected="@(departmentId == Model.Department)">@name</option>
+            }
+        </select>
+    </div>
+    <div class="bo-field">
+        <label for="asignado">@L["SupportAdmin.Assigned"]</label>
+        <select id="asignado" name="asignado">
+            <option value="">@L["SupportAdmin.AnyAssignee"]</option>
+            <option value="yo" selected="@(Model.Assignee == "yo")">@L["SupportAdmin.Mine"]</option>
+            <option value="nadie" selected="@(Model.Assignee == "nadie")">@L["SupportAdmin.Unassigned"]</option>
+            @foreach (var (staffId, staffName) in Model.Staff)
+            {
+                var value = staffId.ToString(CultureInfo.InvariantCulture);
+                <option value="@value" selected="@(Model.Assignee == value)">@staffName</option>
+            }
+        </select>
+    </div>
+    <div class="bo-field">
+        <label for="prioridad">@L["Support.Priority"]</label>
+        <select id="prioridad" name="prioridad">
+            <option value="">@L["SupportAdmin.AnyPriority"]</option>
+            @foreach (var p in Enum.GetValues<BillingOss.App.Support.TicketPriority>())
+            {
+                <option value="@p" selected="@(p == Model.Priority)">@L["TicketPriority." + p]</option>
+            }
+        </select>
+    </div>
+    @if (Model.Sort is { } sort)
+    {
+        <input type="hidden" name="orden" value="@sort">
+        <input type="hidden" name="dir" value="@Model.Dir">
+    }
+    <button type="submit" class="secondary">@L["SupportAdmin.Filter"]</button>
+    <a href="@Model.Link(("formato", "csv"))">@L["SupportAdmin.ExportCsv"]</a>
+</form>
+
+@if (Model.Confirm.Count > 0)
+{
+    <form method="post" action="@Model.Link(("handler", "BulkConfirm"))" asp-antiforgery="true" class="card" role="alertdialog" aria-labelledby="confirmar">
+        <h2 id="confirmar">@heading</h2>
+        <p>@help</p>
+        @if (Model.MergeTarget is { } target)
+        {
+            <p class="strong">@L["Support.Number", target.Number] · @target.Subject<input type="hidden" name="ids" value="@target.Id"></p>
+        }
+        <ul>
+            @foreach (var r in Model.Confirm)
+            {
+                <li>@L["Support.Number", r.Number] · @r.Subject@(Model.Action == QueueModel.SpamThem ? " · " + r.RequesterEmail : string.Empty)<input type="hidden" name="ids" value="@r.Id"></li>
+            }
+        </ul>
+        <input type="hidden" name="accion" value="@Model.Action">
+        <p class="bo-actions"><button type="submit">@button</button> <a href="@Model.Link()">@L["Support.Back"]</a></p>
+    </form>
+}
+else if (Model.Action is not null)
+{
+    <p class="alert" role="alert">@L["SupportAdmin.BulkNothing"]</p>
+}
+
+@if (Model.Rows.Count == 0)
+{
+    <p>@L["SupportAdmin.Empty"]</p>
+}
+else
+{
+    <form method="post" action="@Model.Link(("handler", "Bulk"))" asp-antiforgery="true">
+        <div class="bo-bulk">
+            <label for="accion">@L["SupportAdmin.WithSelected"]</label>
+            <select id="accion" name="accion">
+                <option value="@QueueModel.AssignToMe">@L["SupportAdmin.AssignToMe"]</option>
+                <option value="@QueueModel.CloseThem">@L["SupportAdmin.CloseThem"]</option>
+                <option value="@QueueModel.MergeThem">@L["SupportAdmin.MergeThem"]</option>
+                @if (Model.CanBlock)
+                {
+                    <option value="@QueueModel.SpamThem">@L["SupportAdmin.SpamThem"]</option>
+                }
+            </select>
+            <button type="submit" class="secondary">@L["SupportAdmin.Apply"]</button>
+        </div>
+        <div class="table">
+            <table class="bo-dense">
+                <caption class="bo-sr">@title, @L["SupportAdmin.PageOf", Model.PageNumber, Model.Pages]</caption>
+                <thead>
+                    <tr>
+                        <th scope="col"><span class="bo-sr">@L["SupportAdmin.Select"]</span></th>
+                        @foreach (var (key, label) in columns)
+                        {
+                            <th scope="col" aria-sort="@Model.AriaSort(key)"><a class="bo-sort" href="@Model.SortLink(key)">@L[label]</a></th>
+                        }
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var r in Model.Rows)
+                    {
+                        var (tone, shape) = SupportUi.Status(r.Status, staff: true);
+                        <tr>
+                            <td><input type="checkbox" name="ids" value="@r.Id" aria-label="@L["SupportAdmin.SelectTicket", r.Number]"></td>
+                            <td><a href="/admin/soporte/@r.Id">#@r.Number</a></td>
+                            <th scope="row"><a href="/admin/soporte/@r.Id">@r.Subject</a></th>
+                            <td>
+                                @if (r.AccountId is { } account)
+                                {
+                                    <a href="/admin/cuentas/@account">@(r.Account ?? r.RequesterName)</a>
+                                }
+                                else
+                                {
+                                    @r.RequesterName <span class="muted">@r.RequesterEmail</span>
+                                }
+                            </td>
+                            <td>@r.Department</td>
+                            <td><span class="bo-status" data-tone="@SupportUi.PriorityTone(r.Priority)">@L["TicketPriority." + r.Priority]</span></td>
+                            <td>
+                                <span class="bo-status" data-tone="@tone" data-shape="@shape">@L["TicketStatus." + r.Status]</span>
+                                @if (r.Status == BillingOss.App.Support.TicketStatus.Open)
+                                {
+                                    <span class="muted">@L[r.StaffReplied ? "SupportAdmin.CustomerReplied" : "SupportAdmin.NewTicket"]</span>
+                                }
+                            </td>
+                            <td><time datetime="@SupportUi.Iso(r.LastMessageAt)">@SupportUi.When(r.LastMessageAt, Model.Billing)</time></td>
+                            <td>@(r.Assigned ?? L["SupportAdmin.Unassigned"].Value)</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </form>
+    <div class="bo-pager">
+        <p>@L["SupportAdmin.Showing", Model.From, Model.To, Model.Total]</p>
+        @if (Model.Pages > 1)
+        {
+            <nav aria-label="@L["SupportAdmin.Pages"]">
+                @if (Model.PageNumber > 1)
+                {
+                    <a href="@Model.Link(("pagina", (Model.PageNumber - 1).ToString(CultureInfo.InvariantCulture)))">@L["SupportAdmin.PagePrevious"]</a>
+                }
+                <span>@L["SupportAdmin.PageOf", Model.PageNumber, Model.Pages]</span>
+                @if (Model.PageNumber < Model.Pages)
+                {
+                    <a href="@Model.Link(("pagina", (Model.PageNumber + 1).ToString(CultureInfo.InvariantCulture)))">@L["SupportAdmin.PageNext"]</a>
+                }
+            </nav>
+        }
+    </div>
+}

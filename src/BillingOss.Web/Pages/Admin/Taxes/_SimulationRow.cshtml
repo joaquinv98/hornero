@@ -1,0 +1,44 @@
+@model (string Name, BillingOss.Web.Pages.Admin.Taxes.TaxesIndexModel.Sample Sample)
+@using BillingOss.Domain.Billing
+@{
+    var s = Model.Sample;
+    var currency = s.Input.Currency;
+}
+<tr>
+    <th scope="row">@Model.Name<br><span class="muted">@Ui.Money(s.Input.Price, currency) · @L["PriceMode." + s.Input.Mode]</span></th>
+    @if (s.Result is { } r)
+    {
+        <td><span class="status" data-tone="info">@r.Letter</span></td>
+        <td class="num">@Ui.Money(r.Net, currency)</td>
+        <td>
+            @if (r.Tax > 0m)
+            {
+                <div>@L["Taxes.Vat"] @Ui.Percent(r.Rate) <span class="num">@Ui.Money(r.Tax, currency)</span></div>
+            }
+            @foreach (var t in r.Taxes)
+            {
+                <div>@t.Name @Ui.Percent(t.Rate) <span class="num">@(t.AddsToTotal ? Ui.Money(t.Amount, currency) : L["Taxes.OnlyInformed"].Value)</span></div>
+            }
+            @if (r.Tax == 0m && r.Taxes.Count == 0)
+            {
+                <span class="muted">@L["Taxes.None"]</span>
+            }
+        </td>
+        <td class="num strong">@Ui.Money(r.Total, currency)</td>
+        <td>
+            @L["TaxReason." + r.Reason] @L["Taxes.Letter." + r.Letter]
+            @foreach (var t in r.Taxes)
+            {
+                <text> @L["TaxReason." + t.Reason]</text>
+            }
+            @foreach (var legend in r.Legends)
+            {
+                <div class="muted">@legend</div>
+            }
+        </td>
+    }
+    else
+    {
+        <td colspan="5"><span class="status" data-tone="danger" data-shape="ring">@L["Taxes.CannotCompute"]</span> @s.Error</td>
+    }
+</tr>

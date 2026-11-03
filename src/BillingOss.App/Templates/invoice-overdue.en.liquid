@@ -1,0 +1,5 @@
+{% if debit_note %}Debit note{% else %}Invoice{% endif %} #{{ number }} is overdue
+<p>Hi {{ account_name }},</p>
+<p>{% if debit_note %}Debit note{% else %}Invoice{% endif %} #{{ number }} was due on {{ due_date }} and still has a balance of <strong>{{ pending }}</strong>.</p>
+<p>Please pay it as soon as possible{% unless debit_note %} to keep your services running{% endunless %}.{% if portal_url %} You can do it from <a href="{{ portal_url }}">your account</a>.{% endif %}</p>
+<p>If you have already paid it, please ignore this notice.</p>

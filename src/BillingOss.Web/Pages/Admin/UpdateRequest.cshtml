@@ -1,0 +1,55 @@
+@page "/admin/actualizaciones/{id:long}"
+@model BillingOss.Web.Pages.Admin.AdminUpdateRequestModel
+@{
+    var r = Model.Current;
+    ViewData["Title"] = L["Updates.Request", r.Id];
+    var (tone, shape) = BillingOss.Web.Pages.Admin.AdminUpdatesModel.Look(r.Status);
+}
+<div class="bo-stack">
+    <p><a href="/admin/actualizaciones">@L["Updates.Back"]</a></p>
+    @* Mientras el pedido sigue, htmx trae el avance cada 5 segundos. Sin JavaScript, se ve al recargar la página. *@
+    <section id="avance" class="bo-stack" aria-labelledby="t-pedido" hx-get="@(r.Active ? $"/admin/actualizaciones/{r.Id}" : null)"
+             hx-trigger="@(r.Active ? "every 5s" : null)" hx-select="@(r.Active ? "#avance" : null)" hx-target="@(r.Active ? "#avance" : null)" hx-swap="@(r.Active ? "outerHTML" : null)">
+        <div class="bo-section__head">
+            <h1 id="t-pedido">@L["Updates.Request", r.Id]</h1>
+            <span class="bo-status" data-tone="@tone" data-shape="@shape" role="status">@L["Updates.Status." + r.Status]</span>
+        </div>
+        <dl class="facts">
+            <dt>@L["Updates.Version"]</dt>
+            <dd class="bo-data">@(r.FromVersion is null ? r.Version : $"{r.FromVersion} > {r.Version}")</dd>
+            <dt>@L["Updates.RequestedBy"]</dt>
+            <dd>@r.RequestedBy (@L["Updates.Origin." + r.Origin])</dd>
+            <dt>@L["Updates.Date"]</dt>
+            <dd><time datetime="@r.RequestedAt.ToString("O", CultureInfo.InvariantCulture)">@Model.When(r.RequestedAt)</time></dd>
+            @if (r.FinishedAt is { } finished)
+            {
+                <dt>@L["Updates.Finished"]</dt>
+                <dd><time datetime="@finished.ToString("O", CultureInfo.InvariantCulture)">@Model.When(finished)</time></dd>
+            }
+        </dl>
+        @if (r.Error is { Length: > 0 } error)
+        {
+            <div class="bo-alert" data-tone="danger" role="alert">
+                <p class="bo-alert__title">@L["Updates.Status." + r.Status]</p>
+                <p>@error</p>
+            </div>
+        }
+        <h2>@L["Updates.Progress"]</h2>
+        @if (Model.Events.Count == 0)
+        {
+            <p>@L["Updates.NoProgress"]</p>
+        }
+        else
+        {
+            <ol class="bo-timeline">
+                @foreach (var e in Model.Events)
+                {
+                    <li>
+                        <time datetime="@e.At.ToString("O", CultureInfo.InvariantCulture)">@Model.When(e.At)</time>
+                        <span>@L["Updates.Event." + e.Event, e.Node ?? string.Empty, e.Version ?? string.Empty, e.Detail ?? string.Empty]</span>
+                    </li>
+                }
+            </ol>
+        }
+    </section>
+</div>

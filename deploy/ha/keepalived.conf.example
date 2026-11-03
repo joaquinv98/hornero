@@ -1,0 +1,26 @@
+# keepalived de billing-oss: una IP virtual para la entrada HTTP, que vive en el nodo cuyo HAProxy responde.
+# Va en /etc/keepalived/keepalived.conf de cada nodo de entrada. CAMBIAR interfaz, prioridad e IP virtual.
+# Sin autenticación de VRRP: viaja en claro y no protege nada que la red propia de los nodos no proteja ya.
+
+vrrp_script haproxy_vivo {
+    script "/usr/bin/killall -0 haproxy"
+    interval 2
+    fall 2
+    rise 2
+}
+
+vrrp_instance billing_entrada {
+    interface eth0
+    state BACKUP
+    nopreempt
+    virtual_router_id 51
+    # Distinta en cada nodo: 150, 140 y 130.
+    priority 150
+    advert_int 1
+    virtual_ipaddress {
+        192.0.2.10/24
+    }
+    track_script {
+        haproxy_vivo
+    }
+}

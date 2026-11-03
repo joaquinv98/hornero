@@ -1,0 +1,22 @@
+@page "/estado-red/suscripcion/baja/{token}"
+@model UnsubscribeModel
+@section Head {
+    <link rel="stylesheet" href="~/css/contenidos.css" asp-append-version="true">
+}
+@{
+    ViewData["Title"] = C["Net.UnsubscribeTitle"];
+}
+<h1>@C["Net.UnsubscribeTitle"]</h1>
+@if (Model.Done)
+{
+    <p class="notice" role="status">@C["Net.UnsubscribeDone"]</p>
+    <p><a href="/estado-red">@C["Net.BackToStatus"]</a></p>
+}
+else
+{
+    <p>@C["Net.UnsubscribeAsk"]</p>
+    <form method="post" asp-page-handler="Confirm" asp-route-token="@RouteData.Values["token"]">
+        <button type="submit">@C["Net.UnsubscribeButton"]</button>
+        <a href="/estado-red">@C["Net.Keep"]</a>
+    </form>
+}

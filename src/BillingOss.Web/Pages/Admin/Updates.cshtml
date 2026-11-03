@@ -1,0 +1,233 @@
+@page "/admin/actualizaciones"
+@model BillingOss.Web.Pages.Admin.AdminUpdatesModel
+@using BillingOss.Updates
+@{
+    ViewData["Title"] = L["Updates.Title"];
+    var o = Model.Overview;
+    var s = o.Summary;
+    var (tone, shape) = BillingOss.Web.Pages.Admin.AdminUpdatesModel.Look(s.State);
+    var confirming = Model.Confirming;
+}
+<div class="bo-stack">
+    <section aria-labelledby="t-estado" class="bo-stack">
+        <div class="bo-section__head">
+            <h1 id="t-estado">@L["Updates.Title"]</h1>
+            <span class="bo-small bo-muted">
+                @L["Updates.LastCheck"]:
+                @if (o.CheckedAt is { } checkedAt)
+                {
+                    <time datetime="@checkedAt.ToString("O", CultureInfo.InvariantCulture)">@Model.When(checkedAt)</time>
+                }
+                else
+                {
+                    @L["Updates.NeverChecked"]
+                }
+            </span>
+        </div>
+        <div class="bo-card">
+            <p class="bo-row">
+                <span class="bo-status" data-tone="@tone" data-shape="@shape" id="estado">@L["Updates.State." + s.State]</span>
+                <span>@L["Updates.Installed"] <span class="bo-data">@s.Installed.Text()</span></span>
+            </p>
+            <p>@L["Updates.Reason." + s.Reason]</p>
+            @if (s.Cves.Count > 0)
+            {
+                <p>@L["Updates.Cves"]: <span class="bo-data">@string.Join(", ", s.Cves.Select(c => c.CveId))</span></p>
+            }
+            @if (o.CheckError is { Length: > 0 } checkError)
+            {
+                <p class="bo-small bo-muted">@L["Updates.CheckError"]: @checkError</p>
+            }
+        </div>
+        @if (s.PostgresBehind)
+        {
+            <div class="bo-alert" data-tone="warn" role="status"><p>@L["Updates.PostgresBehind"]</p></div>
+        }
+    </section>
+
+    @if (Model.CodeError is not null || Model.RequestError is not null)
+    {
+        <div class="bo-alert" data-tone="danger" role="alert" id="error" tabindex="-1">
+            <p class="bo-alert__title">@L["Updates.RequestFailed"]</p>
+            <p>@(Model.CodeError is not null ? L[Model.CodeError] : Model.RequestError)</p>
+        </div>
+    }
+
+    @if (confirming is not null)
+    {
+        <section aria-labelledby="t-confirmar" class="bo-card" id="confirmar">
+            <h2 id="t-confirmar">@L["Updates.Confirm", confirming.Release.ReleaseVersion]</h2>
+            <p>@L["Updates.Path"]: <span class="bo-data">@s.Installed.Text() &gt; @string.Join(" > ", confirming.Path)</span></p>
+            @if (confirming.Release.RequiresWindow)
+            {
+                <div class="bo-alert" data-tone="warn" role="status"><p>@L["Updates.RequiresWindow"]</p></div>
+            }
+            <p class="bo-small">@L["Updates.ConfirmHelp"]</p>
+            <form method="post" class="bo-stack">
+                <input type="hidden" name="Version" value="@confirming.Release.ReleaseVersion">
+                <div class="bo-field">
+                    <label for="code">@L["Updates.Code"]</label>
+                    <span id="code-help" class="bo-small bo-muted">@L["Updates.CodeHelp"]</span>
+                    <input id="code" name="Code" inputmode="numeric" autocomplete="one-time-code" required
+                           aria-describedby="@(Model.CodeError is not null ? "code-help code-error" : "code-help")"
+                           aria-invalid="@(Model.CodeError is not null ? "true" : "false")">
+                    @if (Model.CodeError is not null)
+                    {
+                        <span id="code-error" class="bo-small">@L[Model.CodeError]</span>
+                    }
+                </div>
+                <p class="bo-row">
+                    <button type="submit">@L["Updates.ConfirmButton", confirming.Release.ReleaseVersion]</button>
+                    <a href="/admin/actualizaciones">@L["Updates.Cancel"]</a>
+                </p>
+            </form>
+        </section>
+    }
+
+    <section aria-labelledby="t-versiones">
+        <h2 id="t-versiones">@L["Updates.Offered"]</h2>
+        @if (o.Offered.Count == 0)
+        {
+            <p>@L["Updates.NoneOffered"]</p>
+        }
+        else
+        {
+            <div class="table">
+                <table>
+                    <thead>
+                        <tr>
+                            <th scope="col">@L["Updates.Version"]</th>
+                            <th scope="col">@L["Updates.Date"]</th>
+                            <th scope="col">@L["Updates.Security"]</th>
+                            <th scope="col">@L["Updates.Path"]</th>
+                            <th scope="col">@L["Updates.Window"]</th>
+                            <th scope="col"><span class="bo-sr">@L["Updates.Action"]</span></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var r in o.Offered)
+                        {
+                            var release = r.Release;
+                            <tr>
+                                <td>
+                                    <span class="bo-data">@release.ReleaseVersion</span>
+                                    @if (release.Notes is { } notes)
+                                    {
+                                        <a href="@notes" rel="noopener noreferrer">@L["Updates.Notes"]</a>
+                                    }
+                                </td>
+                                <td>@(release.ReleaseDate?.ToString("dd/MM/yyyy", CultureInfo.InvariantCulture))</td>
+                                <td>
+                                    @if (release.Security)
+                                    {
+                                        <span class="bo-status" data-tone="danger" data-shape="ring">@L["Updates.Severity." + (release.Severity ?? "high")]</span>
+                                        @if (release.CveList.Count > 0)
+                                        {
+                                            <span class="bo-small bo-data">@string.Join(", ", release.CveList.Select(c => c.CveId))</span>
+                                        }
+                                    }
+                                    else
+                                    {
+                                        @L["Updates.NoSecurity"]
+                                    }
+                                </td>
+                                <td>
+                                    @if (r.Blocked)
+                                    {
+                                        <span class="bo-status" data-tone="neutral" data-shape="filled">@L["Updates.Blocked"]</span>
+                                    }
+                                    else if (r.Path.Count == 0)
+                                    {
+                                        <span class="bo-muted">@L["Updates.NoPath"]</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="bo-data">@string.Join(" > ", r.Path)</span>
+                                    }
+                                </td>
+                                <td>@(release.RequiresWindow ? L["Updates.WithWindow"] : L["Updates.NoWindow"])</td>
+                                <td>
+                                    @if (!r.Blocked && r.Path.Count > 0)
+                                    {
+                                        <a class="button" href="/admin/actualizaciones?version=@release.ReleaseVersion#confirmar">@L["Updates.ApplyTo", release.ReleaseVersion]</a>
+                                    }
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
+    </section>
+
+    <section aria-labelledby="t-nodos">
+        <h2 id="t-nodos">@L["Updates.Nodes"]</h2>
+        @if (o.Nodes.Count == 0)
+        {
+            <p>@L["Updates.NoNodes"]</p>
+        }
+        else
+        {
+            <div class="table">
+                <table>
+                    <thead>
+                        <tr>
+                            <th scope="col">@L["Updates.Node"]</th>
+                            <th scope="col">@L["Updates.Version"]</th>
+                            <th scope="col">@L["Updates.UpdaterVersion"]</th>
+                            <th scope="col">@L["Updates.SeenAt"]</th>
+                            <th scope="col">@L["Field.Status"]</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var n in o.Nodes)
+                        {
+                            var fresh = DateTimeOffset.UtcNow - n.SeenAt <= UpdateStatus.UpdaterTimeout;
+                            var (nodeTone, nodeShape, nodeText) = n.Status == "failed" ? ("danger", "ring", "Updates.NodeFailed") : fresh ? ("ok", "filled", "Updates.NodeFresh") : ("warn", "ring", "Updates.NodeStale");
+                            <tr>
+                                <td>@n.Name</td>
+                                <td class="bo-data">@n.Version</td>
+                                <td class="bo-data">@n.UpdaterVersion</td>
+                                <td><time datetime="@n.SeenAt.ToString("O", CultureInfo.InvariantCulture)">@Model.When(n.SeenAt)</time></td>
+                                <td><span class="bo-status" data-tone="@nodeTone" data-shape="@nodeShape">@L[nodeText]</span></td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
+    </section>
+
+    @if (o.Requests.Count > 0)
+    {
+        <section aria-labelledby="t-pedidos">
+            <h2 id="t-pedidos">@L["Updates.Requests"]</h2>
+            <div class="table">
+                <table>
+                    <thead>
+                        <tr>
+                            <th scope="col">@L["Updates.Number"]</th>
+                            <th scope="col">@L["Updates.Version"]</th>
+                            <th scope="col">@L["Updates.RequestedBy"]</th>
+                            <th scope="col">@L["Updates.Date"]</th>
+                            <th scope="col">@L["Field.Status"]</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var r in o.Requests)
+                        {
+                            var (rt, rs) = BillingOss.Web.Pages.Admin.AdminUpdatesModel.Look(r.Status);
+                            <tr>
+                                <td><a href="/admin/actualizaciones/@r.Id">@r.Id</a></td>
+                                <td class="bo-data">@(r.FromVersion is null ? r.Version : $"{r.FromVersion} > {r.Version}")</td>
+                                <td>@r.RequestedBy <span class="bo-muted">(@L["Updates.Origin." + r.Origin])</span></td>
+                                <td><time datetime="@r.RequestedAt.ToString("O", CultureInfo.InvariantCulture)">@Model.When(r.RequestedAt)</time></td>
+                                <td><span class="bo-status" data-tone="@rt" data-shape="@rs">@L["Updates.Status." + r.Status]</span></td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </section>
+    }
+</div>

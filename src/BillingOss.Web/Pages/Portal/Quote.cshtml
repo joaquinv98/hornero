@@ -1,0 +1,72 @@
+@page "/presupuestos/{id:long}"
+@model QuoteModel
+@using BillingOss.Domain.Billing
+@{
+    var q = Model.Quote!;
+    ViewData["Title"] = L["Billing.QuoteNumber", q.Id];
+    var expired = q.Status == QuoteStatus.Sent && !Model.CanAnswer;
+}
+<p><a href="/presupuestos">@L["Billing.BackToQuotes"]</a></p>
+<h1>@L["Billing.QuoteNumber", q.Id] <span class="muted">@q.Subject</span></h1>
+@if (Model.Error is not null)
+{
+    <p class="alert" role="alert">@Model.Error</p>
+}
+<dl class="facts">
+    <dt>@L["Field.Status"]</dt>
+    <dd>@(expired ? L["Quotes.Expired"] : L["QuoteStatus." + q.Status])</dd>
+    <dt>@L["Billing.ValidUntil"]</dt>
+    <dd>@Ui.Date(q.ValidUntil)</dd>
+    <dt>@L["Invoices.Total"]</dt>
+    <dd class="bo-money strong">@Ui.Money(q.Total, q.Currency)</dd>
+    @if (Model.Local is { } local)
+    {
+        <dt>@L["Quotes.Equivalent"]</dt>
+        <dd>
+            <span class="bo-money">@Ui.Money(local.Apply(q.Total), local.Rate.Quote == q.Currency ? local.Rate.Currency : local.Rate.Quote)</span>
+            <span class="muted">@L["Pay.Rate", L["RateSource." + (local.Rate.Source == "bna" ? "Bna" : "Manual")], Ui.Date(local.Rate.Date), Ui.Money(local.Rate.Rate, local.Rate.Quote), local.Rate.Currency.Code]</span>
+        </dd>
+    }
+</dl>
+<div class="table">
+    <table>
+        <thead>
+            <tr>
+                <th scope="col">@L["Billing.Description"]</th>
+                <th scope="col" class="num">@L["Billing.Quantity"]</th>
+                <th scope="col" class="num">@L["Billing.UnitPrice"]</th>
+                <th scope="col" class="num">@L["Invoice.Amount"]</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var l in q.Lines)
+            {
+                <tr>
+                    <td>@l.Description</td>
+                    <td class="num">@l.Quantity.ToString("0.####", CultureInfo.CurrentCulture)</td>
+                    <td class="num bo-money">@Ui.Money(l.UnitPrice, q.Currency)</td>
+                    <td class="num bo-money">@Ui.Money(BillingOss.Domain.Shared.Rounding.Commercial(l.Quantity * l.UnitPrice), q.Currency)</td>
+                </tr>
+            }
+        </tbody>
+        <tfoot>
+            <tr><th scope="row" colspan="3">@L["Invoices.Total"]</th><td class="num bo-money strong">@Ui.Money(q.Total, q.Currency)</td></tr>
+        </tfoot>
+    </table>
+</div>
+@if (q.Notes is { Length: > 0 } notes)
+{
+    <p>@notes</p>
+}
+@if (Model.CanAnswer)
+{
+    <div class="bo-actions">
+        <form method="post" asp-page-handler="Accept"><button type="submit">@L["Quotes.Accept"]</button></form>
+        <form method="post" asp-page-handler="Decline"><button type="submit" class="secondary">@L["Quotes.Decline"]</button></form>
+    </div>
+    <p class="muted">@(q.HasPlans ? L["Quotes.AcceptOrderHelp"] : L["Quotes.AcceptInvoiceHelp"])</p>
+}
+else if (q.DocumentId is { } invoice)
+{
+    <p><a class="button" href="/facturas/@invoice">@L["Billing.SeeInvoice"]</a></p>
+}

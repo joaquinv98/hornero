@@ -1,0 +1,9 @@
+@* Los cuatro contenidos para clientes: visibles con o sin sesión (diseno/contenidos.md). *@
+@{
+    var here = Context.Request.Path;
+    string? Current(string prefix) => here.StartsWithSegments(prefix) ? "page" : null;
+}
+<a href="/conocimiento" aria-current="@Current("/conocimiento")">@C["ContentNav.Help"]</a>
+<a href="/anuncios" aria-current="@Current("/anuncios")">@C["ContentNav.News"]</a>
+<a href="/descargas" aria-current="@Current("/descargas")">@C["ContentNav.Downloads"]</a>
+<a href="/estado-red" aria-current="@Current("/estado-red")">@C["ContentNav.Status"]</a>

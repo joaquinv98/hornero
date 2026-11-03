@@ -1,0 +1,78 @@
+@page "/admin/anuncios/{key}"
+@model NewsEditModel
+@{
+    ViewData["Title"] = Model.Id is null ? C["Cms.NewAnnouncement"] : C["Cms.EditAnnouncement"];
+    var isNew = Model.Id is null;
+}
+<h1>@ViewData["Title"]</h1>
+<partial name="_Tabs" />
+<partial name="_Alerts" model="Model" />
+<nav class="ct-crumbs" aria-label="@C["Kb.Breadcrumb"]"><a href="/admin/anuncios">@C["Cms.News"]</a></nav>
+@if (!isNew)
+{
+    <dl class="facts">
+        <dt>@C["Cms.State"]</dt>
+        <dd><partial name="_Pill" model="ContentUi.PhasePill(Model.Phase, C)" /></dd>
+        @if (Model.PublishAt is { } at)
+        {
+            <dt>@C["Cms.PublishAt"]</dt>
+            <dd><time datetime="@at.ToString("O")">@ContentUi.When(at, Model.Zone)</time>@if (Model.Phase == AnnouncementPhase.Live) { <text> &middot; <a href="/anuncios/@Model.Id">@C["Cms.SeeOnSite"]</a></text> }</dd>
+        }
+    </dl>
+}
+<form method="post" asp-page-handler="Save" asp-route-key="@Model.Key" class="ct-form">
+    <input type="hidden" name="Input.Revision" value="@Model.Input.Revision">
+    <fieldset>
+        <legend>@C["Cms.General"]</legend>
+        <label class="check"><input type="checkbox" name="Input.Pinned" value="true" checked="@Model.Input.Pinned"> @C["Cms.PinnedHelp"]</label>
+        <label for="n-expires">@C["Cms.ExpiresAt"]</label>
+        <input id="n-expires" name="Input.ExpiresText" type="datetime-local" value="@Model.Input.ExpiresText" aria-describedby="n-expires-help">
+        <p id="n-expires-help" class="muted">@C["Cms.ExpiresHelp", Model.Zone.Id]</p>
+    </fieldset>
+    <partial name="_Audience" model="Model.AudienceFields" />
+    <partial name="_Texts" model="Model.TextFields" />
+    <p class="ct-actions">
+        <button type="submit">@C["Cms.Save"]</button>
+        <a href="/admin/anuncios">@C["Cms.Cancel"]</a>
+    </p>
+</form>
+@if (!isNew)
+{
+    <section aria-labelledby="publication">
+        <h2 id="publication">@C["Cms.Publication"]</h2>
+        <p class="muted">@C["Cms.AnnouncementPublicationHelp"]</p>
+        <div class="ct-actions">
+            @if (Model.Phase is AnnouncementPhase.Draft or AnnouncementPhase.Archived or AnnouncementPhase.Scheduled)
+            {
+                <form method="post" asp-page-handler="Publish" asp-route-key="@Model.Key" class="ct-form">
+                    <input type="hidden" name="revision" value="@Model.Input.Revision">
+                    <label for="n-publish">@C["Cms.PublishOn"]</label>
+                    <input id="n-publish" name="publishAt" type="datetime-local" value="@Model.PublishText">
+                    <p><button type="submit">@(Model.Phase == AnnouncementPhase.Scheduled ? C["Cms.Reschedule"] : C["Cms.PublishAnnouncement"])</button></p>
+                </form>
+            }
+            @if (Model.Phase is AnnouncementPhase.Live or AnnouncementPhase.Scheduled or AnnouncementPhase.Expired)
+            {
+                <form method="post" asp-page-handler="Unpublish" asp-route-key="@Model.Key" class="inline">
+                    <input type="hidden" name="revision" value="@Model.Input.Revision">
+                    <button type="submit" class="secondary">@C["Cms.Unpublish"]</button>
+                </form>
+            }
+            @if (Model.Phase != AnnouncementPhase.Archived)
+            {
+                <form method="post" asp-page-handler="Archive" asp-route-key="@Model.Key" class="inline">
+                    <input type="hidden" name="revision" value="@Model.Input.Revision">
+                    <button type="submit" class="secondary">@C["Cms.Archive"]</button>
+                </form>
+            }
+        </div>
+    </section>
+    <details>
+        <summary>@C["Cms.DeleteTitle"]</summary>
+        <form method="post" asp-page-handler="Delete" asp-route-key="@Model.Key" class="ct-form">
+            <p>@C["Cms.DeleteAnnouncementHelp"]</p>
+            <label class="check"><input type="checkbox" name="confirm" value="true"> @C["Cms.DeleteConfirm"]</label>
+            <p><button type="submit" class="danger">@C["Cms.DeleteAnnouncement"]</button></p>
+        </form>
+    </details>
+}

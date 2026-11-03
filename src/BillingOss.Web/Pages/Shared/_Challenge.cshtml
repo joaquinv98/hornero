@@ -1,0 +1,13 @@
+@model BillingOss.Web.Identity.ChallengeView?
+@* Desafío anti robots del formulario (diseno/ingreso-clientes.md, sección 7). Sin desafío no muestra nada. *@
+@if (Model is { Provider: BillingOss.App.Identity.SecuritySettings.ChallengeWork } work)
+{
+    <input type="hidden" name="@BillingOss.Web.Identity.ChallengeGuard.TokenField" value="@work.Token" data-bits="@work.Bits">
+    <input type="hidden" name="@BillingOss.Web.Identity.ChallengeGuard.NonceField" value="">
+    <script src="~/js/challenge.js" asp-append-version="true" defer></script>
+}
+else if (Model is { Provider: BillingOss.App.Identity.SecuritySettings.ChallengeTurnstile } turnstile)
+{
+    <div class="cf-turnstile" data-sitekey="@turnstile.SiteKey"></div>
+    <script src="@(BillingOss.Web.Identity.ChallengeGuard.TurnstileOrigin)/turnstile/v0/api.js" async defer></script>
+}

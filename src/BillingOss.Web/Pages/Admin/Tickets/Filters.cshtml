@@ -1,0 +1,60 @@
+@page "/admin/soporte/correo"
+@model BillingOss.Web.Pages.Admin.Tickets.SpamFiltersModel
+@using BillingOss.App.Support
+@{
+    ViewData["Title"] = L["SupportAdmin.SpamControl"];
+}
+<p><a href="/admin/soporte">@L["Support.Back"]</a></p>
+<h1>@L["SupportAdmin.SpamControl"]</h1>
+<p class="muted">@L["SupportAdmin.FiltersHelp"]</p>
+<p><a href="/admin/registros/correo-entrante?resultado=Rejected">@L["SupportAdmin.SeeRejected"]</a></p>
+@if (Model.Problems.Count > 0)
+{
+    <p class="alert" role="alert">@string.Join(" ", Model.Problems)</p>
+}
+<form method="post" asp-page-handler="Add" class="search">
+    <label for="Kind" class="bo-sr">@L["SupportAdmin.FilterKind"]</label>
+    <select id="Kind" name="Kind">
+        @foreach (var kind in Enum.GetValues<MailFilterKind>())
+        {
+            <option value="@kind">@L["MailFilterKind." + kind]</option>
+        }
+    </select>
+    <label for="Value" class="bo-sr">@L["SupportAdmin.FilterValue"]</label>
+    <input id="Value" name="Value" maxlength="500" placeholder="@L["SupportAdmin.FilterPlaceholder"]">
+    <button type="submit" class="secondary">@L["SupportAdmin.AddFilter"]</button>
+</form>
+@if (Model.Filters.Count == 0)
+{
+    <p>@L["SupportAdmin.NoFilters"]</p>
+}
+else
+{
+    <div class="table">
+        <table class="bo-dense">
+            <caption class="bo-sr">@L["SupportAdmin.Filters"]</caption>
+            <thead>
+                <tr>
+                    <th scope="col">@L["SupportAdmin.FilterKind"]</th>
+                    <th scope="col">@L["SupportAdmin.FilterValue"]</th>
+                    <th scope="col"><span class="bo-sr">@L["SupportAdmin.Delete"]</span></th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var f in Model.Filters)
+                {
+                    <tr>
+                        <td>@L["MailFilterKind." + f.Kind]</td>
+                        <th scope="row"><code>@f.Value</code></th>
+                        <td>
+                            <form method="post" asp-page-handler="Delete" class="inline">
+                                <input type="hidden" name="remove" value="@f.Id">
+                                <button type="submit" class="link" aria-label="@L["SupportAdmin.DeleteFilter", f.Value]">@L["SupportAdmin.Delete"]</button>
+                            </form>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+}

@@ -1,0 +1,33 @@
+@page "/admin/ingresar/codigo"
+@model StaffCodeModel
+@{
+    ViewData["Title"] = L["Code.Title"];
+}
+@if (Model.RecoveryCodes is { } codes)
+{
+    <h1>@L["Security.Enabled"]</h1>
+    <partial name="_RecoveryCodes" model="codes" />
+    <p><a class="button" href="/admin">@L["Admin.Continue"]</a></p>
+}
+else
+{
+    <h1>@(Model.Setup is null ? L["Code.Title"] : L["Admin.EnrollTitle"])</h1>
+    @if (Model.Error is not null)
+    {
+        <p class="alert" role="alert">@UiText.Get(L, S, Model.Error, Model.LockMinutes)</p>
+    }
+    @if (Model.Setup is { } setup)
+    {
+        <p>@L["Admin.EnrollHelp"]</p>
+        <partial name="_TotpSetup" model="setup" />
+    }
+    else
+    {
+        <p>@L["Code.Help"]</p>
+    }
+    <form method="post" class="stack narrow">
+        <label for="code">@L["Field.Code"]</label>
+        <input id="code" name="Code" inputmode="numeric" autocomplete="one-time-code" required autofocus>
+        <button type="submit">@L["Code.Submit"]</button>
+    </form>
+}

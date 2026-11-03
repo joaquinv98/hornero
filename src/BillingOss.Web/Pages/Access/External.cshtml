@@ -1,0 +1,75 @@
+@page "/ingresar/externo"
+@model ExternalModel
+@using Step = BillingOss.Web.Pages.Access.ExternalModel.Step
+@{
+    var provider = Model.Identity?.ProviderName ?? string.Empty;
+    ViewData["Title"] = S["External.Title", provider];
+}
+<h1>@S["External.Title", provider]</h1>
+@if (Model.Error is not null)
+{
+    <div class="alert" role="alert">
+        <p>@UiText.Get(L, S, Model.Error, Model.LockMinutes)</p>
+    </div>
+}
+@switch (Model.Show)
+{
+    case Step.Confirm:
+        <p>@(Model.Linking ? S["External.ConfirmLink", provider] : S["External.ConfirmExisting", provider, Model.Identity!.Email ?? string.Empty])</p>
+        @if (Model.HasPassword)
+        {
+            <form method="post" asp-page-handler="Password" class="stack narrow">
+                <label for="password">@L["Field.Password"]</label>
+                <input id="password" name="Password" type="password" autocomplete="current-password" required>
+                <button type="submit">@S["External.ConfirmWithPassword"]</button>
+            </form>
+            <p class="muted">@S["External.OrMail"]</p>
+        }
+        <form method="post" asp-page-handler="Mail">
+            <button type="submit" class="secondary">@S["External.SendMail"]</button>
+        </form>
+        <p><a href="@Model.Back">@S["External.Cancel"]</a></p>
+        break;
+
+    case Step.Register:
+        <p>@S["External.RegisterHelp", provider, Model.Identity!.Email ?? string.Empty]</p>
+        <form method="post" asp-page-handler="Register" class="stack narrow">
+            <label for="name">@L["Field.Name"]</label>
+            <input id="name" name="Name" autocomplete="name" maxlength="200" required value="@Model.Name">
+            <label for="company">@S["Register.Company"]</label>
+            <input id="company" name="Company" autocomplete="organization" maxlength="200" value="@Model.Company">
+            <label for="phone">@S["Register.Phone"]</label>
+            <input id="phone" name="Phone" type="tel" autocomplete="tel" maxlength="50" value="@Model.Phone">
+            @if (Model.Currencies.Count > 1)
+            {
+                <label for="currency">@S["Register.Currency"]</label>
+                <select id="currency" name="Currency">
+                    @foreach (var code in Model.Currencies)
+                    {
+                        <option value="@code" selected="@(code == Model.Currency)">@code</option>
+                    }
+                </select>
+            }
+            else
+            {
+                <input type="hidden" name="Currency" value="@Model.Currency">
+            }
+            <button type="submit">@S["Register.Submit"]</button>
+        </form>
+        <p><a href="/ingresar">@S["External.Cancel"]</a></p>
+        break;
+
+    case Step.MailSent:
+        <p class="notice" role="status">@S["External.MailSent", provider]</p>
+        <p><a href="@Model.Back">@L["Status.Back"]</a></p>
+        break;
+
+    case Step.AlreadyLinked:
+        <p class="notice" role="status">@S["External.AlreadyLinked", provider]</p>
+        <p><a href="/cuenta/seguridad">@L["Status.Back"]</a></p>
+        break;
+
+    default:
+        <p><a href="@Model.Back">@L["Status.Back"]</a></p>
+        break;
+}

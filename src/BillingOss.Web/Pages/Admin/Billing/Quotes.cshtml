@@ -1,0 +1,59 @@
+@page "/admin/presupuestos"
+@model BillingOss.Web.Pages.Admin.Billing.QuotesModel
+@{
+    ViewData["Title"] = L["Billing.Quotes"];
+}
+<h1>@L["Billing.Quotes"]</h1>
+@if (User.HasClaim(Claims.Permission, BillingOss.App.Identity.StaffPermissions.BillingWrite))
+{
+    <div class="bo-actions">
+        <a class="button" href="/admin/presupuestos/nuevo@(Model.AccountId is { } a ? "?cuenta=" + a : "")">@L["Billing.NewQuote"]</a>
+    </div>
+}
+<form method="get" class="search" role="search">
+    <label>@L["Field.Status"]
+        <select name="estado">
+            @foreach (var s in BillingOss.Web.Pages.Admin.Billing.QuotesModel.States)
+            {
+                <option value="@s" selected="@(Model.State == s)">@L["Billing.QuoteState." + s]</option>
+            }
+        </select>
+    </label>
+    <label>@L["Billing.Account"] <input name="cuenta" type="number" min="1" value="@Model.AccountId"></label>
+    <button type="submit">@L["Admin.SearchButton"]</button>
+</form>
+@if (Model.Rows.Count == 0)
+{
+    <p>@L["Admin.NoResults"]</p>
+}
+else
+{
+    <div class="table">
+        <table>
+            <thead>
+                <tr>
+                    <th scope="col">@L["Billing.Number"]</th>
+                    <th scope="col">@L["Billing.Account"]</th>
+                    <th scope="col">@L["Billing.Subject"]</th>
+                    <th scope="col">@L["Billing.ValidUntil"]</th>
+                    <th scope="col" class="num">@L["Invoices.Total"]</th>
+                    <th scope="col">@L["Field.Status"]</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var r in Model.Rows)
+                {
+                    var q = r.Quote;
+                    <tr>
+                        <td><a href="/admin/presupuestos/@q.Id">@q.Id</a></td>
+                        <td><a href="/admin/cuentas/@q.AccountId">@r.Account</a></td>
+                        <td>@q.Subject</td>
+                        <td>@Ui.Date(q.ValidUntil)</td>
+                        <td class="num bo-money">@Ui.Money(q.Total, q.Currency)</td>
+                        <td>@L["QuoteStatus." + q.Status]@(q.IsExpired(Model.Today) ? " · " + L["Quotes.Expired"] : string.Empty)</td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+}

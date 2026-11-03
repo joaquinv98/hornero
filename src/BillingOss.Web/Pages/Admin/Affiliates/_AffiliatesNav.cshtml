@@ -1,0 +1,8 @@
+@{
+    var path = Context.Request.Path.Value ?? string.Empty;
+}
+<nav class="menu bo-tabs" aria-label="@L["Affiliates.Title"]">
+    <a href="/admin/afiliados" aria-current="@(path == "/admin/afiliados" ? "page" : null)">@L["Affiliates.List"]</a>
+    <a href="/admin/afiliados/retiros" aria-current="@(path == "/admin/afiliados/retiros" ? "page" : null)">@L["Affiliates.Payouts"]</a>
+    <a href="/admin/afiliados/programa" aria-current="@(path == "/admin/afiliados/programa" ? "page" : null)">@L["Affiliates.Program"]</a>
+</nav>

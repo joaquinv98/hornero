@@ -1,0 +1,46 @@
+@page "/estado-red/suscribirse"
+@model SubscribeModel
+@section Head {
+    <link rel="stylesheet" href="~/css/contenidos.css" asp-append-version="true">
+}
+@{
+    ViewData["Title"] = C["Net.Subscribe"];
+}
+<nav aria-label="@C["Kb.Breadcrumb"]" class="ct-crumbs">
+    <a href="/estado-red">@C["Net.Title"]</a>
+</nav>
+<h1>@C["Net.Subscribe"]</h1>
+@if (Model.Done)
+{
+    <p class="notice" role="status">@C["Net.SubscribeDone"]</p>
+    <p><a href="/estado-red">@C["Net.BackToStatus"]</a></p>
+}
+else
+{
+    <p>@C["Net.SubscribeHelp"]</p>
+    @if (Model.Error is not null)
+    {
+        <p class="alert" role="alert">@Model.Error</p>
+    }
+    <form method="post" class="stack narrow">
+        <label for="email">@C["Net.Email"]</label>
+        <input id="email" name="Email" type="email" value="@Model.Email" autocomplete="email" maxlength="320" required>
+        <label for="lang">@C["Net.Language"]</label>
+        <select id="lang" name="Lang">
+            <option value="es-AR" selected="@(Model.Lang is not "en")">Español</option>
+            <option value="en" selected="@(Model.Lang is "en")">English</option>
+        </select>
+        @if (Model.Choices.Count > 0)
+        {
+            <fieldset>
+                <legend>@C["Net.WhichComponents"]</legend>
+                <p class="muted">@C["Net.AllIfNone"]</p>
+                @foreach (var c in Model.Choices)
+                {
+                    <label class="check"><input type="checkbox" name="Components" value="@SubscribeModel.Id(c.Id)" checked="@Model.Components.Contains(c.Id)"> @c.Name</label>
+                }
+            </fieldset>
+        }
+        <button type="submit">@C["Net.SubscribeSend"]</button>
+    </form>
+}

@@ -1,0 +1,58 @@
+@page "/pay/return/{reference}"
+@model PayReturnModel
+@using BillingOss.Domain.Payments
+@{
+    ViewData["Title"] = L["PayReturn.Title"];
+    var a = Model.Attempt!;
+    var single = a.DocumentIds.Count == 1;
+}
+<div class="bo-stack bo-wrap--narrow">
+    <div class="bo-head">
+        <h1>@L["PayReturn.Title"]</h1>
+        <ol class="bo-steps" aria-label="@L["Pay.Steps"]">
+            <li data-done>@L["Pay.StepReview"]</li>
+            <li data-done>@L["Pay.StepMethod"]</li>
+            <li aria-current="step">@L["Pay.StepDone"]</li>
+        </ol>
+    </div>
+
+    @if (a.Status == AttemptStatus.Paid)
+    {
+        <div class="bo-alert" data-tone="ok" role="status">
+            <p class="bo-alert__title">@L["PayReturn.PaidTitle"]</p>
+            <p>@L["PayReturn.Paid", Ui.Money(a.Amount, a.Currency)]</p>
+        </div>
+    }
+    else if (a.Status == AttemptStatus.Failed)
+    {
+        <div class="bo-alert" data-tone="danger" role="status">
+            <p class="bo-alert__title">@L["PayReturn.FailedTitle"]</p>
+            <p>@L["PayReturn.Failed"]</p>
+        </div>
+    }
+    else if (Model.Cancelled)
+    {
+        <div class="bo-alert" data-tone="warn" role="status">
+            <p class="bo-alert__title">@L["PayReturn.CancelledTitle"]</p>
+            <p>@L["PayReturn.Cancelled"]</p>
+        </div>
+    }
+    else
+    {
+        <div class="bo-alert" data-tone="info" role="status">
+            <p class="bo-alert__title">@L["PayReturn.WaitingTitle"]</p>
+            <p>@L["PayReturn.Waiting"]</p>
+        </div>
+    }
+
+    @if (!a.IsTest)
+    {
+        <div class="bo-row">
+            @if (a.Status != AttemptStatus.Paid)
+            {
+                <a class="bo-btn" href="@Model.Retry">@L["PayReturn.TryAgain"]</a>
+            }
+            <a class="bo-btn bo-btn--secondary" href="@(single ? "/facturas/" + a.DocumentIds[0].ToString(CultureInfo.InvariantCulture) : "/facturas")">@(single ? L["PayReturn.SeeInvoice"] : L["PayReturn.SeeInvoices"])</a>
+        </div>
+    }
+</div>

@@ -1,0 +1,459 @@
+@page "/admin/cuentas/{id:long}"
+@model CustomerModel
+@using BillingOss.Domain.Accounts
+@using BillingOss.Domain.Billing
+@{
+    var a = Model.Account!;
+    ViewData["Title"] = a.Name;
+    var today = Model.Today;
+}
+<h1>@a.Name <span class="muted">#@a.Id</span></h1>
+@if (Model.Error is not null)
+{
+    <p class="alert" role="alert">@Model.Error</p>
+}
+@if (Model.Done is { Length: > 0 })
+{
+    <p class="notice" role="status">@L["Taxes.Done"]</p>
+}
+<dl class="facts">
+    <dt>@L["Field.Email"]</dt>
+    <dd>@a.Email</dd>
+    @if (a.CompanyName is { Length: > 0 })
+    {
+        <dt>@L["Admin.Company"]</dt>
+        <dd>@a.CompanyName</dd>
+    }
+    <dt>@L["Field.Status"]</dt>
+    <dd>@L["AccountStatus." + a.Status]</dd>
+    <dt>@L["Admin.Currency"]</dt>
+    <dd>@a.Currency.Code</dd>
+    @if (Model.Tax is { } t)
+    {
+        <dt>@L["Admin.TaxId"]</dt>
+        <dd>@t.DocumentNumber (@t.LegalName)</dd>
+    }
+</dl>
+@if (BillingOss.Web.Pages.Admin.Reports.ReportModel.Catalog.Single(e => e.Slug == BillingOss.Web.Pages.Admin.Reports.ReportModel.Statement) is var statement
+     && BillingOss.Web.Pages.Admin.Reports.ReportModel.Allowed(User, statement))
+{
+    <p><a href="/admin/reportes/@statement.Slug?cuenta=@a.Id">@L[statement.Title]</a></p>
+}
+@if (Model.CanImpersonate)
+{
+    <form method="post" asp-page-handler="Impersonate">
+        <button type="submit" class="secondary">@L["Admin.Impersonate"]</button>
+        <span class="muted">@L["Admin.ImpersonateHelp"]</span>
+    </form>
+}
+
+@if (Model.CanSeeBilling)
+{
+    <section aria-labelledby="facturacion-title" id="facturacion">
+        <h2 id="facturacion-title">@L["Billing.Section"]</h2>
+        <div class="bo-actions">
+            @if (Model.CanWriteBilling)
+            {
+                <a class="button" href="/admin/facturas/nueva?cuenta=@a.Id">@L["Billing.NewInvoice"]</a>
+                <a class="button secondary" href="/admin/presupuestos/nuevo?cuenta=@a.Id">@L["Billing.NewQuote"]</a>
+            }
+            <a href="/admin/facturas?cuenta=@a.Id">@L["Billing.Invoices"]</a>
+            <a href="/admin/presupuestos?cuenta=@a.Id">@L["Billing.QuotesOpen", Model.OpenQuotes]</a>
+            <a href="/admin/items?cuenta=@a.Id">@L["Billing.ItemsPending", Model.PendingItems]</a>
+        </div>
+        @if (Model.CanWriteBilling)
+        {
+            <form method="post" asp-page-handler="Exemptions" class="bo-actions">
+                <label class="check"><input type="checkbox" name="NoLateFees" value="true" checked="@Model.NoLateFees"> @L["Billing.NoLateFees"]</label>
+                <label class="check"><input type="checkbox" name="NoReminders" value="true" checked="@Model.NoReminders"> @L["Billing.NoReminders"]</label>
+                <button type="submit" class="secondary">@L["Billing.Save"]</button>
+            </form>
+        }
+        else
+        {
+            <p class="muted">@(Model.NoLateFees ? L["Billing.NoLateFees"] : string.Empty) @(Model.NoReminders ? L["Billing.NoReminders"] : string.Empty)</p>
+        }
+    </section>
+
+    <section aria-labelledby="saldo-title" id="saldo">
+        <h2 id="saldo-title">@L["Credit.Title"]</h2>
+        @if (Model.Balances.Count == 0)
+        {
+            <p>@L["Credit.None"]</p>
+        }
+        else
+        {
+            <ul class="plain">
+                @foreach (var b in Model.Balances)
+                {
+                    <li class="strong bo-money">@Ui.Money(b.Balance, b.Currency)</li>
+                }
+            </ul>
+        }
+        @if (Model.Entries.Count > 0)
+        {
+            <div class="table">
+                <table>
+                    <caption>@L["Credit.Ledger"]</caption>
+                    <thead><tr><th scope="col">@L["Admin.Date"]</th><th scope="col">@L["Billing.Reason"]</th><th scope="col">@L["Credit.Actor"]</th><th scope="col" class="num">@L["Invoice.Amount"]</th></tr></thead>
+                    <tbody>
+                        @foreach (var e in Model.Entries)
+                        {
+                            <tr>
+                                <td>@e.CreatedAt.ToString("g", CultureInfo.CurrentCulture)</td>
+                                <td>@e.Reason @if (e.DocumentId is { } doc) { <a href="/admin/facturas/@doc">#@doc</a> }</td>
+                                <td>@e.Actor</td>
+                                <td class="num bo-money">@Ui.Money(e.Amount, e.Currency)</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
+        @if (Model.CanAdjustCredit)
+        {
+            <form method="post" asp-page-handler="Adjust" class="bo-actions">
+                <label>@L["Admin.Currency"] <input name="AdjustCurrency" value="@(Model.AdjustCurrency ?? a.Currency.Code)" maxlength="3" size="4" required></label>
+                <label>@L["Credit.Amount"] <input name="AdjustAmount" value="@Model.AdjustAmount" inputmode="decimal" size="10" required></label>
+                <label>@L["Billing.Reason"] <input name="AdjustReason" value="@Model.AdjustReason" maxlength="200" required></label>
+                <button type="submit">@L["Credit.Adjust"]</button>
+            </form>
+            <p class="muted">@L["Credit.AdjustHelp"]</p>
+        }
+    </section>
+}
+
+<section aria-labelledby="fiscal-title" id="fiscal">
+    <h2 id="fiscal-title">@L["Customer.TaxData"]</h2>
+    @if (Model.Tax is { } tx)
+    {
+        <dl class="facts">
+            <dt>@L["Admin.TaxId"]</dt><dd>@L["TaxDocumentType." + tx.DocumentType] @tx.DocumentNumber (@tx.LegalName)</dd>
+            <dt>@L["Fiscal.VatCondition"]</dt><dd>@tx.VatCondition. @VatConditions.Describe(tx.VatCondition) <span class="muted">@L["Customer.Class", VatConditions.ClassFor(tx.VatCondition)]</span></dd>
+            <dt>@L["Taxes.Country"]</dt><dd>@tx.Country @tx.Province</dd>
+            @if (tx.VatNumber is { Length: > 0 })
+            {
+                <dt>@L["Customer.VatNumber"]</dt><dd>@tx.Country@tx.VatNumber @if (tx.ValidatedBusiness) { <span class="status" data-tone="ok">@L["Customer.VatValidated", tx.VatValidationRef ?? ""]</span> } else { <span class="status" data-tone="warn" data-shape="hollow">@L["Customer.VatNotValidated"]</span> }</dd>
+            }
+            <dt>@L["Customer.Source"]</dt><dd>@(tx.Source ?? "manual") @(tx.VerifiedAt is { } v ? L["Customer.VerifiedAt", v.ToLocalTime().ToString("g", CultureInfo.CurrentCulture)].Value : "")</dd>
+            <dt>@L["Customer.LargeCompany"]</dt><dd>@(a.LargeCompany ? L["Yes"] : L["No"])</dd>
+        </dl>
+    }
+    else
+    {
+        <p class="warn">@L["Customer.NoTaxData"]</p>
+    }
+    @if (Model.CanEditTaxes)
+    {
+        <div class="actions">
+            @if (Model.Tax is { DocumentType: TaxDocumentType.Cuit or TaxDocumentType.Cuil })
+            {
+                <form method="post" asp-page-handler="Lookup"><input type="hidden" name="taxId" value="@Model.Tax.DocumentNumber"><button type="submit" class="secondary">@L["Fiscal.FillFromArca"]</button></form>
+            }
+            @if (Model.CanValidateVat)
+            {
+                <form method="post" asp-page-handler="ValidateVat"><button type="submit" class="secondary">@L["Customer.ValidateVat"]</button></form>
+            }
+            <form method="post" asp-page-handler="LargeCompany"><input type="hidden" name="largeCompany" value="@(a.LargeCompany ? "false" : "true")"><button type="submit" class="secondary">@(a.LargeCompany ? L["Customer.UnmarkLarge"] : L["Customer.MarkLarge"])</button></form>
+        </div>
+        <p class="muted">@L["Customer.LargeCompanyHelp"]</p>
+        @if (Model.Registry is { } r)
+        {
+            <section class="card" aria-labelledby="registry">
+                <h3 id="registry">@L["Customer.RegistrySays"]</h3>
+                <dl class="facts">
+                    <dt>@L["Field.Name"]</dt><dd>@r.Name</dd>
+                    <dt>@L["Fiscal.Address"]</dt><dd>@string.Join(", ", new[] { r.Street, r.City, r.Province, r.PostalCode }.Where(p => !string.IsNullOrWhiteSpace(p)))</dd>
+                    <dt>@L["Customer.RegistryTaxes"]</dt><dd>@string.Join(", ", r.Taxes) @r.MonotaxCategory</dd>
+                    @if (r.Blocked)
+                    {
+                        <dt>@L["Customer.RegistryBlocked"]</dt><dd>@string.Join(" ", r.Notes)</dd>
+                    }
+                </dl>
+                <form method="post" asp-page-handler="Fill" class="stack narrow">
+                    <input type="hidden" name="taxId" value="@r.TaxId">
+                    <div class="field"><label for="confirmed">@L["Fiscal.VatCondition"]</label>
+                        <select id="confirmed" name="confirmedCondition">
+                            @foreach (var c in Model.Conditions)
+                            {
+                                <option value="@c.Code" selected="@(c.Code == (r.SuggestedVatCondition ?? Model.Tax?.VatCondition))">@c.Code. @c.Description</option>
+                            }
+                        </select>
+                        <span class="help">@L["Customer.RegistrySuggestion"]</span></div>
+                    <div><button type="submit">@L["Customer.SaveRegistry"]</button></div>
+                </form>
+            </section>
+        }
+        <details>
+            <summary>@L["Customer.EditTax"]</summary>
+            <form method="post" asp-page-handler="Tax" class="stack narrow">
+                <div class="field"><label for="documentType">@L["Customer.DocumentType"]</label>
+                    <select id="documentType" name="documentType">
+                        @foreach (var kind in Enum.GetValues<TaxDocumentType>())
+                        {
+                            <option value="@kind" selected="@(kind == (Model.Tax?.DocumentType ?? TaxDocumentType.Cuit))">@L["TaxDocumentType." + kind]</option>
+                        }
+                    </select></div>
+                <div class="field"><label for="documentNumber">@L["Admin.TaxId"]</label><input id="documentNumber" name="documentNumber" value="@Model.Tax?.DocumentNumber" inputmode="numeric" required></div>
+                <div class="field"><label for="legalName">@L["Fiscal.LegalName"]</label><input id="legalName" name="legalName" value="@(Model.Tax?.LegalName ?? a.CompanyName ?? a.Name)" required></div>
+                <div class="field"><label for="vatCondition">@L["Fiscal.VatCondition"]</label>
+                    <select id="vatCondition" name="vatCondition">
+                        @foreach (var c in Model.Conditions)
+                        {
+                            <option value="@c.Code" selected="@(c.Code == Model.Tax?.VatCondition)">@c.Code. @c.Description</option>
+                        }
+                    </select>
+                    <span class="help">@L["Customer.ConditionHelp"]</span></div>
+                <div class="field"><label for="country">@L["Taxes.Country"]</label><input id="country" name="country" value="@(Model.Tax?.Country ?? "AR")" maxlength="2" required></div>
+                @if ((Model.Tax?.Country ?? "AR") == "AR")
+                {
+                    <div class="field"><label for="province">@L["Taxes.Province"]</label>
+                        <select id="province" name="province">
+                            <option value="">@L["Customer.NoProvince"]</option>
+                            @foreach (var (iso, name) in ArgentinaProvinces.Table)
+                            {
+                                <option value="@iso" selected="@(iso == Model.Tax?.Province)">@iso @name</option>
+                            }
+                            @if (Model.Tax?.Province is { Length: > 0 } other && !ArgentinaProvinces.IsCode(other))
+                            {
+                                <option value="@other" selected>@other</option>
+                            }
+                        </select>
+                        <span class="help">@L["Taxes.ProvinceHelp"]</span></div>
+                }
+                else
+                {
+                    <div class="field"><label for="province">@L["Taxes.Province"]</label><input id="province" name="province" value="@Model.Tax?.Province" maxlength="6"><span class="help">@L["Taxes.ProvinceHelp"]</span></div>
+                }
+                <div class="field"><label for="vatNumber">@L["Customer.VatNumber"]</label><input id="vatNumber" name="vatNumber" value="@Model.Tax?.VatNumber"><span class="help">@L["Customer.VatNumberHelp"]</span></div>
+                <div><button type="submit">@L["Taxes.Save"]</button></div>
+            </form>
+        </details>
+    }
+
+    <h3>@L["Customer.AccountRules"]</h3>
+    <p class="muted">@L["Customer.AccountRulesHelp"]</p>
+    @if (Model.AccountRules.Count > 0)
+    {
+        <div class="table">
+            <table>
+                <thead><tr><th scope="col">@L["Taxes.TaxesColumn"]</th><th scope="col">@L["Taxes.Outcome"]</th><th scope="col">@L["Taxes.Reason"]</th><th scope="col">@L["Customer.Certificate"]</th><th scope="col">@L["Taxes.Validity"]</th><th scope="col"></th></tr></thead>
+                <tbody>
+                    @foreach (var r in Model.AccountRules)
+                    {
+                        var current = r.ValidFrom <= today && (r.ValidTo is null || today < r.ValidTo);
+                        <tr>
+                            <td>@(Model.Taxes.FirstOrDefault(x => x.Code == r.TaxCode)?.Name ?? r.TaxCode)</td>
+                            <td>@(r.Outcome == TaxTreatment.Taxed ? Ui.Percent(r.Rate) : L["TaxTreatment." + r.Outcome].Value)</td>
+                            <td>@L["TaxReason." + (r.Reason ?? TaxReasons.AccountRule)] @r.Note</td>
+                            <td>@r.CertificateRef</td>
+                            <td><span class="status" data-tone="@(current ? "ok" : "neutral")" data-shape="@(r.ValidFrom > today ? "hollow" : null)">@Ui.Date(r.ValidFrom)@(r.ValidTo is { } to ? " " + L["Taxes.To"].Value + " " + Ui.Date(to) : "")</span></td>
+                            <td>
+                                @if (Model.CanEditTaxes && (r.ValidTo is null || r.ValidTo > today))
+                                {
+                                    <form method="post" asp-page-handler="CloseRule" class="inline"><input type="hidden" name="ruleId" value="@r.Id"><button type="submit" class="link">@L["Taxes.CloseToday"]</button></form>
+                                }
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
+    @if (Model.CanEditTaxes)
+    {
+        <details>
+            <summary>@L["Customer.AddAccountRule"]</summary>
+            <form method="post" asp-page-handler="Rule" class="stack">
+                <div class="field-row">
+                    <div class="field"><label for="ar-tax">@L["Taxes.TaxesColumn"]</label>
+                        <select id="ar-tax" name="taxCode">
+                            @foreach (var x in Model.Taxes)
+                            {
+                                <option value="@x.Code">@x.Name</option>
+                            }
+                        </select></div>
+                    <div class="field"><label for="ar-outcome">@L["Taxes.Outcome"]</label>
+                        <select id="ar-outcome" name="outcome"><option value="Exempt">@L["TaxTreatment.Exempt"]</option><option value="NotTaxed">@L["TaxTreatment.NotTaxed"]</option><option value="Taxed">@L["TaxTreatment.Taxed"]</option></select></div>
+                    <div class="field"><label for="ar-rate">@L["Taxes.RatePercent"]</label><input id="ar-rate" name="ratePercent" inputmode="decimal" value="21"></div>
+                    <div class="field"><label for="ar-reason">@L["Taxes.Reason"]</label>
+                        <select id="ar-reason" name="reason" required>
+                            @foreach (var reason in new[] { TaxReasons.ExemptByLaw, TaxReasons.Untaxed, TaxReasons.Taxed, TaxReasons.Export, TaxReasons.AccountRule })
+                            {
+                                <option value="@reason">@L["TaxReason." + reason]</option>
+                            }
+                        </select></div>
+                    <div class="field"><label for="ar-cert">@L["Customer.Certificate"]</label><input id="ar-cert" name="certificateRef"><span class="help">@L["Customer.CertificateHelp"]</span></div>
+                    <div class="field"><label for="ar-from">@L["Taxes.ValidFrom"]</label><input id="ar-from" name="validFrom" type="date" value="@today.ToString("yyyy-MM-dd")" required></div>
+                    <div class="field"><label for="ar-to">@L["Taxes.ValidTo"]</label><input id="ar-to" name="validTo" type="date"><span class="help">@L["Customer.ValidToHelp"]</span></div>
+                    <div class="field"><label for="ar-note">@L["Taxes.Note"]</label><input id="ar-note" name="note"></div>
+                </div>
+                <div><button type="submit">@L["Customer.AddAccountRule"]</button></div>
+            </form>
+        </details>
+    }
+</section>
+
+<section aria-labelledby="users">
+    <h2 id="users">@L["Admin.Users"]</h2>
+    <p><a href="/admin/cuentas/@a.Id/seguridad">@S["Customer.SecurityLink"]</a></p>
+    @if (Model.Users.Count == 0)
+    {
+        <p>@L["Admin.NoUsers"]</p>
+    }
+    else
+    {
+        <ul class="plain">
+            @foreach (var u in Model.Users)
+            {
+                <li>@u.Email @(u.IsOwner ? L["Admin.Owner"] : string.Join(", ", u.Capabilities))</li>
+            }
+        </ul>
+    }
+</section>
+
+<section aria-labelledby="services">
+    <h2 id="services">@L["Nav.Services"]</h2>
+    @if (Model.CanPlaceOrders)
+    {
+        <p><a class="button secondary" href="@NewOrderModel.Link(a.Id)">@L["Nav.AddOrder"]</a></p>
+    }
+    <div class="table">
+        <table>
+            <thead><tr><th scope="col">#</th><th scope="col">@L["Services.Service"]</th><th scope="col">@L["Field.Status"]</th><th scope="col">@L["Services.NextDue"]</th><th scope="col" class="num">@L["Services.Price"]</th></tr></thead>
+            <tbody>
+                @foreach (var s in Model.Services)
+                {
+                    <tr>
+                        <td>@s.Service.Id</td>
+                        <td>
+                            @s.Product @s.Service.Label
+                            @if (Model.Metered.Contains(s.Service.ProductId))
+                            {
+                                <a href="/admin/servicios/@s.Service.Id/uso">@L["Usage.Link"]</a>
+                            }
+                            @if (Model.CanChangeServices && s.Service.Status == BillingOss.Domain.Services.ServiceStatus.Active)
+                            {
+                                <a href="/admin/servicios/@s.Service.Id/cambio">@L["Change.Link"]</a>
+                            }
+                        </td>
+                        <td>@L["ServiceStatus." + s.Service.Status]</td>
+                        <td>@Ui.Date(s.Service.NextDueDate)</td>
+                        <td class="num">
+                            @Ui.Money(s.Service.UnitPrice * s.Service.Quantity, s.Service.Currency)
+                            @if (s.Service.IndexCurrency is { } index)
+                            {
+                                <span class="muted">@L["Services.Indexed", Ui.Money(s.Service.IndexedUnitPrice!.Value * s.Service.Quantity, index)]</span>
+                            }
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</section>
+
+@if (Model.Domains.Count > 0)
+{
+    <section aria-labelledby="domains">
+        <h2 id="domains">@L["Nav.Domains"]</h2>
+        <div class="table">
+            <table>
+                <thead><tr><th scope="col">@L["Domains.Domain"]</th><th scope="col">@L["Field.Status"]</th><th scope="col">@L["Domains.Expires"]</th><th scope="col" class="num">@L["Domains.Price"]</th></tr></thead>
+                <tbody>
+                    @foreach (var d in Model.Domains)
+                    {
+                        <tr>
+                            <td>@if (Model.CanSeeDomains) { <a href="/admin/dominios/@d.Id">@d.Name</a> } else { @d.Name }</td>
+                            <td><partial name="_DomainStatus" model="d.Status" /></td>
+                            <td>@Ui.Date(d.ExpiresOn)</td>
+                            <td class="num">@Ui.Money(d.RecurringAmount, d.Currency)</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </section>
+}
+
+<section aria-labelledby="documents">
+    <h2 id="documents">@L["Nav.Invoices"]</h2>
+    <div class="table">
+        <table>
+            <thead><tr><th scope="col">@L["Invoices.Document"]</th><th scope="col">@L["Invoices.Date"]</th><th scope="col">@L["Invoices.Due"]</th><th scope="col" class="num">@L["Invoices.Total"]</th><th scope="col" class="num">@L["Invoices.Pending"]</th><th scope="col">@L["Field.Status"]</th></tr></thead>
+            <tbody>
+                @foreach (var d in Model.Documents)
+                {
+                    <tr>
+                        <td>@L["DocumentKind." + d.Kind] @(d.Number ?? d.Id)</td>
+                        <td>@Ui.Date(d.IssueDate)</td>
+                        <td>@Ui.Date(d.DueDate)</td>
+                        <td class="num">@Ui.Money(d.Total, d.Currency)</td>
+                        <td class="num">@Ui.Money(d.Pending, d.Currency)</td>
+                        <td>@L["InvoiceStatus." + d.Status]</td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</section>
+
+<section aria-labelledby="payments">
+    <h2 id="payments">@L["Admin.Payments"]</h2>
+    <div class="table">
+        <table>
+            <thead><tr><th scope="col">#</th><th scope="col">@L["Admin.Date"]</th><th scope="col">@L["Admin.Channel"]</th><th scope="col" class="num">@L["Invoice.Amount"]</th><th scope="col" class="num">@L["Admin.Applied"]</th><th scope="col">@L["Field.Status"]</th></tr></thead>
+            <tbody>
+                @foreach (var p in Model.Payments)
+                {
+                    <tr>
+                        <td>@p.Id</td>
+                        <td>@p.CreatedAt.ToString("g", CultureInfo.CurrentCulture)</td>
+                        <td>@p.Channel @p.ExternalId</td>
+                        <td class="num">@Ui.Money(p.Amount, p.Currency)</td>
+                        <td class="num">@Ui.Money(p.Applied, p.Currency)</td>
+                        <td>@L["PaymentStatus." + p.Status]</td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</section>
+
+@if (Model.CanSupport)
+{
+    <section aria-labelledby="tickets">
+        <h2 id="tickets">@L["Nav.Support"]</h2>
+        <p class="bo-actions"><a href="/admin/soporte/nuevo?cuenta=@a.Id">@L["SupportAdmin.OpenForAccount"]</a> <a href="/admin/cuentas/@a.Id/tickets">@L["SupportAdmin.SeeAll"]</a></p>
+        @if (Model.Tickets.Count == 0)
+        {
+            <p>@L["SupportAdmin.Empty"]</p>
+        }
+        else
+        {
+            <ul class="plain">
+                @foreach (var ticket in Model.Tickets)
+                {
+                    var (tone, shape) = SupportUi.Status(ticket.Status, staff: true);
+                    <li><a href="/admin/soporte/@ticket.Id">@ticket.Subject</a> <span class="muted">@L["Support.Number", ticket.Number]</span> <span class="bo-status" data-tone="@tone" data-shape="@shape">@L["TicketStatus." + ticket.Status]</span></li>
+                }
+            </ul>
+        }
+    </section>
+}
+
+@if (Model.Requests.Count > 0)
+{
+    <section aria-labelledby="requests">
+        <h2 id="requests">@L["Admin.ConsumerRequests"]</h2>
+        <ul class="plain">
+            @foreach (var r in Model.Requests)
+            {
+                <li>
+                    @(r.Kind == BillingOss.App.Identity.ConsumerRequestKind.Withdrawal ? L["Consumer.WithdrawalButton"] : L["Consumer.CancellationButton"]):
+                    <code>@r.Receipt</code> @r.ConfirmedAt?.ToString("g", CultureInfo.CurrentCulture) @r.Detail
+                </li>
+            }
+        </ul>
+    </section>
+}

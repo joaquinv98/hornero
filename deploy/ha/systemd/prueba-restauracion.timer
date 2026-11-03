@@ -1,0 +1,9 @@
+[Unit]
+Description=Prueba de restauración semanal de billing-oss
+
+[Timer]
+OnCalendar=Wed *-*-* 10:00:00 America/Argentina/Buenos_Aires
+Persistent=true
+
+[Install]
+WantedBy=timers.target

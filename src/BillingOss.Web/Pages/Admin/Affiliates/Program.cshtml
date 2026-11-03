@@ -1,0 +1,73 @@
+@page "/admin/afiliados/programa"
+@model BillingOss.Web.Pages.Admin.Affiliates.AffiliateProgramModel
+@{
+    ViewData["Title"] = L["Affiliates.Program"];
+}
+<h1>@L["Affiliates.Program"]</h1>
+<partial name="_AffiliatesNav" />
+@if (Model.Error is { } error)
+{
+    <div class="alert bo-alert" data-tone="danger" role="alert"><p>@error</p></div>
+}
+<section aria-labelledby="settings">
+    <h2 id="settings">@L["Affiliates.Settings"]</h2>
+    <form method="post" asp-page-handler="Program" class="stack narrow bo-form">
+        <label class="check bo-check"><input type="checkbox" name="Enabled" value="true" checked="@Model.Enabled" disabled="@(!Model.CanManage)"> @L["Affiliates.Enabled"]</label>
+        <input type="hidden" name="Enabled" value="false">
+        <label class="check bo-check"><input type="checkbox" name="RequiresApproval" value="true" checked="@Model.RequiresApproval" disabled="@(!Model.CanManage)"> @L["Affiliates.RequiresApproval"]</label>
+        <input type="hidden" name="RequiresApproval" value="false">
+        <label for="cookie-days">@L["Affiliates.CookieDays"]</label>
+        <input id="cookie-days" name="CookieDays" type="number" min="1" max="365" value="@Model.CookieDays" class="bo-input" readonly="@(!Model.CanManage)">
+        <label for="hold-days">@L["Affiliates.HoldDays"]</label>
+        <input id="hold-days" name="HoldDays" type="number" min="0" max="365" value="@Model.HoldDays" class="bo-input" readonly="@(!Model.CanManage)">
+        <label for="minimums">@L["Affiliates.Minimums"]</label>
+        <input id="minimums" name="Minimums" type="text" autocomplete="off" value="@Model.Minimums" class="bo-input" aria-describedby="minimums-help" readonly="@(!Model.CanManage)">
+        <p id="minimums-help" class="muted bo-help">@L["Affiliates.MinimumsHelp"]</p>
+        <label for="bonuses">@L["Affiliates.Bonuses"]</label>
+        <input id="bonuses" name="Bonuses" type="text" autocomplete="off" value="@Model.Bonuses" class="bo-input" aria-describedby="bonuses-help" readonly="@(!Model.CanManage)">
+        <p id="bonuses-help" class="muted bo-help">@L["Affiliates.BonusesHelp"]</p>
+        <label for="payout-notify">@L["Affiliates.PayoutNotify"]</label>
+        <input id="payout-notify" name="PayoutNotifyEmail" type="email" maxlength="320" autocomplete="off" value="@Model.PayoutNotifyEmail" class="bo-input" aria-describedby="payout-notify-help" readonly="@(!Model.CanManage)">
+        <p id="payout-notify-help" class="muted bo-help">@L["Affiliates.PayoutNotifyHelp"]</p>
+        <label for="links">@L["Affiliates.Material"]</label>
+        <textarea id="links" name="Links" rows="6" maxlength="4000" class="bo-textarea bo-data" aria-describedby="links-help" readonly="@(!Model.CanManage)">@Model.Links</textarea>
+        <p id="links-help" class="muted bo-help">@L["Affiliates.MaterialHelp"]</p>
+        <label class="check bo-check"><input type="checkbox" name="MonthlyReport" value="true" checked="@Model.MonthlyReport" disabled="@(!Model.CanManage)"> @L["Affiliates.MonthlyReport"]</label>
+        <input type="hidden" name="MonthlyReport" value="false">
+        @if (Model.CanManage)
+        {
+            <button type="submit" class="bo-btn">@L["Affiliates.Save"]</button>
+        }
+    </form>
+</section>
+
+<section aria-labelledby="rules">
+    <h2 id="rules">@L["Affiliates.Rules"]</h2>
+    <p class="muted bo-muted">@L["Affiliates.RulesHelp"]</p>
+    @if (Model.Rules.Count == 0)
+    {
+        <p>@L["Affiliates.NoRules"]</p>
+    }
+    else
+    {
+        <ul class="plain">
+            @foreach (var r in Model.Rules)
+            {
+                <li>
+                    <span class="strong bo-strong">@(r.Product ?? L["Affiliates.DefaultRule"].Value)</span>: <partial name="_CommissionRule" model="r.Rule" />
+                    @if (Model.CanManage)
+                    {
+                        <form method="post" asp-page-handler="DeleteRule" asp-route-ruleId="@r.Rule.Id" class="inline"><button type="submit" class="link">@L["Affiliates.Delete"]</button></form>
+                    }
+                </li>
+            }
+        </ul>
+    }
+    @if (Model.CanManage)
+    {
+        <form method="post" asp-page-handler="Rule" class="stack narrow bo-form">
+            <partial name="_RuleFields" model="Model.Rule" view-data='new ViewDataDictionary(ViewData) { ["Products"] = Model.Products, ["Prefix"] = "program" }' />
+            <button type="submit" class="bo-btn">@L["Affiliates.SaveRule"]</button>
+        </form>
+    }
+</section>

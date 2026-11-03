@@ -1,0 +1,221 @@
+@page "/admin/impuestos/reglas"
+@model TaxesRulesModel
+@using BillingOss.Domain.Accounts
+@using BillingOss.Domain.Billing
+@using BillingOss.Domain.Catalog
+@{
+    ViewData["Title"] = L["Taxes.Rules"];
+    var today = Model.Today;
+}
+<h1>@L["Taxes.Title"]</h1>
+<partial name="_Nav" model="@("/admin/impuestos/reglas")" />
+@if (Model.Error is not null)
+{
+    <p class="alert" role="alert">@Model.Error</p>
+}
+@if (Model.Done is { Length: > 0 })
+{
+    <p class="notice" role="status">@L["Taxes.Done"]</p>
+}
+
+<section aria-labelledby="categories">
+    <h2 id="categories">@L["Taxes.Categories"]</h2>
+    <p class="muted">@L["Taxes.CategoriesHelp"]</p>
+    <div class="table">
+        <table>
+            <thead><tr><th scope="col">@L["Taxes.Code"]</th><th scope="col">@L["Field.Name"]</th><th scope="col">@L["Taxes.Explanation"]</th><th scope="col">@L["Taxes.Treatment"]</th><th scope="col" class="num">@L["Taxes.ProductsUsing"]</th></tr></thead>
+            <tbody>
+                @foreach (var c in Model.Categories)
+                {
+                    <tr><td><code>@c.Category.Code</code></td><td>@c.Category.Name</td><td>@c.Category.Explanation</td><td>@L["TaxTreatment." + c.Category.Treatment]</td><td class="num">@c.Products</td></tr>
+                }
+            </tbody>
+        </table>
+    </div>
+    <details>
+        <summary>@L["Taxes.AddCategory"]</summary>
+        <form method="post" asp-page-handler="AddCategory" class="stack narrow">
+            <div class="field"><label for="cat-code">@L["Taxes.Code"]</label><input id="cat-code" name="code" pattern="[a-z0-9_]{2,40}" required><span class="help">@L["Taxes.CodeHelp"]</span></div>
+            <div class="field"><label for="cat-name">@L["Field.Name"]</label><input id="cat-name" name="name" required></div>
+            <div class="field"><label for="cat-expl">@L["Taxes.Explanation"]</label><input id="cat-expl" name="explanation"></div>
+            <div class="field"><label for="cat-treat">@L["Taxes.Treatment"]</label>
+                <select id="cat-treat" name="treatment">
+                    <option value="Taxed">@L["TaxTreatment.Taxed"]</option>
+                    <option value="Exempt">@L["TaxTreatment.Exempt"]</option>
+                    <option value="NotTaxed">@L["TaxTreatment.NotTaxed"]</option>
+                </select></div>
+            <div><button type="submit">@L["Taxes.AddCategory"]</button></div>
+        </form>
+    </details>
+</section>
+
+<section aria-labelledby="taxes">
+    <h2 id="taxes">@L["Taxes.TaxesColumn"]</h2>
+    <div class="table">
+        <table>
+            <thead><tr><th scope="col">@L["Taxes.Code"]</th><th scope="col">@L["Field.Name"]</th><th scope="col">@L["Taxes.Level"]</th><th scope="col">@L["Taxes.Base"]</th><th scope="col">@L["Taxes.FiscalCode"]</th><th scope="col">@L["Taxes.AddsToTotal"]</th></tr></thead>
+            <tbody>
+                @foreach (var t in Model.Taxes)
+                {
+                    <tr><td><code>@t.Code</code></td><td>@t.Name</td><td>@L["TaxLevel." + t.Level]</td><td>@L["TaxBase." + t.Base]</td><td>@(t.FiscalCode?.ToString(CultureInfo.InvariantCulture) ?? "")</td><td>@(t.AddsToTotal ? L["Yes"] : L["Taxes.OnlyInformed"])</td></tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</section>
+
+<section aria-labelledby="rules">
+    <h2 id="rules">@L["Taxes.RulesList"]</h2>
+    <p class="muted">@L["Taxes.RulesHelp"]</p>
+    <form method="get" class="search" role="search">
+        <div class="field"><label for="f-tax">@L["Taxes.TaxesColumn"]</label>
+            <select id="f-tax" name="tax"><option value="">@L["Taxes.Any"]</option>
+                @foreach (var t in Model.Taxes)
+                {
+                    <option value="@t.Code" selected="@(t.Code == Model.FilterTax)">@t.Name</option>
+                }
+            </select></div>
+        <div class="field"><label for="f-country">@L["Taxes.Country"]</label><input id="f-country" name="country" value="@Model.FilterCountry" maxlength="2"></div>
+        <div class="field"><label for="f-category">@L["Taxes.Category"]</label>
+            <select id="f-category" name="category"><option value="">@L["Taxes.Any"]</option>
+                @foreach (var c in Model.Categories)
+                {
+                    <option value="@c.Category.Code" selected="@(c.Category.Code == Model.FilterCategory)">@c.Category.Name</option>
+                }
+            </select></div>
+        <div class="field"><label for="f-condition">@L["Taxes.Condition"]</label>
+            <select id="f-condition" name="condition"><option value="">@L["Taxes.Any"]</option>
+                @foreach (var c in VatConditions.Table)
+                {
+                    <option value="@c.Code" selected="@(c.Code == Model.FilterCondition)">@c.Description</option>
+                }
+            </select></div>
+        <label class="check"><input type="checkbox" name="closed" value="true" checked="@Model.ShowClosed"> @L["Taxes.ShowClosed"]</label>
+        <button type="submit" class="secondary">@L["Taxes.Filter"]</button>
+    </form>
+    <div class="table">
+        <table>
+            <thead><tr><th scope="col">@L["Taxes.TaxesColumn"]</th><th scope="col">@L["Taxes.Receiver"]</th><th scope="col">@L["Taxes.Category"]</th><th scope="col">@L["Taxes.Outcome"]</th><th scope="col">@L["Taxes.Why"]</th><th scope="col">@L["Taxes.Validity"]</th><th scope="col"></th></tr></thead>
+            <tbody>
+                @foreach (var r in Model.Rules)
+                {
+                    var current = r.ValidFrom <= today && (r.ValidTo is null || today < r.ValidTo);
+                    <tr>
+                        <td>@(Model.Taxes.FirstOrDefault(t => t.Code == r.TaxCode)?.Name ?? r.TaxCode)</td>
+                        <td>@(r.Country ?? L["Taxes.AnyCountry"].Value)@(r.Province is null ? "" : " · " + r.Province)@(r.VatCondition is { } vc ? " · " + VatConditions.Describe(vc) : "")@(r.BusinessWithValidatedNumber is { } b ? " · " + L[b ? "Taxes.ValidatedBusiness" : "Taxes.NotValidatedBusiness"].Value : "")</td>
+                        <td>@(r.Category ?? L["Taxes.Any"].Value)</td>
+                        <td>@(r.Outcome == TaxTreatment.Taxed ? Ui.Percent(r.Rate) : L["TaxTreatment." + r.Outcome].Value)</td>
+                        <td>@(r.Reason is null ? "" : L["TaxReason." + r.Reason].Value) @r.Legend @r.Note</td>
+                        <td><span class="status" data-tone="@(current ? "ok" : "neutral")" data-shape="@(r.ValidFrom > today ? "hollow" : null)">@Ui.Date(r.ValidFrom)@(r.ValidTo is { } to ? " " + L["Taxes.To"].Value + " " + Ui.Date(to) : "")</span></td>
+                        <td>
+                            @if (r.ValidTo is null || r.ValidTo > today)
+                            {
+                                <form method="post" asp-page-handler="Close" class="inline"><input type="hidden" name="id" value="@r.Id"><button type="submit" class="link">@L["Taxes.CloseToday"]</button></form>
+                            }
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+    <details>
+        <summary>@L["Taxes.AddRule"]</summary>
+        <form method="post" asp-page-handler="AddRule" class="stack">
+            <div class="field-row">
+                <div class="field"><label for="r-tax">@L["Taxes.TaxesColumn"]</label>
+                    <select id="r-tax" name="taxCode">
+                        @foreach (var t in Model.Taxes)
+                        {
+                            <option value="@t.Code">@t.Name</option>
+                        }
+                    </select></div>
+                <div class="field"><label for="r-country">@L["Taxes.Country"]</label><input id="r-country" name="country" maxlength="2"><span class="help">@L["Taxes.CountryRuleHelp"]</span></div>
+                <div class="field"><label for="r-province">@L["Taxes.Province"]</label><input id="r-province" name="province" maxlength="6"></div>
+                <div class="field"><label for="r-condition">@L["Taxes.Condition"]</label>
+                    <select id="r-condition" name="vatCondition"><option value="">@L["Taxes.Any"]</option>
+                        @foreach (var c in VatConditions.Table)
+                        {
+                            <option value="@c.Code">@c.Description</option>
+                        }
+                    </select></div>
+                <div class="field"><label for="r-business">@L["Taxes.Business"]</label>
+                    <select id="r-business" name="business"><option value="">@L["Taxes.Any"]</option><option value="yes">@L["Taxes.ValidatedBusiness"]</option><option value="no">@L["Taxes.NotValidatedBusiness"]</option></select></div>
+                <div class="field"><label for="r-category">@L["Taxes.Category"]</label>
+                    <select id="r-category" name="category"><option value="">@L["Taxes.Any"]</option>
+                        @foreach (var c in Model.Categories)
+                        {
+                            <option value="@c.Category.Code">@c.Category.Name</option>
+                        }
+                    </select></div>
+                <div class="field"><label for="r-outcome">@L["Taxes.Outcome"]</label>
+                    <select id="r-outcome" name="outcome"><option value="Taxed">@L["TaxTreatment.Taxed"]</option><option value="Exempt">@L["TaxTreatment.Exempt"]</option><option value="NotTaxed">@L["TaxTreatment.NotTaxed"]</option></select></div>
+                <div class="field"><label for="r-rate">@L["Taxes.RatePercent"]</label><input id="r-rate" name="ratePercent" inputmode="decimal" value="21"><span class="help">@L["Taxes.RatePercentHelp"]</span></div>
+                <div class="field"><label for="r-reason">@L["Taxes.Reason"]</label>
+                    <select id="r-reason" name="reason"><option value="">@L["Taxes.ReasonAuto"]</option>
+                        @foreach (var reason in new[] { TaxReasons.Taxed, TaxReasons.Export, TaxReasons.ExemptByLaw, TaxReasons.Untaxed, TaxReasons.ReverseCharge, TaxReasons.Perception, TaxReasons.Informational, TaxReasons.Monotax })
+                        {
+                            <option value="@reason">@L["TaxReason." + reason]</option>
+                        }
+                    </select></div>
+                <div class="field"><label for="r-legend">@L["Taxes.Legend"]</label><input id="r-legend" name="legend"></div>
+                <div class="field"><label for="r-from">@L["Taxes.ValidFrom"]</label><input id="r-from" name="validFrom" type="date" value="@today.ToString("yyyy-MM-dd")" required></div>
+                <div class="field"><label for="r-to">@L["Taxes.ValidTo"]</label><input id="r-to" name="validTo" type="date"></div>
+                <div class="field"><label for="r-note">@L["Taxes.Note"]</label><input id="r-note" name="note"></div>
+            </div>
+            <div><button type="submit">@L["Taxes.AddRule"]</button></div>
+        </form>
+    </details>
+</section>
+
+<section aria-labelledby="perceptions">
+    <h2 id="perceptions">@L["Taxes.Perceptions"]</h2>
+    <p><span class="status" data-tone="@(Model.Rg2126Active ? "ok" : "neutral")">@L["Taxes.Rg2126"]</span> @(Model.Rg2126Active ? L["Taxes.Rg2126On"] : L["Taxes.Rg2126Off"])</p>
+    <h3>@L["Taxes.GrossIncome"]</h3>
+    <p class="muted">@L["Taxes.GrossIncomeHelp"]</p>
+    @if (Model.Regimes.Count > 0)
+    {
+        <div class="table">
+            <table>
+                <thead><tr><th scope="col">@L["Taxes.Jurisdiction"]</th><th scope="col">@L["Taxes.Regime"]</th><th scope="col">@L["Taxes.AgentNumber"]</th><th scope="col">@L["Taxes.RatePercent"]</th><th scope="col">@L["Taxes.Base"]</th><th scope="col">@L["Taxes.Validity"]</th><th scope="col"></th></tr></thead>
+                <tbody>
+                    @foreach (var g in Model.Regimes)
+                    {
+                        <tr>
+                            <td>@g.Jurisdiction</td><td>@g.Regime</td><td>@g.AgentNumber</td><td>@Ui.Percent(g.Rate)</td><td>@L["TaxBase." + g.Base]</td>
+                            <td><span class="status" data-tone="@(g.IsValidOn(today) ? "ok" : "neutral")">@Ui.Date(g.ValidFrom)@(g.ValidTo is { } to ? " " + L["Taxes.To"].Value + " " + Ui.Date(to) : "")</span></td>
+                            <td>
+                                @if (g.ValidTo is null || g.ValidTo > today)
+                                {
+                                    <form method="post" asp-page-handler="CloseRegime" class="inline"><input type="hidden" name="jurisdiction" value="@g.Jurisdiction"><button type="submit" class="link">@L["Taxes.CloseToday"]</button></form>
+                                }
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
+    <details>
+        <summary>@L["Taxes.AddRegime"]</summary>
+        <form method="post" asp-page-handler="Regime" class="stack">
+            <div class="field-row">
+                <div class="field"><label for="g-jur">@L["Taxes.Jurisdiction"]</label><input id="g-jur" name="jurisdiction" placeholder="AR-B" maxlength="4" required><span class="help">@L["Taxes.JurisdictionHelp"]</span></div>
+                <div class="field"><label for="g-reg">@L["Taxes.Regime"]</label><input id="g-reg" name="regime" required></div>
+                <div class="field"><label for="g-num">@L["Taxes.AgentNumber"]</label><input id="g-num" name="agentNumber" required></div>
+                <div class="field"><label for="g-rate">@L["Taxes.RatePercent"]</label><input id="g-rate" name="ratePercent" inputmode="decimal" required></div>
+                <div class="field"><label for="g-base">@L["Taxes.Base"]</label>
+                    <select id="g-base" name="taxBase"><option value="Net">@L["TaxBase.Net"]</option><option value="Total">@L["TaxBase.Total"]</option></select></div>
+                <div class="field"><label for="g-from">@L["Taxes.ValidFrom"]</label><input id="g-from" name="validFrom" type="date" value="@today.ToString("yyyy-MM-dd")" required></div>
+                <div class="field"><label for="g-to">@L["Taxes.ValidTo"]</label><input id="g-to" name="validTo" type="date"></div>
+            </div>
+            <fieldset class="field">
+                <legend>@L["Taxes.ExcludedConditions"]</legend>
+                @foreach (var c in VatConditions.Table)
+                {
+                    <label class="check"><input type="checkbox" name="excluded" value="@c.Code"> @c.Description</label>
+                }
+            </fieldset>
+            <div><button type="submit">@L["Taxes.AddRegime"]</button></div>
+        </form>
+    </details>
+</section>

@@ -1,0 +1,105 @@
+@page "/admin/catalogo/cupones/{id}"
+@model BillingOss.Web.Pages.Admin.Catalog.CouponModel
+@using BillingOss.Domain.Catalog
+@using BillingOss.Web.Pages.Admin.Catalog
+@{
+    var title = Model.CouponId is null ? L["Catalog.NewCoupon"].Value : Model.Input.Code ?? "";
+    ViewData["Title"] = title;
+    var products = new ProductPicker("Input.ProductIds", L["Catalog.CouponProducts"], Model.Products, Model.Input.ProductIds, L["Catalog.CouponProductsHelp"]);
+    string CycleName(string code) => L["CycleOption." + code] is { ResourceNotFound: false } text ? text.Value : code;
+}
+<nav aria-label="@L["Catalog.Breadcrumb"]"><a href="/admin/catalogo/cupones">@L["Nav.Promotions"]</a></nav>
+<h1>@title</h1>
+@if (Model.Error is { } error)
+{
+    <div class="alert" role="alert" tabindex="-1" autofocus><p><strong>@L["Catalog.ErrorTitle"]</strong> @error</p></div>
+}
+@if (Model.Saved)
+{
+    <p class="notice" role="status">@L["Catalog.Saved"]</p>
+}
+@if (Model.CouponId is not null)
+{
+    <p class="muted">@L["Catalog.UsedTimes", Model.Uses]</p>
+}
+<form method="post" class="stack">
+    <fieldset class="card">
+        <legend>@L["Catalog.Discount"]</legend>
+        <div class="grid">
+            <div class="field">
+                <label asp-for="Input.Code">@L["Catalog.Code"]</label>
+                <input asp-for="Input.Code" required maxlength="100" autocomplete="off" spellcheck="false" class="code">
+            </div>
+            <div class="field">
+                <label asp-for="Input.Kind">@L["Catalog.DiscountKind"]</label>
+                <select asp-for="Input.Kind">
+                    @foreach (var kind in Enum.GetValues<DiscountKind>())
+                    {
+                        <option value="@kind" selected="@(Model.Input.Kind == kind)">@L["DiscountKind." + kind]</option>
+                    }
+                </select>
+            </div>
+            <div class="field">
+                <label asp-for="Input.Value">@L["Catalog.DiscountValue"]</label>
+                <input asp-for="Input.Value" type="number" step="any" min="0" inputmode="decimal" required>
+            </div>
+            <div class="field">
+                <label asp-for="Input.Currency">@L["Catalog.Currency"]</label>
+                <input asp-for="Input.Currency" maxlength="3" autocomplete="off" aria-describedby="currency-help">
+                <small id="currency-help" class="muted">@L["Catalog.CouponCurrencyHelp"]</small>
+            </div>
+            <div class="field">
+                <label asp-for="Input.RecurringCycles">@L["Catalog.RecurringCycles"]</label>
+                <input asp-for="Input.RecurringCycles" min="1" aria-describedby="cycles-help">
+                <small id="cycles-help" class="muted">@L["Catalog.RecurringCyclesHelp"]</small>
+            </div>
+        </div>
+        <label class="check"><input asp-for="Input.Recurring"> @L["Catalog.Recurring"]</label>
+    </fieldset>
+
+    <fieldset class="card">
+        <legend>@L["Catalog.WhereItApplies"]</legend>
+        <partial name="_Products" model="products" />
+        <div role="group" aria-label="@L["Catalog.CouponCycles"]">
+            <p class="strong">@L["Catalog.CouponCycles"] <span class="muted">@L["Catalog.CouponCyclesHelp"]</span></p>
+            @foreach (var code in CatalogForm.Cycles.Where(c => c != "free"))
+            {
+                <label class="check"><input type="checkbox" name="Input.Cycles" value="@code" checked="@Model.Input.Cycles.Contains(code)"> @CycleName(code)</label>
+            }
+        </div>
+    </fieldset>
+
+    <fieldset class="card">
+        <legend>@L["Catalog.WhenAndWho"]</legend>
+        <div class="grid">
+            <div class="field">
+                <label asp-for="Input.StartsOn">@L["Catalog.StartsOn"]</label>
+                <input asp-for="Input.StartsOn" type="date">
+            </div>
+            <div class="field">
+                <label asp-for="Input.ExpiresOn">@L["Catalog.ExpiresOn"]</label>
+                <input asp-for="Input.ExpiresOn" type="date" aria-describedby="expires-help">
+                <small id="expires-help" class="muted">@L["Catalog.ExpiresHelp"]</small>
+            </div>
+            <div class="field">
+                <label asp-for="Input.MaxUses">@L["Catalog.MaxUses"]</label>
+                <input asp-for="Input.MaxUses" min="0" aria-describedby="uses-help">
+                <small id="uses-help" class="muted">@L["Catalog.MaxUsesHelp"]</small>
+            </div>
+        </div>
+        <label class="check"><input asp-for="Input.OncePerAccount"> @L["Catalog.OncePerAccount"]</label>
+        <label class="check"><input asp-for="Input.OncePerOrder"> @L["Catalog.OncePerOrder"]</label>
+        <label class="check"><input asp-for="Input.NewAccountsOnly"> @L["Catalog.NewAccountsOnly"]</label>
+        <label class="check"><input asp-for="Input.ExistingAccountsOnly"> @L["Catalog.ExistingAccountsOnly"]</label>
+        <label class="check"><input asp-for="Input.Active"> @L["Catalog.ActiveHelp"]</label>
+        <div class="field">
+            <label asp-for="Input.Notes">@L["Catalog.Notes"]</label>
+            <textarea asp-for="Input.Notes" rows="2" maxlength="1000"></textarea>
+        </div>
+    </fieldset>
+
+    @if (Model.CanWrite)
+    {
+        <p><button type="submit">@L["Catalog.SaveCoupon"]</button></p>
+    }
+</form>

@@ -1,0 +1,47 @@
+@page "/admin/{tipo:regex(^(conocimiento|descargas)$)}/categorias/{id:long?}"
+@model CategoryModel
+@{
+    ViewData["Title"] = Model.Id is null ? C["Cms.NewCategory"] : C["Cms.EditCategory"];
+    var isNew = Model.Id is null;
+    var back = Model.IsHelp ? "/admin/conocimiento" : "/admin/descargas";
+}
+<h1>@ViewData["Title"]</h1>
+<partial name="_Tabs" />
+<partial name="_Alerts" model="Model" />
+<nav class="ct-crumbs" aria-label="@C["Kb.Breadcrumb"]"><a href="@back">@(Model.IsHelp ? C["Cms.Help"] : C["Cms.Downloads"])</a></nav>
+<form method="post" asp-page-handler="Save" asp-route-id="@Model.Id" asp-route-tipo="@Model.Tipo" class="ct-form">
+    <input type="hidden" name="Input.Revision" value="@Model.Input.Revision">
+    <fieldset>
+        <legend>@C["Cms.General"]</legend>
+        <label for="c-parent">@C["Cms.Parent"]</label>
+        <select id="c-parent" name="Input.ParentId">
+            <option value="">@C["Cms.NoParent"]</option>
+            @foreach (var c in Model.Parents)
+            {
+                <option value="@c.Id" selected="@(Model.Input.ParentId == c.Id)">@c.Name</option>
+            }
+        </select>
+        <label for="c-slug">@C["Cms.Slug"]</label>
+        <input id="c-slug" name="Input.Slug" value="@Model.Input.Slug" maxlength="100" aria-describedby="c-slug-help" autocomplete="off">
+        <p id="c-slug-help" class="muted">@C["Cms.SlugHelp"]</p>
+        <label for="c-order">@C["Cms.Order"]</label>
+        <input id="c-order" name="Input.SortOrder" type="number" value="@Model.Input.SortOrder" inputmode="numeric">
+        <label class="check"><input type="checkbox" name="Input.Hidden" value="true" checked="@Model.Input.Hidden"> @C["Cms.HiddenHelp"]</label>
+    </fieldset>
+    <partial name="_Texts" model="Model.TextFields" />
+    <p class="ct-actions">
+        <button type="submit">@C["Cms.Save"]</button>
+        <a href="@back">@C["Cms.Cancel"]</a>
+    </p>
+</form>
+@if (!isNew)
+{
+    <details>
+        <summary>@C["Cms.DeleteTitle"]</summary>
+        <form method="post" asp-page-handler="Delete" asp-route-id="@Model.Id" asp-route-tipo="@Model.Tipo" class="ct-form">
+            <p>@C["Cms.DeleteCategoryHelp"]</p>
+            <label class="check"><input type="checkbox" name="confirm" value="true"> @C["Cms.DeleteConfirm"]</label>
+            <p><button type="submit" class="danger">@C["Cms.DeleteCategory"]</button></p>
+        </form>
+    </details>
+}

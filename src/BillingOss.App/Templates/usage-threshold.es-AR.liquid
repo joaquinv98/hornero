@@ -1,0 +1,6 @@
+{% if over %}Llegaste a lo incluido de {{ metric }} en {{ service }}{% else %}Usaste el {{ percent }} % de {{ metric }} en {{ service }}{% endif %}
+<p>Hola, {{ account_name }}:</p>
+{% if over %}<p>Tu servicio <strong>{{ service }}</strong> ya usó <strong>{{ used }}</strong> de {{ metric }} en este período, y tu plan incluye {{ included }}.</p>
+<p>Lo que pase de lo incluido se cobra{% if price %} a {{ price }}{% if unit != "" %} por {{ unit }}{% endif %}{% endif %} en tu próxima factura.</p>{% else %}<p>Tu servicio <strong>{{ service }}</strong> ya usó <strong>{{ used }}</strong> de {{ metric }} en este período: el {{ percent }} % de los {{ included }} que incluye tu plan.</p>
+<p>Si pasás lo incluido, el excedente se cobra{% if price %} a {{ price }}{% if unit != "" %} por {{ unit }}{% endif %}{% endif %} en tu próxima factura.</p>{% endif %}
+{% if usage_url %}<p>Podés ver el detalle en <a href="{{ usage_url }}">tu cuenta</a>.</p>{% endif %}

@@ -1,0 +1,61 @@
+@page "/dominios"
+@model DomainsModel
+@{
+    ViewData["Title"] = L["Nav.Domains"];
+}
+<div class="bo-head">
+    <div class="bo-head__row">
+        <h1>@L["Nav.Domains"]</h1>
+        <div class="bo-row">
+            <a class="bo-btn" href="/dominios/nuevo">@L["Domains.Register"]</a>
+            <a class="bo-btn bo-btn--secondary" href="/dominios/nuevo#transferir">@L["Domains.Transfer"]</a>
+        </div>
+    </div>
+    <p class="bo-lead">@L["Domains.Lead"]</p>
+</div>
+@if (Model.Rows.Count == 0)
+{
+    <div class="bo-card">
+        <p>@L["Domains.None"]</p>
+    </div>
+}
+else
+{
+    <div class="bo-table-wrap">
+        <table class="bo-table">
+            <thead>
+                <tr>
+                    <th scope="col">@L["Domains.Domain"]</th>
+                    @if (Model.ManyAccounts)
+                    {
+                        <th scope="col">@L["Field.Account"]</th>
+                    }
+                    <th scope="col">@L["Field.Status"]</th>
+                    <th scope="col">@L["Domains.Expires"]</th>
+                    <th scope="col">@L["Domains.Renewal"]</th>
+                    <th scope="col" class="bo-num">@L["Domains.Price"]</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var r in Model.Rows)
+                {
+                    var d = r.Domain;
+                    <tr>
+                        <th scope="row"><a href="/dominios/@d.Id">@d.Name</a></th>
+                        @if (Model.ManyAccounts)
+                        {
+                            <td data-label="@L["Field.Account"]">@r.Account</td>
+                        }
+                        <td><partial name="_DomainStatus" model="d.Status" /></td>
+                        <td data-label="@L["Domains.Expires"]"><time datetime="@Ui.Iso(d.ExpiresOn)">@Ui.Date(d.ExpiresOn)</time></td>
+                        <td data-label="@L["Domains.Renewal"]">@(d.IsLive && d.AutoRenew ? L["Domains.AutoRenewOn"] : L["Domains.AutoRenewOff"])</td>
+                        <td data-label="@L["Domains.Price"]" class="bo-num">
+                            <data class="bo-money" value="@Ui.Value(d.RecurringAmount)">@Ui.Money(d.RecurringAmount, d.Currency)</data>
+                            <span class="bo-muted">@(d.Years == 1 ? L["Domains.PerYear"] : L["Domains.PerYears", d.Years])</span>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+}

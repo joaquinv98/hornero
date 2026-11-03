@@ -1,0 +1,55 @@
+@page "/admin/afiliados/retiros"
+@model BillingOss.Web.Pages.Admin.Affiliates.AffiliatePayoutsModel
+@{
+    ViewData["Title"] = L["Affiliates.Payouts"];
+}
+<h1>@L["Affiliates.Payouts"]</h1>
+<partial name="_AffiliatesNav" />
+@if (Model.Error is { } error)
+{
+    <div class="alert bo-alert" data-tone="danger" role="alert"><p>@error</p></div>
+}
+<section aria-labelledby="requested">
+    <h2 id="requested">@L["Affiliates.RequestedTitle"]</h2>
+    @if (Model.Requested.Count == 0)
+    {
+        <p>@L["Affiliates.NoRequested"]</p>
+    }
+    @foreach (var r in Model.Requested)
+    {
+        var p = r.Payout;
+        <article class="card bo-card" aria-labelledby="payout-@p.Id">
+            <h3 id="payout-@p.Id"><span class="bo-money">@Ui.Money(p.Amount, p.Currency)</span> <span class="muted bo-muted">#@p.Id</span></h3>
+            <dl class="facts bo-facts">
+                <dt>@L["Field.Account"]</dt>
+                <dd><a href="/admin/cuentas/@r.AccountId">@r.Account</a> (<a href="/admin/afiliados/@p.AffiliateId">@L["Affiliates.Affiliate", p.AffiliateId]</a>)</dd>
+                <dt>@L["Admin.Date"]</dt>
+                <dd>@p.RequestedAt.ToString("g", CultureInfo.CurrentCulture)</dd>
+                <dt>@L["Affiliates.Details"]</dt>
+                <dd>@p.Details</dd>
+            </dl>
+            @if (Model.CanManage)
+            {
+                <div class="cards bo-grid">
+                    <form method="post" asp-page-handler="Paid" asp-route-id="@p.Id" class="stack">
+                        <label for="reference-@p.Id">@L["Affiliates.Reference"]</label>
+                        <input id="reference-@p.Id" name="reference" type="text" maxlength="200" autocomplete="off" required class="bo-input">
+                        <button type="submit" class="bo-btn">@L["Affiliates.MarkPaid"]</button>
+                    </form>
+                    <form method="post" asp-page-handler="Reject" asp-route-id="@p.Id" class="stack">
+                        <label for="reason-@p.Id">@L["Affiliates.Reason"]</label>
+                        <input id="reason-@p.Id" name="reason" type="text" maxlength="500" autocomplete="off" required class="bo-input">
+                        <button type="submit" class="secondary bo-btn bo-btn--secondary">@L["Affiliates.RejectPayout"]</button>
+                    </form>
+                </div>
+            }
+        </article>
+    }
+</section>
+@if (Model.Decided.Count > 0)
+{
+    <section aria-labelledby="decided">
+        <h2 id="decided">@L["Affiliates.DecidedTitle"]</h2>
+        <partial name="_PayoutTable" model="Model.Decided.Select(r => r.Payout).ToList()" />
+    </section>
+}

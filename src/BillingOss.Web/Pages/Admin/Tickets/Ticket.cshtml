@@ -1,0 +1,165 @@
+@page "/admin/soporte/{id:long}"
+@model BillingOss.Web.Pages.Admin.Tickets.StaffTicketModel
+@using BillingOss.App.Support
+@{
+    var t = Model.Ticket!;
+    var (tone, shape) = SupportUi.Status(t.Status, staff: true);
+    ViewData["Title"] = (Model.Problems.Count > 0 ? L["Support.ErrorPrefix"] + " " : string.Empty) + t.Subject;
+    var thread = new SupportUi.ThreadView(Model.Thread, true, $"/admin/soporte/{t.Id}?handler=File&file=", Model.Billing);
+}
+<p><a href="/admin/soporte">@L["Support.Back"]</a></p>
+<h1>@t.Subject <span class="muted">@L["Support.Number", t.Number]</span></h1>
+<dl class="facts">
+    <dt>@L["Field.Status"]</dt>
+    <dd>
+        <span class="bo-status" data-tone="@tone" data-shape="@shape">@L["TicketStatus." + t.Status]</span>
+        <span class="bo-status" data-tone="@SupportUi.PriorityTone(t.Priority)">@L["TicketPriority." + t.Priority]</span>
+    </dd>
+    <dt>@L["SupportAdmin.Requester"]</dt>
+    <dd>@t.RequesterName <span class="muted">@t.RequesterEmail</span></dd>
+    @if (t.Cc.Length > 0)
+    {
+        <dt>@L["SupportAdmin.Cc"]</dt>
+        <dd>@string.Join(", ", t.Cc)</dd>
+    }
+    <dt>@L["Field.Account"]</dt>
+    <dd>
+        @if (t.AccountId is { } account)
+        {
+            <a href="/admin/cuentas/@account">@Model.AccountName</a> <span class="muted">@L["SupportAdmin.AccountNumber", account]</span>
+        }
+        else
+        {
+            @L["SupportAdmin.NoAccount"]
+        }
+    </dd>
+    @if (Model.Service is { } service)
+    {
+        <dt>@L["Support.Service"]</dt>
+        <dd>@service <span class="muted">@L["SupportAdmin.ServiceNumber", t.ServiceId!.Value]</span></dd>
+    }
+    <dt>@L["Support.Opened"]</dt>
+    <dd><time datetime="@SupportUi.Iso(t.CreatedAt)">@SupportUi.When(t.CreatedAt, Model.Billing)</time>@if (t.Imported) { <span class="muted"> · @L["MessageSource.Import"]</span> }</dd>
+    @if (Model.Feedback is { } feedback)
+    {
+        <dt>@L["Survey.Rating"]</dt>
+        <dd>
+            <span class="bo-status" data-tone="@SupportUi.RatingTone(feedback.Rating)">@L["Survey.OutOfTen", feedback.Rating]</span>
+            @if (feedback.Comment is { Length: > 0 } comment)
+            {
+                <span class="bo-body">@comment</span>
+            }
+        </dd>
+    }
+</dl>
+
+@if (Model.Problems.Count > 0)
+{
+    <div class="alert" role="alert">
+        <p class="strong">@L["Support.FixBelow"]</p>
+        <ul>
+            @foreach (var problem in Model.Problems)
+            {
+                <li>@problem</li>
+            }
+        </ul>
+    </div>
+}
+
+<details class="card">
+    <summary class="strong">@L["SupportAdmin.Change"]</summary>
+    <form method="post" asp-page-handler="Update" asp-route-id="@t.Id" class="bo-form">
+        <div class="bo-field">
+            <label for="Status">@L["Field.Status"]</label>
+            <select id="Status" name="Status">
+                @foreach (var s in Enum.GetValues<TicketStatus>())
+                {
+                    <option value="@s" selected="@(s == Model.Status)">@L["TicketStatus." + s]</option>
+                }
+            </select>
+        </div>
+        <div class="bo-field">
+            <label for="Priority">@L["Support.Priority"]</label>
+            <select id="Priority" name="Priority">
+                @foreach (var p in Enum.GetValues<TicketPriority>())
+                {
+                    <option value="@p" selected="@(p == Model.Priority)">@L["TicketPriority." + p]</option>
+                }
+            </select>
+        </div>
+        <div class="bo-field">
+            <label for="DepartmentId">@L["Support.Department"]</label>
+            <select id="DepartmentId" name="DepartmentId">
+                @foreach (var (id, name) in Model.Departments)
+                {
+                    <option value="@id" selected="@(id == Model.DepartmentId)">@name</option>
+                }
+            </select>
+        </div>
+        <div class="bo-field">
+            <label for="AssignedStaffId">@L["SupportAdmin.Assigned"]</label>
+            <select id="AssignedStaffId" name="AssignedStaffId">
+                <option value="0">@L["SupportAdmin.Unassigned"]</option>
+                @foreach (var (id, name) in Model.Staff)
+                {
+                    <option value="@id" selected="@(id == Model.AssignedStaffId)">@name</option>
+                }
+            </select>
+        </div>
+        <div><button type="submit" class="secondary">@L["SupportAdmin.Save"]</button></div>
+    </form>
+</details>
+
+<details class="card">
+    <summary class="strong">@L["SupportAdmin.Merge"]</summary>
+    <form method="post" asp-page-handler="Merge" asp-route-id="@t.Id" class="bo-form">
+        <div class="bo-field">
+            <label for="MergeInto">@L["SupportAdmin.MergeInto"]</label>
+            <input id="MergeInto" name="MergeInto" value="@Model.MergeInto" inputmode="numeric" autocomplete="off" aria-describedby="unir-ayuda">
+            <p class="bo-help" id="unir-ayuda">@L["SupportAdmin.MergeHelp"]</p>
+        </div>
+        <div><button type="submit" class="secondary">@L["SupportAdmin.MergeButton"]</button></div>
+    </form>
+</details>
+
+<h2>@L["Support.Messages"]</h2>
+<partial name="_TicketThread" model="thread" />
+
+<section aria-labelledby="respuesta">
+    <h2 id="respuesta">@L["Support.Reply"]</h2>
+    @if (Model.SavedReplies.Count > 0)
+    {
+        <form method="get" action="/admin/soporte/@t.Id" class="search">
+            <label for="respuesta-predefinida">@L["SupportAdmin.UseSavedReply"]</label>
+            <select id="respuesta-predefinida" name="respuesta">
+                @foreach (var (id, name, category) in Model.SavedReplies)
+                {
+                    <option value="@id">@(category is { Length: > 0 } ? $"{category} · {name}" : name)</option>
+                }
+            </select>
+            <button type="submit" class="secondary">@L["SupportAdmin.Insert"]</button>
+        </form>
+    }
+    <form method="post" asp-page-handler="Reply" asp-route-id="@t.Id" enctype="multipart/form-data" class="bo-form" novalidate>
+        <div class="bo-field">
+            <label for="Message">@L["Support.Message"]</label>
+            <textarea id="Message" name="Message" rows="8">@Model.Message</textarea>
+        </div>
+        <label class="check"><input type="checkbox" name="Internal" value="true" checked="@Model.Internal"> @L["SupportAdmin.InternalHelp"]</label>
+        <div class="bo-field">
+            <label for="Next">@L["SupportAdmin.Next"]</label>
+            <select id="Next" name="Next">
+                @foreach (var s in new[] { TicketStatus.AwaitingCustomer, TicketStatus.InProgress, TicketStatus.OnHold, TicketStatus.Closed })
+                {
+                    <option value="@s" selected="@(s == Model.Next)">@L["TicketStatus." + s]</option>
+                }
+            </select>
+        </div>
+        <div class="bo-field">
+            <label for="Files">@L["Support.Files"] <span class="muted">@L["Support.Optional"]</span></label>
+            <input id="Files" name="Files" type="file" multiple accept="@SupportUi.Accept(Model.Options)" aria-describedby="adjuntos">
+            <p class="bo-help" id="adjuntos">@L["Support.FilesHelp", Model.Options.MaxAttachments, SupportUi.Megabytes(Model.Options.MaxAttachmentBytes), SupportUi.Extensions(Model.Options)]</p>
+        </div>
+        <div><button type="submit">@L["SupportAdmin.Send"]</button></div>
+    </form>
+</section>

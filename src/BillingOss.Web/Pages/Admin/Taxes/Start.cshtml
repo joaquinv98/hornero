@@ -1,0 +1,50 @@
+@page "/admin/impuestos/empezar"
+@model TaxesStartModel
+@using BillingOss.Domain.Accounts
+@{
+    ViewData["Title"] = L["Taxes.Start"];
+}
+<h1>@L["Taxes.Title"]</h1>
+<partial name="_Nav" model="@("/admin/impuestos/empezar")" />
+<h2>@L["Taxes.Start"]</h2>
+<p>@L["Taxes.StartHelp"]</p>
+@if (Model.Error is not null)
+{
+    <p class="alert" role="alert">@Model.Error</p>
+}
+@if (Model.CurrentRules > 0)
+{
+    <p class="warn" role="status">@L["Taxes.StartReplaces", Model.CurrentRules]</p>
+}
+<form method="post" class="stack narrow">
+    <div class="field">
+        <label for="country">@L["Taxes.IssuerCountry"]</label>
+        <input id="country" name="IssuerCountry" value="@Model.IssuerCountry" maxlength="2" required>
+        <span class="help">@L["Taxes.IssuerCountryHelp"]</span>
+    </div>
+    <div class="field">
+        <label for="condition">@L["Taxes.IssuerCondition"]</label>
+        <select id="condition" name="IssuerVatCondition">
+            @foreach (var code in VatConditions.IssuerConditions)
+            {
+                <option value="@code" selected="@(code == Model.IssuerVatCondition)">@VatConditions.Describe(code)</option>
+            }
+        </select>
+        <span class="help">@L["Taxes.IssuerConditionHelp"]</span>
+    </div>
+    <fieldset class="field">
+        <legend>@L["Taxes.WhereSell"]</legend>
+        <label class="check"><input type="checkbox" name="SellsAbroad" value="true" checked="@Model.SellsAbroad"> @L["Taxes.SellsAbroad"]</label>
+        <label class="check"><input type="checkbox" name="SellsToEuConsumers" value="true" checked="@Model.SellsToEuConsumers"> @L["Taxes.SellsToEu"]</label>
+        <label class="check"><input type="checkbox" name="SellsToUkConsumers" value="true" checked="@Model.SellsToUkConsumers"> @L["Taxes.SellsToUk"]</label>
+        <span class="help">@L["Taxes.WhereSellHelp"]</span>
+    </fieldset>
+    <fieldset class="field">
+        <legend>@L["Taxes.Perceptions"]</legend>
+        <label class="check"><input type="checkbox" name="PerceivesRg2126" value="true" checked="@Model.PerceivesRg2126"> @L["Taxes.PerceivesRg2126"]</label>
+        <span class="help">@L["Taxes.PerceivesRg2126Help"]</span>
+        <label class="check"><input type="checkbox" name="PaysGrossIncomeInCaba" value="true" checked="@Model.PaysGrossIncomeInCaba"> @L["Taxes.PaysIsibCaba"]</label>
+        <span class="help">@L["Taxes.PaysIsibCabaHelp"]</span>
+    </fieldset>
+    <div><button type="submit">@L["Taxes.ApplyPreset"]</button></div>
+</form>

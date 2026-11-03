@@ -1,0 +1,111 @@
+# "Publicar parche" (D-20, sección 3.4 y pasos A5 y A6). Lo dispara la etiqueta vX.Y.Z que crea un mantenedor desde la
+# web de Forgejo (solo ellos pueden, por la regla de etiquetas protegidas).
+#
+# Construye una sola vez con BuildKit sin raíz, adentro del contenedor del trabajo y sin el socket de Docker del host:
+# ningún trabajo de este repo corre en la máquina del runner, y nada queda ahí para la corrida siguiente (sección 11,
+# regla 6). Publica las imágenes por digest con su proveniencia, frena con una CVE crítica que ya tiene arreglo, genera
+# un SBOM CycloneDX por imagen y adjunta a la versión de Forgejo el manifiesto (digests, runtime y notas), los SBOM y
+# el actualizador autocontenido. Este trabajo NO tiene llave de firma: lo que publica no le llega a nadie hasta que la
+# versión entra al canal por un PR aprobado por otro mantenedor, y recién ahí se firma (canal.yml, en el repo del
+# canal). El token del registro sí está acá, y quien pueda empujar una rama a este repo puede usarlo: con eso publica
+# imágenes que el canal no nombra, y nada más. Guía: docs/versiones/README.md.
+name: publicar
+
+on:
+  push:
+    tags: ['v*']
+
+env:
+  DOTNET_CLI_TELEMETRY_OPTOUT: '1'
+  DOTNET_NOLOGO: '1'
+  REGISTRO: ${{ vars.REGISTRO }}
+
+jobs:
+  publicar:
+    # El mismo runner de contenedores que la CI: nada de este repo corre en el host.
+    runs-on: docker
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          global-json-file: global.json
+      - name: Versión de la etiqueta
+        id: version
+        run: |
+          version="${GITHUB_REF_NAME#v}"
+          if ! echo "$version" | grep -Eq '^(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)$'; then
+            echo "La etiqueta $GITHUB_REF_NAME no es vX.Y.Z." >&2
+            exit 1
+          fi
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+      - name: Credenciales del registro para BuildKit, en una carpeta que se borra al terminar de construir
+        run: |
+          mkdir -p dist/docker dist/publicar
+          auth=$(printf '%s:%s' "${{ vars.REGISTRO_USUARIO }}" "${{ secrets.REGISTRO_TOKEN }}" | base64 -w0)
+          printf '{"auths":{"%s":{"auth":"%s"}}}\n' "${REGISTRO%%/*}" "$auth" > dist/docker/config.json
+          chmod -R a+rwX dist
+      - name: Imágenes, construidas una vez por BuildKit sin raíz y publicadas por digest con su proveniencia
+        # La imagen rootless corre como el usuario 1000, sin daemon: buildctl-daemonless.sh levanta buildkitd adentro del
+        # paso y lo apaga al terminar. --oci-worker-no-process-sandbox es lo que pide sin privilegios (ver la guía).
+        uses: docker://moby/buildkit:v0.24.0-rootless
+        env:
+          DOCKER_CONFIG: ${{ github.workspace }}/dist/docker
+          BUILDKITD_FLAGS: --oci-worker-no-process-sandbox
+          VERSION: ${{ steps.version.outputs.version }}
+        with:
+          entrypoint: /bin/sh
+          # Un solo guion: el bloque plegado une las líneas con espacios, por eso van todas con la misma sangría.
+          args: >-
+            -ec 'for destino in nucleo arca mercadopago stripe paypal cryptocloud; do
+            nombre=billing-oss; [ "$destino" = nucleo ] || nombre="billing-oss-$destino";
+            buildctl-daemonless.sh build --frontend dockerfile.v0 --local context=. --local dockerfile=deploy
+            --opt target="$destino" --opt build-arg:VERSION="$VERSION" --opt attest:provenance=mode=max
+            --output type=image,name="$REGISTRO/$nombre:$VERSION",push=true --metadata-file "dist/buildx-$destino.json";
+            done'
+      - name: Sin credenciales en el espacio de trabajo, e imágenes por digest para el escaneo
+        run: |
+          rm -rf dist/docker
+          for destino in nucleo arca mercadopago stripe paypal cryptocloud; do
+            nombre=$(grep -o '"image.name": *"[^",]*' "dist/buildx-$destino.json" | sed 's/.*"//')
+            digest=$(grep -o '"containerimage.digest": *"sha256:[a-f0-9]*' "dist/buildx-$destino.json" | grep -o 'sha256:[a-f0-9]*')
+            echo "$destino ${nombre%:*}@$digest"
+          done > dist/imagenes.txt
+          cat dist/imagenes.txt
+      - name: Ninguna CVE crítica con arreglo y un SBOM CycloneDX por imagen
+        # Trivy lee las imágenes del registro, sin daemon.
+        uses: docker://aquasec/trivy:0.69.3
+        env:
+          TRIVY_USERNAME: ${{ vars.REGISTRO_USUARIO }}
+          TRIVY_PASSWORD: ${{ secrets.REGISTRO_TOKEN }}
+        with:
+          entrypoint: /bin/sh
+          args: >-
+            -ec 'while read -r destino imagen; do
+            trivy image --image-src remote --severity CRITICAL --ignore-unfixed --exit-code 1 "$imagen";
+            trivy image --image-src remote --format cyclonedx --output "dist/publicar/sbom-$destino.cdx.json" "$imagen";
+            done < dist/imagenes.txt'
+      - name: Actualizador autocontenido
+        run: |
+          dotnet publish src/BillingOss.Updater -c Release -r linux-x64 --self-contained -p:PublishSingleFile=true \
+            -p:Version="${{ steps.version.outputs.version }}" -o dist/actualizador
+          cp dist/actualizador/billing-oss-actualizador dist/publicar/billing-oss-actualizador-linux-x64
+      - name: Manifiesto de la versión
+        run: |
+          base="${{ github.server_url }}/${{ github.repository }}/releases"
+          dotnet run --project src/BillingOss.Releases -c Release -- manifiesto --version "${{ steps.version.outputs.version }}" \
+            --imagen nucleo=dist/buildx-nucleo.json --imagen arca=dist/buildx-arca.json --imagen mercadopago=dist/buildx-mercadopago.json \
+            --imagen stripe=dist/buildx-stripe.json --imagen paypal=dist/buildx-paypal.json --imagen cryptocloud=dist/buildx-cryptocloud.json \
+            --receta deploy/compose --dockerfile deploy/Dockerfile \
+            --actualizador dist/publicar/billing-oss-actualizador-linux-x64 \
+            --actualizador-url "$base/download/${{ github.ref_name }}/billing-oss-actualizador-linux-x64" \
+            --notas "$base/tag/${{ github.ref_name }}" --salida dist/publicar/manifiesto.json
+          (cd dist/publicar && sha256sum * > sha256sums.txt)
+      - name: Versión de Forgejo con el manifiesto, los SBOM y el actualizador
+        uses: actions/forgejo-release@v2
+        with:
+          direction: upload
+          url: ${{ github.server_url }}
+          repo: ${{ github.repository }}
+          token: ${{ github.token }}
+          tag: ${{ github.ref_name }}
+          release-dir: dist/publicar

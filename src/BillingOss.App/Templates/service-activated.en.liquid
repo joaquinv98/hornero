@@ -1,0 +1,5 @@
+Your service {{ service }} is now active
+<p>Hi {{ account_name }},</p>
+<p>Your service <strong>{{ service }}</strong> is now active.{% if due_date %} The next due date is {{ due_date }}.{% endif %}</p>
+{% if portal_url %}<p>Access details and service management are in <a href="{{ portal_url }}">your account</a>.</p>{% else %}<p>Access details and service management are in your account.</p>{% endif %}
+<p>Thank you for choosing us!</p>

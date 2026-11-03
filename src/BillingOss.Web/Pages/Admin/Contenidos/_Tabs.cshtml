@@ -1,0 +1,22 @@
+@using BillingOss.App.Identity
+@* Las áreas de contenidos del panel. Cada una se ve con su permiso: lo de ayuda, novedades y descargas con content.read, y el estado de la red con status.write. *@
+@{
+    var here = Context.Request.Path;
+    string? Current(string prefix) => here.StartsWithSegments(prefix) ? "page" : null;
+    var canStatus = User.HasClaim(Claims.Permission, StaffPermissions.StatusWrite);
+    var canContent = User.HasClaim(Claims.Permission, StaffPermissions.ContentRead);
+}
+<link rel="stylesheet" href="~/css/contenidos.css" asp-append-version="true">
+<nav class="ct-tabs" aria-label="@C["Cms.Areas"]">
+    @if (canContent)
+    {
+        <a href="/admin/contenidos" aria-current="@(here.Value?.TrimEnd('/') == "/admin/contenidos" ? "page" : null)">@C["Cms.Summary"]</a>
+        <a href="/admin/conocimiento" aria-current="@Current("/admin/conocimiento")">@C["Cms.Help"]</a>
+        <a href="/admin/anuncios" aria-current="@Current("/admin/anuncios")">@C["Cms.News"]</a>
+        <a href="/admin/descargas" aria-current="@Current("/admin/descargas")">@C["Cms.Downloads"]</a>
+    }
+    @if (canStatus)
+    {
+        <a href="/admin/estado-red" aria-current="@Current("/admin/estado-red")">@C["Cms.Network"]</a>
+    }
+</nav>

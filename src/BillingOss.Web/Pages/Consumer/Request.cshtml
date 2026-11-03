@@ -1,0 +1,49 @@
+@page "/{kind:regex(^(baja|arrepentimiento)$)}"
+@model RequestModel
+@inject Microsoft.Extensions.Configuration.IConfiguration Config
+@{
+    var w = Model.IsWithdrawal;
+    var title = w ? L["Consumer.WithdrawalButton"] : L["Consumer.CancellationButton"];
+    ViewData["Title"] = title;
+}
+<h1>@title</h1>
+@if (Model.Receipt is { } receipt)
+{
+    <section class="notice" role="status" aria-labelledby="receipt">
+        <h2 id="receipt">@L["Consumer.ReceiptTitle"]</h2>
+        <p>@(w ? L["Consumer.WithdrawalRegistered"] : L["Consumer.CancellationRegistered"])</p>
+        <p class="receipt"><code>@receipt.Receipt</code></p>
+        <p>@L["Consumer.ReceiptAt", Model.ReceiptTime]</p>
+        <p>@L["Consumer.ReceiptMail"]</p>
+    </section>
+}
+else if (Model.Reference is not null)
+{
+    <p class="notice" role="status">@L["Consumer.CodeSent"]</p>
+    @if (Model.Error is not null)
+    {
+        <p class="alert" role="alert">@L[Model.Error]</p>
+    }
+    <form method="post" asp-page-handler="Confirm" class="stack narrow">
+        <input type="hidden" name="Reference" value="@Model.Reference">
+        <label for="code">@L["Field.Code"]</label>
+        <input id="code" name="Code" inputmode="numeric" autocomplete="one-time-code" required autofocus>
+        <button type="submit">@L["Consumer.Confirm"]</button>
+    </form>
+}
+else
+{
+    <p>@(w ? L["Consumer.WithdrawalHelp"] : L["Consumer.CancellationHelp"])</p>
+    <p>@L["Consumer.NoLogin"]</p>
+    <form method="post" asp-page-handler="Start" class="stack narrow">
+        <label for="email">@L["Consumer.Email"]</label>
+        <input id="email" name="Email" type="email" autocomplete="email" required>
+        <label for="detail">@L["Consumer.Detail"]</label>
+        <textarea id="detail" name="Detail" rows="4" maxlength="1000"></textarea>
+        <button type="submit">@L["Consumer.SendCode"]</button>
+    </form>
+}
+@if (Config["Ui:AttentionChannel"] is { Length: > 0 } channel)
+{
+    <p class="muted">@L["Layout.Attention"] @channel</p>
+}

@@ -1,0 +1,6 @@
+{% if over %}You reached the {{ metric }} included in {{ service }}{% else %}You used {{ percent }}% of the {{ metric }} included in {{ service }}{% endif %}
+<p>Hi {{ account_name }},</p>
+{% if over %}<p>Your service <strong>{{ service }}</strong> has used <strong>{{ used }}</strong> of {{ metric }} this period, and your plan includes {{ included }}.</p>
+<p>Anything above the included amount is charged{% if price %} at {{ price }}{% if unit != "" %} per {{ unit }}{% endif %}{% endif %} on your next invoice.</p>{% else %}<p>Your service <strong>{{ service }}</strong> has used <strong>{{ used }}</strong> of {{ metric }} this period: {{ percent }}% of the {{ included }} included in your plan.</p>
+<p>If you go over the included amount, the overage is charged{% if price %} at {{ price }}{% if unit != "" %} per {{ unit }}{% endif %}{% endif %} on your next invoice.</p>{% endif %}
+{% if usage_url %}<p>You can see the details in <a href="{{ usage_url }}">your account</a>.</p>{% endif %}

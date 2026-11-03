@@ -1,0 +1,29 @@
+@page "/estado-red/historial"
+@model HistoryModel
+@section Head {
+    <link rel="stylesheet" href="~/css/contenidos.css" asp-append-version="true">
+}
+@{
+    ViewData["Title"] = C["Net.History"];
+    var month = Model.First.ToString("MMMM yyyy", System.Globalization.CultureInfo.CurrentCulture);
+}
+<nav aria-label="@C["Kb.Breadcrumb"]" class="ct-crumbs">
+    <a href="/estado-red">@C["Net.Title"]</a>
+</nav>
+<h1>@C["Net.History"]</h1>
+<nav class="ct-months" aria-label="@C["Net.Months"]">
+    <a href="/estado-red/historial?mes=@Model.Previous" rel="prev">@C["Net.PreviousMonth"]</a>
+    <strong aria-current="date">@month</strong>
+    @if (Model.Next is { } next)
+    {
+        <a href="/estado-red/historial?mes=@next" rel="next">@C["Net.NextMonth"]</a>
+    }
+</nav>
+@if (Model.Items.Count == 0)
+{
+    <p>@C["Net.NoEventsMonth"]</p>
+}
+else
+{
+    <partial name="_Events" model="new EventList(Model.Items, Model.Zone)" />
+}

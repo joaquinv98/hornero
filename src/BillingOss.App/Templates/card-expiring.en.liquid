@@ -1,0 +1,4 @@
+The card for your automatic payments expires soon
+<p>Hi {{ account_name }},</p>
+<p>The {{ method }} you use for automatic payments expires on {{ expires }}. After that date we will not be able to charge your invoices to it.</p>
+<p>If your bank sends you a new card, it may be updated automatically. If not, pay your next invoice with the new card and save it for automatic payments{% if methods_url %}, or check your methods in <a href="{{ methods_url }}">Payment methods</a>{% endif %}.</p>

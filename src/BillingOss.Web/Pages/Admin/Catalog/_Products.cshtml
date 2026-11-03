@@ -1,0 +1,31 @@
+@model BillingOss.Web.Pages.Admin.Catalog.ProductPicker
+@{
+    // Los elegidos van primero, así se ven sin recorrer todo el catálogo.
+    var chosen = Model.All.Where(p => Model.Selected.Contains(p.Id)).ToList();
+    var rest = Model.All.Where(p => !Model.Selected.Contains(p.Id)).GroupBy(p => p.Group).ToList();
+}
+<details class="picker" open="@(chosen.Count > 0)">
+    <summary>@Model.Legend <span class="muted">@L["Catalog.Chosen", chosen.Count]</span></summary>
+    @if (Model.Help is { Length: > 0 } help)
+    {
+        <p class="muted">@help</p>
+    }
+    <div role="group" aria-label="@Model.Legend" class="picks">
+        @if (chosen.Count > 0)
+        {
+            <p class="strong">@L["Catalog.ChosenHeading"]</p>
+            @foreach (var p in chosen)
+            {
+                <label class="check"><input type="checkbox" name="@Model.Name" value="@p.Id" checked> @p.Name <span class="muted">#@p.Id</span></label>
+            }
+        }
+        @foreach (var group in rest)
+        {
+            <p class="strong">@(group.Key ?? Model.Ungrouped ?? L["Catalog.NoGroup"].Value)</p>
+            @foreach (var p in group)
+            {
+                <label class="check"><input type="checkbox" name="@Model.Name" value="@p.Id"> @p.Name <span class="muted">#@p.Id</span></label>
+            }
+        }
+    </div>
+</details>

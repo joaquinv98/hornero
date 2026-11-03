@@ -1,0 +1,9 @@
+@model AdminContentPage
+@if (Model.Error is not null)
+{
+    <p class="alert" role="alert">@Model.Error</p>
+}
+else if (Model.Saved)
+{
+    <p class="notice" role="status">@C["Cms.Saved"]</p>
+}

@@ -1,0 +1,132 @@
+@page "/admin/catalogo/productos/{id:long}/uso"
+@using BillingOss.Domain.Usage
+@using BillingOss.Modules.Protocol
+@model ProductUsageModel
+@{
+    ViewData["Title"] = L["Usage.ProductTitle", Model.Product!];
+}
+<h1>@L["Usage.ProductTitle", Model.Product!]</h1>
+<p class="muted">@L["Usage.ProductHelp"]</p>
+@if (Model.Error is not null)
+{
+    <p class="alert" role="alert">@L["Usage.NotSaved", Model.Error]</p>
+}
+else if (Model.Saved)
+{
+    <p class="notice" role="status">@L["Usage.Saved"]</p>
+}
+
+@if (Model.Metrics.Count == 0)
+{
+    <p>@L["Usage.NoMetrics"]</p>
+}
+else
+{
+    <div class="table">
+        <table>
+            <caption>@L["Usage.Metrics"]</caption>
+            <thead>
+                <tr>
+                    <th scope="col">@L["Usage.Metric"]</th>
+                    <th scope="col">@L["Usage.Kind"]</th>
+                    <th scope="col" class="num">@L["Usage.Included"]</th>
+                    <th scope="col" class="num">@L["Usage.Step"]</th>
+                    <th scope="col">@L["Usage.When"]</th>
+                    <th scope="col">@L["Usage.Alerts"]</th>
+                    <th scope="col">@L["Usage.Prices"]</th>
+                    <th scope="col">@L["Field.Status"]</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var m in Model.Metrics)
+                {
+                    <tr>
+                        <td>@m.Name <code>@m.Code</code></td>
+                        <td>@L["Usage.Aggregation." + m.Aggregation]</td>
+                        <td class="num">@BillingOss.App.UseCases.UsageBilling.Amount(m.Included, m.Unit, CultureInfo.CurrentCulture)</td>
+                        <td class="num">@m.Step.ToString("#,##0.####", CultureInfo.CurrentCulture)</td>
+                        <td>@L["Usage.Cycle." + m.Cycle]</td>
+                        <td>@string.Join(", ", m.AlertPercents.Select(p => p + " %"))</td>
+                        <td>
+                            <ul class="plain">
+                                @foreach (var p in Model.Prices.Where(p => p.MetricId == m.Id))
+                                {
+                                    <li>@L["Usage.PriceFrom", BillingOss.App.UseCases.UsageBilling.Price(p.UnitPrice, p.Currency, CultureInfo.CurrentCulture), Ui.Date(p.ValidFrom)]</li>
+                                }
+                            </ul>
+                        </td>
+                        <td>@(m.Active ? L["Usage.Active"] : L["Usage.Inactive"])</td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+}
+
+@if (Model.Declared.Count > 0)
+{
+    <section aria-labelledby="metric-form">
+        <h2 id="metric-form">@L["Usage.SaveMetric"]</h2>
+        <form method="post" asp-page-handler="Metric" class="stack narrow">
+            <label for="code">@L["Usage.Metric"]</label>
+            <select id="code" name="code" required>
+                @foreach (var d in Model.Declared.Values)
+                {
+                    <option value="@d.Id">@(d.Label.GetValueOrDefault(CultureInfo.CurrentUICulture.TwoLetterISOLanguageName) ?? d.Id) (@d.Id, @(d.Kind == UsageProtocol.Counter ? L["Usage.Counter"] : L["Usage.Gauge"]))</option>
+                }
+            </select>
+            <label for="name">@L["Field.Name"]</label>
+            <input id="name" name="name" maxlength="100" aria-describedby="name-help">
+            <p id="name-help" class="bo-small bo-muted">@L["Usage.NameHelp"]</p>
+            <label for="unit">@L["Usage.Unit"]</label>
+            <input id="unit" name="unit" maxlength="16">
+            <label for="aggregation">@L["Usage.Kind"]</label>
+            <select id="aggregation" name="aggregation" aria-describedby="aggregation-help">
+                <option value="">@L["Usage.AggregationDefault"]</option>
+                <option value="Max">@L["Usage.Aggregation.Max"]</option>
+                <option value="Average">@L["Usage.Aggregation.Average"]</option>
+            </select>
+            <p id="aggregation-help" class="bo-small bo-muted">@L["Usage.AggregationHelp"]</p>
+            <label for="included">@L["Usage.Included"]</label>
+            <input id="included" name="included" inputmode="decimal" required aria-describedby="included-help">
+            <p id="included-help" class="bo-small bo-muted">@L["Usage.IncludedHelp"]</p>
+            <label for="step">@L["Usage.Step"]</label>
+            <input id="step" name="step" inputmode="decimal" value="1" aria-describedby="step-help">
+            <p id="step-help" class="bo-small bo-muted">@L["Usage.StepHelp"]</p>
+            <label for="cycle">@L["Usage.When"]</label>
+            <select id="cycle" name="cycle">
+                <option value="Renewal">@L["Usage.Cycle.Renewal"]</option>
+                <option value="CalendarMonth">@L["Usage.Cycle.CalendarMonth"]</option>
+            </select>
+            <label for="alerts">@L["Usage.Alerts"]</label>
+            <input id="alerts" name="alerts" value="80, 100" inputmode="numeric" aria-describedby="alerts-help">
+            <p id="alerts-help" class="bo-small bo-muted">@L["Usage.AlertsHelp"]</p>
+            <label class="check"><input type="checkbox" name="active" value="true" checked> @L["Usage.Active"]</label>
+            <button type="submit">@L["Usage.SaveMetric"]</button>
+        </form>
+    </section>
+}
+
+@if (Model.Metrics.Count > 0)
+{
+    <section aria-labelledby="price-form">
+        <h2 id="price-form">@L["Usage.AddPrice"]</h2>
+        <p class="bo-small bo-muted">@L["Usage.PriceHelp"]</p>
+        <form method="post" asp-page-handler="Price" class="stack narrow">
+            <label for="price-code">@L["Usage.Metric"]</label>
+            <select id="price-code" name="code" required>
+                @foreach (var m in Model.Metrics)
+                {
+                    <option value="@m.Code">@m.Name (@m.Code)</option>
+                }
+            </select>
+            <label for="currency">@L["Admin.Currency"]</label>
+            <input id="currency" name="currency" value="ARS" maxlength="3" autocomplete="off" required>
+            <label for="unit-price">@L["Usage.UnitPrice"]</label>
+            <input id="unit-price" name="unitPrice" inputmode="decimal" required>
+            <label for="valid-from">@L["Usage.ValidFrom"]</label>
+            <input id="valid-from" name="validFrom" type="date" required>
+            <button type="submit">@L["Usage.AddPrice"]</button>
+        </form>
+    </section>
+}

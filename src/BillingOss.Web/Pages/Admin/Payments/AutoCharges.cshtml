@@ -1,0 +1,90 @@
+@page "/admin/cobros/automaticos"
+@model AutoChargesModel
+@{
+    ViewData["Title"] = L["Menu.AutoCharges"];
+}
+<div class="bo-stack">
+    <div class="bo-head">
+        <h1>@L["Menu.AutoCharges"]</h1>
+        <p class="bo-muted">@L["AutoCharges.Summary", Model.AccountsOn, Model.SubscriptionsOn] <a href="/debito-automatico">@L["Pay.Conditions"]</a></p>
+    </div>
+
+    @if (Model.Stopped.Count > 0)
+    {
+        <div class="bo-alert" data-tone="warn">
+            <p class="bo-alert__title">@L["AutoCharges.StoppedTitle"]</p>
+            @foreach (var s in Model.Stopped)
+            {
+                <p class="bo-small">@s.At · <a href="/admin/cuentas/@s.AccountId">@(s.AccountName.Length > 0 ? s.AccountName : "#" + s.AccountId)</a></p>
+            }
+        </div>
+    }
+
+    <form method="get" action="/admin/cobros/automaticos" class="bo-row">
+        <label for="estado">@L["Field.Status"]</label>
+        <select id="estado" name="estado" class="bo-select">
+            @foreach (var f in AutoChargesModel.Filters)
+            {
+                <option value="@f.Value" selected="@(f.Value == Model.Filter)">@L[f.Text]</option>
+            }
+        </select>
+        <button type="submit" class="bo-btn bo-btn--secondary">@L["AutoCharges.Filter"]</button>
+        <a href="@Model.Link(1, csv: true)">@L["AutoCharges.Csv"]</a>
+    </form>
+
+    @if (Model.Rows.Count == 0)
+    {
+        <p class="bo-muted">@L["AutoCharges.Empty"]</p>
+    }
+    else
+    {
+        <div class="bo-table-wrap">
+            <table class="bo-table">
+                <thead>
+                    <tr>
+                        <th scope="col">@L["Transfers.Date"]</th>
+                        <th scope="col">@L["Field.Account"]</th>
+                        <th scope="col">@L["AutoCharges.Invoice"]</th>
+                        <th scope="col">@L["AutoCharges.Method"]</th>
+                        <th scope="col" class="bo-num">@L["Invoice.Amount"]</th>
+                        <th scope="col">@L["Field.Status"]</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var r in Model.Rows)
+                    {
+                        <tr>
+                            <td>@r.At</td>
+                            <td><a href="/admin/cuentas/@r.AccountId">@(r.AccountName.Length > 0 ? r.AccountName : "#" + r.AccountId)</a></td>
+                            <td>@(r.Number?.ToString(CultureInfo.InvariantCulture) ?? "#" + r.DocumentId)</td>
+                            <td>@r.Method</td>
+                            <td class="bo-num">@Ui.Money(r.Amount, r.Currency)</td>
+                            <td>
+                                <span class="bo-status" data-tone="@r.Tone">@L[r.State]</span>
+                                @if (r.Detail is { } detail)
+                                {
+                                    <span class="bo-small bo-muted">@L[detail]</span>
+                                }
+                                @if (r.Code is { Length: > 0 } code)
+                                {
+                                    <span class="bo-small bo-data">@code</span>
+                                }
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+        <nav class="bo-row" aria-label="@L["AutoCharges.Pages"]">
+            @if (Model.PageNumber > 1)
+            {
+                <a href="@Model.Link(Model.PageNumber - 1)">@L["AutoCharges.Previous"]</a>
+            }
+            <span class="bo-small bo-muted">@L["AutoCharges.Page", Model.PageNumber]</span>
+            @if (Model.HasMore)
+            {
+                <a href="@Model.Link(Model.PageNumber + 1)">@L["AutoCharges.Next"]</a>
+            }
+        </nav>
+    }
+</div>

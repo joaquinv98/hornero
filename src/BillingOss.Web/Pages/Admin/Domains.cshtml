@@ -1,0 +1,101 @@
+@page "/admin/dominios"
+@model BillingOss.Web.Pages.Admin.DomainsModel
+@{
+    ViewData["Title"] = L["Nav.Domains"];
+    var csv = $"/admin/dominios?handler=Csv&vista={Uri.EscapeDataString(Model.Filter ?? string.Empty)}&q={Uri.EscapeDataString(Model.Q ?? string.Empty)}";
+}
+<div class="bo-head">
+    <div class="bo-head__row">
+        <h1>@L["Nav.Domains"]</h1>
+        <a class="bo-btn bo-btn--secondary" href="/admin/dominios/precios">@L["AdminDomains.Prices"]</a>
+    </div>
+</div>
+
+@if (Model.Bulk is { } bulk)
+{
+    <p class="bo-alert" data-tone="@(bulk.Skipped == 0 ? "ok" : "warn")" role="status">@L["AdminDomains.BulkDone", bulk.Done, bulk.Skipped]</p>
+}
+@if (Model.Error is not null)
+{
+    <p class="bo-alert" data-tone="danger" role="alert">@L[Model.Error]</p>
+}
+
+<nav class="bo-filters" aria-label="@L["AdminDomains.Views"]">
+    @foreach (var v in Model.Views)
+    {
+        <a href="/admin/dominios?vista=@v.Id" aria-current="@(Model.Filter == v.Id ? "page" : null)">@L[v.Label] <span class="bo-count">@v.Count</span></a>
+    }
+</nav>
+
+<form method="get" class="search" role="search">
+    <label for="q">@L["AdminDomains.Search"]</label>
+    <input id="q" name="q" value="@Model.Q" autocomplete="off" spellcheck="false">
+    <button type="submit">@L["Admin.SearchButton"]</button>
+</form>
+
+@if (Model.Rows.Count > 0)
+{
+    <form method="post" asp-page-handler="Bulk" class="bo-stack bo-stack--sm">
+        <input type="hidden" name="vista" value="@Model.Filter">
+        <input type="hidden" name="q" value="@Model.Q">
+        <div class="bo-row"><a class="bo-btn bo-btn--quiet" href="@csv">@L["AdminDomains.ExportCsv"]</a></div>
+        <div class="bo-table-wrap">
+            <table class="bo-table">
+                <thead>
+                    <tr>
+                        @if (Model.CanManage)
+                        {
+                            <th scope="col"><span class="bo-sr">@L["AdminDomains.Select"]</span></th>
+                        }
+                        <th scope="col">@L["Domains.Domain"]</th>
+                        <th scope="col">@L["Field.Account"]</th>
+                        <th scope="col">@L["Field.Status"]</th>
+                        <th scope="col">@L["AdminDomains.Registry"]</th>
+                        <th scope="col">@L["Domains.Expires"]</th>
+                        <th scope="col">@L["Domain.PaidThrough"]</th>
+                        <th scope="col">@L["AdminDomains.Registrar"]</th>
+                        <th scope="col">@L["Domains.Renewal"]</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var r in Model.Rows)
+                    {
+                        var d = r.Domain;
+                        <tr>
+                            @if (Model.CanManage)
+                            {
+                                <td><input type="checkbox" name="ids" value="@d.Id" aria-label="@L["AdminDomains.SelectOne", d.Name]"></td>
+                            }
+                            <th scope="row"><a href="/admin/dominios/@d.Id">@d.Name</a></th>
+                            <td><a href="/admin/cuentas/@d.AccountId">@r.Account</a> <span class="bo-muted">#@d.AccountId</span></td>
+                            <td><partial name="_DomainStatus" model="d.Status" /></td>
+                            <td class="bo-data">@(d.RegistryStatus ?? "")</td>
+                            <td><time datetime="@Ui.Iso(d.ExpiresOn)">@Ui.Date(d.ExpiresOn)</time></td>
+                            <td><time datetime="@Ui.Iso(d.PaidThrough)">@Ui.Date(d.PaidThrough)</time></td>
+                            <td>@r.Registrar</td>
+                            <td>@(d.IsLive && d.AutoRenew ? L["Domains.AutoRenewOn"] : L["Domains.AutoRenewOff"])</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+        @if (Model.CanManage)
+        {
+            <fieldset class="bo-row">
+                <legend class="bo-sr">@L["AdminDomains.BulkTitle"]</legend>
+                <label for="action" class="bo-small">@L["AdminDomains.BulkTitle"]</label>
+                <select id="action" name="action" class="bo-select">
+                    <option value="sync">@L["AdminDomain.Sync"]</option>
+                    <option value="renew-on">@L["Domain.KeepRenewingButton"]</option>
+                    <option value="renew-off">@L["Domain.StopRenewingButton"]</option>
+                </select>
+                <label class="bo-check"><input type="checkbox" name="confirm" value="true"> @L["AdminDomains.BulkConfirmLabel"]</label>
+                <button type="submit" class="bo-btn bo-btn--secondary">@L["AdminDomains.BulkApply"]</button>
+            </fieldset>
+        }
+    </form>
+}
+else if (Model.Filter is not null || !string.IsNullOrWhiteSpace(Model.Q))
+{
+    <p class="bo-muted">@L["AdminDomains.NoResults"]</p>
+}

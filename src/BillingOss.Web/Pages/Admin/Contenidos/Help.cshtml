@@ -1,0 +1,137 @@
+@page "/admin/conocimiento"
+@model HelpModel
+@{
+    ViewData["Title"] = C["Cms.Help"];
+}
+<h1>@C["Cms.Help"]</h1>
+<partial name="_Tabs" />
+<partial name="_Alerts" model="Model" />
+@if (Model.CanWrite)
+{
+    <p class="ct-actions">
+        <a class="button" href="/admin/conocimiento/articulos">@C["Cms.NewArticle"]</a>
+        <a class="button secondary" href="/admin/conocimiento/categorias">@C["Cms.NewCategory"]</a>
+    </p>
+}
+<form method="get" class="ct-filters" role="search" aria-label="@C["Cms.Filters"]">
+    <div>
+        <label for="f-q">@C["Cms.SearchArticles"]</label>
+        <input id="f-q" name="q" type="search" value="@Model.Q" maxlength="100" autocomplete="off">
+    </div>
+    <div>
+        <label for="f-cat">@C["Cms.Category"]</label>
+        <select id="f-cat" name="category">
+            <option value="">@C["Cms.All"]</option>
+            @foreach (var c in Model.CategoryChoices)
+            {
+                <option value="@c.Id" selected="@(Model.Category == c.Id)">@c.Name</option>
+            }
+        </select>
+    </div>
+    <div>
+        <label for="f-state">@C["Cms.State"]</label>
+        <select id="f-state" name="state">
+            <option value="">@C["Cms.All"]</option>
+            <option value="Draft" selected="@(Model.State == "Draft")">@C["Cms.StateDraft"]</option>
+            <option value="Published" selected="@(Model.State == "Published")">@C["Cms.StatePublished"]</option>
+            <option value="Archived" selected="@(Model.State == "Archived")">@C["Cms.StateArchived"]</option>
+        </select>
+    </div>
+    <button type="submit">@C["Cms.Filter"]</button>
+</form>
+@if (Model.Rows.Count == 0)
+{
+    <p>@C["Cms.NoArticles"]</p>
+}
+else
+{
+    <div class="table">
+        <table>
+            <caption class="muted">@C["Cms.ArticleCount", Model.Rows.Count]</caption>
+            <thead>
+                <tr>
+                    <th scope="col">#</th>
+                    <th scope="col">@C["Cms.Title"]</th>
+                    <th scope="col">@C["Cms.Category"]</th>
+                    <th scope="col">@C["Cms.State"]</th>
+                    <th scope="col">@C["Cms.AudienceWho"]</th>
+                    <th scope="col">@C["Cms.Languages"]</th>
+                    <th scope="col" class="num">@C["Cms.Views"]</th>
+                    <th scope="col" class="num">@C["Cms.Votes"]</th>
+                    <th scope="col">@C["Cms.Updated"]</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var r in Model.Rows)
+                {
+                    <tr>
+                        <td>@r.Article.Id</td>
+                        <td>
+                            @if (Model.CanWrite)
+                            {
+                                <a href="/admin/conocimiento/articulos/@r.Article.Id">@(r.Title.Length == 0 ? r.Article.Slug : r.Title)</a>
+                            }
+                            else
+                            {
+                                @(r.Title.Length == 0 ? r.Article.Slug : r.Title)
+                            }
+                            @if (r.Article.Featured)
+                            {
+                                <span class="muted">(@C["Cms.Featured"])</span>
+                            }
+                        </td>
+                        <td>@Model.CategoryName(r.Article.CategoryId)</td>
+                        <td><partial name="_Pill" model="ContentUi.PublishPill(r.Article.Status, C)" /></td>
+                        <td>@Model.AudienceName(r.Article.Audience)</td>
+                        <td>@string.Join(", ", r.Languages)</td>
+                        <td class="num">@r.Article.Views.ToString("N0", System.Globalization.CultureInfo.CurrentCulture)</td>
+                        <td class="num">@r.Article.Helpful / @(r.Article.Helpful + r.Article.Unhelpful)</td>
+                        <td><time datetime="@r.Article.UpdatedAt.ToString("O")">@ContentUi.When(r.Article.UpdatedAt, Model.Zone)</time></td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+}
+<h2 id="categories">@C["Cms.Categories"]</h2>
+@if (Model.Categories.Count == 0)
+{
+    <p>@C["Cms.NoCategories"]</p>
+}
+else
+{
+    <div class="table">
+        <table aria-labelledby="categories">
+            <thead>
+                <tr>
+                    <th scope="col">#</th>
+                    <th scope="col">@C["Cms.Name"]</th>
+                    <th scope="col">@C["Cms.Slug"]</th>
+                    <th scope="col" class="num">@C["Cms.Articles"]</th>
+                    <th scope="col">@C["Cms.Visibility"]</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var c in Model.Categories)
+                {
+                    <tr>
+                        <td>@c.Category.Id</td>
+                        <td>
+                            @if (Model.CanWrite)
+                            {
+                                <a href="/admin/conocimiento/categorias/@c.Category.Id">@Model.CategoryName(c.Category.Id)</a>
+                            }
+                            else
+                            {
+                                @Model.CategoryName(c.Category.Id)
+                            }
+                        </td>
+                        <td><code>@c.Category.Slug</code></td>
+                        <td class="num">@c.Items</td>
+                        <td>@(c.Category.Hidden ? C["Cms.Hidden"] : C["Cms.Visible"])</td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+}

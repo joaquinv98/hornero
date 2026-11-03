@@ -1,0 +1,27 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <ItemGroup>
+    <ProjectReference Include="../BillingOss.Domain/BillingOss.Domain.csproj" />
+    <ProjectReference Include="../BillingOss.Modules.Protocol/BillingOss.Modules.Protocol.csproj" />
+    <ProjectReference Include="../BillingOss.Updates/BillingOss.Updates.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="EFCore.NamingConventions" />
+    <!-- Plantillas de los avisos y del PDF (D-13), y código QR fiscal (RG 4892). Con licencia MIT. -->
+    <PackageReference Include="Fluid.Core" />
+    <PackageReference Include="MailKit" />
+    <!-- Npgsql pide 10.0.4 y Design trae 10.0.14: se fija la misma versión para toda la solución. -->
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Relational" />
+    <PackageReference Include="Microsoft.Extensions.Hosting.Abstractions" />
+    <PackageReference Include="Net.Codecrete.QrCodeGenerator" />
+    <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" />
+    <!-- MimeKit pide la 10.0.0, que tiene una vulnerabilidad conocida: se sube a la de la solución. -->
+    <PackageReference Include="System.Security.Cryptography.Pkcs" />
+  </ItemGroup>
+  <ItemGroup>
+    <!-- Plantillas de fábrica de los avisos. El idioma va en el nombre, pero no son recursos satélite. -->
+    <EmbeddedResource Include="Templates/*.liquid" LogicalName="Templates.%(Filename)%(Extension)" WithCulture="false" />
+  </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="Documents/*.liquid" />
+  </ItemGroup>
+</Project>

@@ -1,0 +1,47 @@
+@page "/admin/reportes/libro-iva"
+@model BillingOss.Web.Pages.Admin.Reports.LibroIvaModel
+@using BillingOss.Web.Pages.Admin.Reports
+@{
+    ViewData["Title"] = L["Reports.LibroIva"];
+}
+<p class="crumbs"><a href="/admin/reportes">@L["Reports.Back"]</a></p>
+<h1>@L["Reports.LibroIva"]</h1>
+<p class="muted lead">@L["Reports.LibroIvaHelp"]</p>
+<form method="get" class="period" hx-get="/admin/reportes/libro-iva" hx-target="#report" hx-select="#report" hx-swap="outerHTML" hx-push-url="true">
+    <div class="field">
+        <label for="mes">@L["Reports.Month"]</label>
+        <input id="mes" name="mes" type="month" value="@(Model.InvalidMonth ? Model.Mes : Model.MonthText)" placeholder="2026-10" pattern="[0-9]{4}-[0-9]{2}" required>
+    </div>
+    <button type="submit">@L["Reports.Show"]</button>
+</form>
+<div id="report" aria-live="polite">
+    @if (Model.InvalidMonth)
+    {
+        <p class="alert" role="alert">@L["Reports.InvalidMonth"]</p>
+    }
+    else if (Model.Libro is { } libro)
+    {
+        @foreach (var note in libro.Notes)
+        {
+            <p class="warn" role="status">@L["ReportNote." + note.Key, [.. note.Args]]</p>
+        }
+
+        @if (libro.Vouchers.Count == 0)
+        {
+            <p class="muted">@L["Reports.LibroEmpty"]</p>
+        }
+        else
+        {
+            <section class="report-table" aria-labelledby="t-files">
+                <h2 id="t-files">@L["Reports.LibroFiles"]</h2>
+                <p>@L["Reports.LibroCounts", libro.Vouchers.Count, libro.Aliquots.Count]</p>
+                <p class="downloads">
+                    <a class="button" href="/admin/reportes/libro-iva?handler=vouchers&amp;mes=@Model.MonthText" download>@L["Reports.LibroVouchers"]</a>
+                    <a class="button secondary" href="/admin/reportes/libro-iva?handler=aliquots&amp;mes=@Model.MonthText" download>@L["Reports.LibroAliquots"]</a>
+                </p>
+                <p class="muted">@L["Reports.LibroImport"]</p>
+            </section>
+            <partial name="_ReportTable" model="new ReportTableView(libro.Summary, null)" />
+        }
+    }
+</div>

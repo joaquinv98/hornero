@@ -1,0 +1,71 @@
+@page "/admin/estado-red/componentes/{id:long?}"
+@model ComponentModel
+@{
+    ViewData["Title"] = Model.Id is null ? C["Cms.NetNewComponent"] : C["Cms.NetEditComponent"];
+    var isNew = Model.Id is null;
+}
+<h1>@ViewData["Title"]</h1>
+<partial name="_Tabs" />
+<partial name="_Alerts" model="Model" />
+<nav class="ct-crumbs" aria-label="@C["Kb.Breadcrumb"]"><a href="/admin/estado-red">@C["Cms.Network"]</a></nav>
+<form method="post" asp-page-handler="Save" asp-route-id="@Model.Id" class="ct-form">
+    <input type="hidden" name="Input.Revision" value="@Model.Input.Revision">
+    <fieldset>
+        <legend>@C["Cms.General"]</legend>
+        <label for="k-kind">@C["Cms.Type"]</label>
+        @if (isNew)
+        {
+            <select id="k-kind" name="Input.Kind">
+                <option value="Server" selected="@(Model.Input.Kind == "Server")">@C["Cms.KindServer"]</option>
+                <option value="Service" selected="@(Model.Input.Kind == "Service")">@C["Cms.KindService"]</option>
+                <option value="Group" selected="@(Model.Input.Kind == "Group")">@C["Cms.KindGroup"]</option>
+            </select>
+        }
+        else
+        {
+            <input id="k-kind" type="text" value="@C[$"Cms.Kind{Model.Input.Kind}"]" readonly>
+            <input type="hidden" name="Input.Kind" value="@Model.Input.Kind">
+        }
+        <label for="k-parent">@C["Cms.NetGroup"]</label>
+        <select id="k-parent" name="Input.ParentId">
+            <option value="">@C["Cms.NoParent"]</option>
+            @foreach (var g in Model.Groups)
+            {
+                <option value="@g.Id" selected="@(Model.Input.ParentId == g.Id)">@g.Name</option>
+            }
+        </select>
+        <label for="k-slug">@C["Cms.Slug"]</label>
+        <input id="k-slug" name="Input.Slug" value="@Model.Input.Slug" maxlength="100" aria-describedby="k-slug-help" autocomplete="off">
+        <p id="k-slug-help" class="muted">@C["Cms.SlugHelp"]</p>
+        <label for="k-order">@C["Cms.Order"]</label>
+        <input id="k-order" name="Input.SortOrder" type="number" value="@Model.Input.SortOrder" inputmode="numeric">
+        <label class="check"><input type="checkbox" name="Input.Hidden" value="true" checked="@Model.Input.Hidden"> @C["Cms.NetHiddenHelp"]</label>
+        @if (Model.Products.Count > 0)
+        {
+            <label for="k-products">@C["Cms.NetProducts"]</label>
+            <select id="k-products" name="Input.ProductIds" multiple size="6" aria-describedby="k-products-help">
+                @foreach (var p in Model.Products)
+                {
+                    <option value="@p.Id" selected="@Model.Input.ProductIds.Contains(p.Id)">@p.Name (#@p.Id)</option>
+                }
+            </select>
+            <p id="k-products-help" class="muted">@C["Cms.NetProductsHelp"]</p>
+        }
+    </fieldset>
+    <partial name="_Texts" model="Model.TextFields" />
+    <p class="ct-actions">
+        <button type="submit">@C["Cms.Save"]</button>
+        <a href="/admin/estado-red">@C["Cms.Cancel"]</a>
+    </p>
+</form>
+@if (!isNew)
+{
+    <details>
+        <summary>@C["Cms.DeleteTitle"]</summary>
+        <form method="post" asp-page-handler="Delete" asp-route-id="@Model.Id" class="ct-form">
+            <p>@C["Cms.NetDeleteComponentHelp"]</p>
+            <label class="check"><input type="checkbox" name="confirm" value="true"> @C["Cms.DeleteConfirm"]</label>
+            <p><button type="submit" class="danger">@C["Cms.NetDeleteComponent"]</button></p>
+        </form>
+    </details>
+}

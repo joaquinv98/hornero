@@ -1,0 +1,6 @@
+Code to confirm your {% if withdrawal %}withdrawal{% else %}cancellation{% endif %} request
+<p>Hi,</p>
+<p>We received a {% if withdrawal %}withdrawal{% else %}cancellation{% endif %} request with this email address. To confirm it, enter this code on the request page:</p>
+<p style="font-size:24px;font-weight:bold;letter-spacing:4px;">{{ code }}</p>
+<p>The code expires in {{ minutes }} minutes.</p>
+<p>If you did not request this, ignore this email: nothing is registered without the code.</p>

@@ -1,0 +1,89 @@
+@page "/admin/catalogo/paquetes/{id}"
+@model BillingOss.Web.Pages.Admin.Catalog.BundleModel
+@using BillingOss.Domain.Shared
+@{
+    var title = Model.BundleId is null ? L["Catalog.NewBundle"].Value : Model.Input.Name ?? "";
+    ViewData["Title"] = title;
+    string CycleName(string code) => L["CycleOption." + code] is { ResourceNotFound: false } text ? text.Value : code;
+}
+<nav aria-label="@L["Catalog.Breadcrumb"]"><a href="/admin/catalogo#paquetes">@L["Catalog.Title"]</a></nav>
+<h1>@title</h1>
+@if (Model.Error is { } error)
+{
+    <div class="alert" role="alert" tabindex="-1" autofocus><p><strong>@L["Catalog.ErrorTitle"]</strong> @error</p></div>
+}
+@if (Model.Saved)
+{
+    <p class="notice" role="status">@L["Catalog.Saved"]</p>
+}
+@if (Model.Prices.Count > 0)
+{
+    <p class="muted">
+        @L["Catalog.BundleFirstPeriod"]:
+        @string.Join(" · ", Model.Prices.Select(p => L["Catalog.BundlePrice", Ui.Money(p.Amount, new Currency(p.Currency)), Ui.Money(p.FullAmount, new Currency(p.Currency))].Value))
+    </p>
+}
+<form method="post" class="stack">
+    <fieldset class="card">
+        <legend>@L["Catalog.Bundle"]</legend>
+        <div class="grid">
+            <div class="field">
+                <label asp-for="Input.Name">@L["Catalog.Name"]</label>
+                <input asp-for="Input.Name" required maxlength="200">
+            </div>
+            <div class="field">
+                <label asp-for="Input.DiscountPercent">@L["Catalog.BundleDiscount"]</label>
+                <input asp-for="Input.DiscountPercent" type="number" step="any" min="0" max="100" inputmode="decimal" aria-describedby="discount-help">
+                <small id="discount-help" class="muted">@L["Catalog.BundleDiscountHelp"]</small>
+            </div>
+            <div class="field">
+                <label asp-for="Input.DiscountCycles">@L["Catalog.RecurringCycles"]</label>
+                <input asp-for="Input.DiscountCycles" min="1" aria-describedby="cycles-help">
+                <small id="cycles-help" class="muted">@L["Catalog.RecurringCyclesHelp"]</small>
+            </div>
+        </div>
+        <div class="field">
+            <label asp-for="Input.Description">@L["Catalog.Description"]</label>
+            <textarea asp-for="Input.Description" rows="2" maxlength="4000"></textarea>
+        </div>
+        <label class="check"><input asp-for="Input.Active"> @L["Catalog.BundleActiveHelp"]</label>
+    </fieldset>
+
+    <div class="table">
+        <table class="prices">
+            <caption>@L["Catalog.BundlePlans"] <span class="muted">@L["Catalog.BundlePlansHelp"]</span></caption>
+            <thead>
+                <tr><th scope="col">@L["Catalog.Plan"]</th><th scope="col" class="num">@L["Catalog.Units"]</th></tr>
+            </thead>
+            <tbody>
+                @for (var k = 0; k < Model.Input.Items.Count; k++)
+                {
+                    var row = Model.Input.Items[k];
+                    var n = k + 1;
+                    <tr>
+                        <td>
+                            <select name="Input.Items[@k].PlanId" aria-label="@L["Catalog.PlanRow", n]">
+                                <option value=""></option>
+                                @foreach (var group in Model.Plans.GroupBy(p => p.Group))
+                                {
+                                    <optgroup label="@(group.Key ?? L["Catalog.NoGroup"].Value)">
+                                        @foreach (var p in group)
+                                        {
+                                            <option value="@p.Id" selected="@(p.Id == row.PlanId)">@p.Product · @CycleName(p.Cycle)</option>
+                                        }
+                                    </optgroup>
+                                }
+                            </select>
+                        </td>
+                        <td class="num"><input type="number" min="1" max="50" name="Input.Items[@k].Quantity" value="@row.Quantity" aria-label="@L["Catalog.UnitsRow", n]"></td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+
+    @if (Model.CanWrite)
+    {
+        <p><button type="submit">@L["Catalog.SaveBundle"]</button></p>
+    }
+</form>

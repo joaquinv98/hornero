@@ -1,0 +1,27 @@
+@model System.Text.Json.Nodes.JsonObject
+@{
+    // Los datos del titular, con el autocompletado de cada campo (WCAG 1.3.5). Los obligatorios los pide cualquier registro.
+    var autocomplete = new Dictionary<string, string>
+    {
+        ["first_name"] = "given-name", ["last_name"] = "family-name", ["company"] = "organization", ["email"] = "email",
+        ["phone"] = "tel", ["address1"] = "address-line1", ["address2"] = "address-line2", ["city"] = "address-level2",
+        ["state"] = "address-level1", ["postal_code"] = "postal-code", ["country"] = "country",
+    };
+}
+<fieldset class="bo-stack bo-stack--sm">
+    <legend class="bo-strong">@L["Contact.Legend"]</legend>
+    <p class="bo-help">@L["Contact.Help"]</p>
+    <div class="bo-grid">
+        @foreach (var field in BillingOss.App.UseCases.DomainContacts.Fields)
+        {
+            var required = BillingOss.App.UseCases.DomainContacts.Required.Contains(field);
+            var id = "contact-" + field;
+            <div class="bo-field">
+                <label for="@id">@L[Ui.Key("Contact", field)]@(required ? "" : " " + L["Contact.Optional"])</label>
+                <input id="@id" class="bo-input" name="Contact[@field]" value="@(Model[field]?.ToString())" autocomplete="@autocomplete[field]"
+                       type="@(field == "email" ? "email" : field == "phone" ? "tel" : "text")" required="@required" maxlength="200">
+            </div>
+        }
+    </div>
+    <p class="bo-help">@L["Contact.PhoneHelp"]</p>
+</fieldset>

@@ -1,0 +1,5 @@
+Your domain {{ domain }} expires on {{ expires_on }}
+<p>Hi {{ account_name }},</p>
+{% if invoice_id %}<p>The renewal of <strong>{{ domain }}</strong> has been invoiced and is still unpaid. If it is not paid before {{ expires_on }}, the domain expires.</p>{% else %}<p>Your domain <strong>{{ domain }}</strong> expires on {{ expires_on }} and will not renew automatically.</p>{% endif %}
+<p>Renewing it costs {{ amount }}.{% if portal_url %} You can do it from <a href="{{ portal_url }}">your account</a>.{% endif %}</p>
+<p>If you do not want to renew it, there is nothing else to do.</p>

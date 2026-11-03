@@ -1,0 +1,178 @@
+@page "/admin/catalogo"
+@model BillingOss.Web.Pages.Admin.Catalog.CatalogIndexModel
+@using BillingOss.App.UseCases
+@using BillingOss.Domain.Catalog
+@using BillingOss.Domain.Shared
+@{
+    ViewData["Title"] = L["Catalog.Title"];
+    string CycleName(string code) => L["Cycle." + code] is { ResourceNotFound: false } text ? text.Value : code;
+    string Price(PriceView p) => $"{Ui.Money(p.Amount, new Currency(p.Currency))} {CycleName(p.Cycle)}";
+    string Plan(BundleItemView i) => (L["CycleOption." + i.Cycle] is { ResourceNotFound: false } cycle ? $"{i.Product} · {cycle.Value}" : $"{i.Product} · {i.Cycle}") + (i.Quantity > 1 ? $" x{i.Quantity}" : "");
+    var groups = Model.Groups.Select(g => (Group: (ProductGroup?)g, Products: Model.Products.Where(p => p.GroupId == g.Id && !p.Addon).ToList()))
+        .Append((null, Model.Products.Where(p => p.GroupId is null && !p.Addon).ToList()))
+        .Where(x => x.Group is not null || x.Products.Count > 0)
+        .ToList();
+    var addons = Model.Products.Where(p => p.Addon).ToList();
+}
+<h1>@L["Catalog.Title"]</h1>
+@if (Model.CanWrite)
+{
+    <p class="actions">
+        <a class="button" href="/admin/catalogo/productos/nuevo">@L["Catalog.NewProduct"]</a>
+        <a class="button secondary" href="/admin/catalogo/grupos/nuevo">@L["Catalog.NewGroup"]</a>
+        <a class="button secondary" href="/admin/catalogo/opciones/nuevo">@L["Catalog.NewOptionGroup"]</a>
+        <a class="button secondary" href="/admin/catalogo/paquetes/nuevo">@L["Catalog.NewBundle"]</a>
+    </p>
+}
+<nav class="tabs" aria-label="@L["Catalog.Sections"]">
+    <a href="#productos">@L["Catalog.Products"]</a>
+    <a href="#complementos">@L["Catalog.Addons"]</a>
+    <a href="#opciones">@L["Catalog.OptionGroups"]</a>
+    <a href="#paquetes">@L["Catalog.Bundles"]</a>
+    <a href="/admin/catalogo/cupones">@L["Nav.Promotions"]</a>
+</nav>
+
+<section id="productos" aria-labelledby="t-productos">
+    <h2 id="t-productos">@L["Catalog.Products"]</h2>
+    @if (Model.Products.Count == 0)
+    {
+        <p>@L["Catalog.NoProducts"]</p>
+    }
+    @foreach (var (group, products) in groups)
+    {
+        <div class="table">
+            <table>
+                <caption>
+                    @if (group is null)
+                    {
+                        @L["Catalog.NoGroup"]
+                    }
+                    else
+                    {
+                        <a href="/admin/catalogo/grupos/@group.Id">@group.Name</a>
+                        @if (!group.Visible)
+                        {
+                            <span class="status">@L["Catalog.Hidden"]</span>
+                        }
+                    }
+                </caption>
+                <thead>
+                    <tr><th scope="col">@L["Catalog.Number"]</th><th scope="col">@L["Catalog.Product"]</th><th scope="col">@L["Catalog.Kind"]</th><th scope="col" class="num">@L["Catalog.BasePrice"]</th><th scope="col" class="num">@L["Catalog.Stock"]</th><th scope="col">@L["Catalog.Activation"]</th><th scope="col">@L["Field.Status"]</th></tr>
+                </thead>
+                <tbody>
+                    @foreach (var p in products)
+                    {
+                        <tr>
+                            <td>@p.Id</td>
+                            <td>
+                                <a href="/admin/catalogo/productos/@p.Id">@p.Name</a>
+                                @if (p.Options.Count > 0)
+                                {
+                                    <span class="muted">@L["Catalog.WithOptions", p.Options.Count]</span>
+                                }
+                            </td>
+                            <td>@L["ProductKind." + p.Kind]</td>
+                            <td class="num">
+                                @foreach (var price in p.Prices.Take(3))
+                                {
+                                    <div>@Price(price)</div>
+                                }
+                                @if (p.Prices.Count > 3)
+                                {
+                                    <div class="muted">@L["Catalog.MorePrices", p.Prices.Count - 3]</div>
+                                }
+                            </td>
+                            <td class="num">@(p.Stock?.ToString(System.Globalization.CultureInfo.CurrentCulture) ?? "")</td>
+                            <td>@L["ProductActivation." + p.Activation]</td>
+                            <td><span class="status @(p.Visible ? "s-active" : "")">@(p.Visible ? L["Catalog.Visible"] : L["Catalog.Hidden"])</span></td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
+</section>
+
+<section id="complementos" aria-labelledby="t-complementos">
+    <h2 id="t-complementos">@L["Catalog.Addons"]</h2>
+    @if (addons.Count == 0)
+    {
+        <p>@L["Catalog.NoAddons"]</p>
+    }
+    else
+    {
+        <div class="table">
+            <table>
+                <thead><tr><th scope="col">@L["Catalog.Number"]</th><th scope="col">@L["Catalog.Product"]</th><th scope="col">@L["Catalog.HangsFrom"]</th><th scope="col" class="num">@L["Catalog.BasePrice"]</th><th scope="col">@L["Field.Status"]</th></tr></thead>
+                <tbody>
+                    @foreach (var p in addons)
+                    {
+                        <tr>
+                            <td>@p.Id</td>
+                            <td><a href="/admin/catalogo/productos/@p.Id">@p.Name</a></td>
+                            <td>@(p.ParentProductIds.Count == 0 ? L["Catalog.AnyProduct"].Value : string.Join(", ", Model.Products.Where(x => p.ParentProductIds.Contains(x.Id)).Select(x => x.Name)))</td>
+                            <td class="num">@foreach (var price in p.Prices.Take(3)) { <div>@Price(price)</div> }</td>
+                            <td><span class="status @(p.Visible ? "s-active" : "")">@(p.Visible ? L["Catalog.Visible"] : L["Catalog.Hidden"])</span></td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
+</section>
+
+<section id="opciones" aria-labelledby="t-opciones">
+    <h2 id="t-opciones">@L["Catalog.OptionGroups"]</h2>
+    @if (Model.OptionGroups.Count == 0)
+    {
+        <p>@L["Catalog.NoOptionGroups"]</p>
+    }
+    else
+    {
+        <div class="table">
+            <table>
+                <thead><tr><th scope="col">@L["Catalog.Number"]</th><th scope="col">@L["Catalog.OptionGroup"]</th><th scope="col">@L["Catalog.Options"]</th><th scope="col" class="num">@L["Catalog.Products"]</th></tr></thead>
+                <tbody>
+                    @foreach (var g in Model.OptionGroups)
+                    {
+                        <tr>
+                            <td>@g.Id</td>
+                            <td><a href="/admin/catalogo/opciones/@g.Id">@g.Name</a></td>
+                            <td>@string.Join(", ", g.Options.Select(o => o.Name))</td>
+                            <td class="num">@g.ProductIds.Count</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
+</section>
+
+<section id="paquetes" aria-labelledby="t-paquetes">
+    <h2 id="t-paquetes">@L["Catalog.Bundles"]</h2>
+    @if (Model.Bundles.Count == 0)
+    {
+        <p>@L["Catalog.NoBundles"]</p>
+    }
+    else
+    {
+        <div class="table">
+            <table>
+                <thead><tr><th scope="col">@L["Catalog.Number"]</th><th scope="col">@L["Catalog.Bundle"]</th><th scope="col">@L["Catalog.BundlePlans"]</th><th scope="col" class="num">@L["Catalog.Discount"]</th><th scope="col" class="num">@L["Catalog.BundleFirstPeriod"]</th><th scope="col">@L["Field.Status"]</th></tr></thead>
+                <tbody>
+                    @foreach (var b in Model.Bundles)
+                    {
+                        <tr>
+                            <td>@b.Id</td>
+                            <td><a href="/admin/catalogo/paquetes/@b.Id">@b.Name</a></td>
+                            <td>@string.Join(", ", b.Items.Select(Plan))</td>
+                            <td class="num">@L["Catalog.PercentValue", b.DiscountPercent.ToString("0.##", System.Globalization.CultureInfo.CurrentCulture)]</td>
+                            <td class="num">@foreach (var price in b.Prices) { <div>@Ui.Money(price.Amount, new Currency(price.Currency))</div> }</td>
+                            <td><span class="status @(b.Active ? "s-active" : "")">@(b.Active ? L["Catalog.Active"] : L["Catalog.Inactive"])</span></td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
+</section>

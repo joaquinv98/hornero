@@ -1,0 +1,75 @@
+@page "/admin/reportes/{kind}"
+@model BillingOss.Web.Pages.Admin.Reports.ReportModel
+@using BillingOss.App.Reports
+@using BillingOss.Web.Pages.Admin.Reports
+@{
+    ViewData["Title"] = L[Model.Entry.Title];
+}
+<p class="crumbs"><a href="/admin/reportes">@L["Reports.Back"]</a></p>
+<h1>@L[Model.Entry.Title]</h1>
+<p class="muted lead">@L[Model.Entry.Help]</p>
+@if (Model.HasPeriod)
+{
+    <form method="get" class="period" hx-get="/admin/reportes/@Model.Entry.Slug" hx-target="#report" hx-select="#report" hx-swap="outerHTML" hx-push-url="true">
+        <div class="field">
+            <label for="desde">@L["Reports.From"]</label>
+            <input id="desde" name="desde" type="month" value="@(Model.Range is { } r1 ? MonthRange.Format(r1.From) : Model.Desde)" placeholder="2026-10" pattern="[0-9]{4}-[0-9]{2}" required>
+        </div>
+        <div class="field">
+            <label for="hasta">@L["Reports.To"]</label>
+            <input id="hasta" name="hasta" type="month" value="@(Model.Range is { } r2 ? MonthRange.Format(r2.To) : Model.Hasta)" placeholder="2026-10" pattern="[0-9]{4}-[0-9]{2}" required>
+        </div>
+        @if (Model.Entry.Slug == ReportModel.Statement)
+        {
+            <div class="field">
+                <label for="cuenta">@L["Reports.AccountNumber"]</label>
+                <input id="cuenta" name="cuenta" type="number" min="1" inputmode="numeric" value="@Model.Cuenta" required>
+            </div>
+        }
+        <button type="submit">@L["Reports.Show"]</button>
+    </form>
+    <nav class="ranges" aria-label="@L["Reports.Period"]">
+        @foreach (var (key, range) in Model.Shortcuts)
+        {
+            <a href="/admin/reportes/@Model.Entry.Slug?desde=@MonthRange.Format(range.From)&amp;hasta=@MonthRange.Format(range.To)@Model.Extra" aria-current="@(range == Model.Range ? "true" : null)">@L[key]</a>
+        }
+    </nav>
+}
+<div id="report" aria-live="polite">
+    @if (Model.InvalidPeriod)
+    {
+        <p class="alert" role="alert">@L["Reports.InvalidPeriod", MonthRange.MaxMonths]</p>
+    }
+    else if (Model.NeedsAccount)
+    {
+        <p class="muted">@L["Reports.PickAccount"]</p>
+    }
+    else if (Model.Result is { } report)
+    {
+        @if (!Model.HasPeriod)
+        {
+            <p class="muted">@L[Model.AsOfKey, Ui.Date(Model.Today)]</p>
+        }
+
+        @foreach (var note in report.Notes)
+        {
+            <p class="warn" role="status">@L["ReportNote." + note.Key, [.. note.Args]]</p>
+        }
+
+        var charts = ReportCharts.Build(report, Model.Range);
+        @if (charts.Count > 0)
+        {
+            <div class="charts">
+                @foreach (var chart in charts)
+                {
+                    <partial name="_ReportChart" model="chart" />
+                }
+            </div>
+        }
+
+        @foreach (var table in report.Tables)
+        {
+            <partial name="_ReportTable" model="new ReportTableView(table, Model.CsvUrl(table))" />
+        }
+    }
+</div>

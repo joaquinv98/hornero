@@ -1,0 +1,104 @@
+@page "/admin/descargas/{key:regex(^([0-9]+|nueva)$)}"
+@model DownloadEditModel
+@{
+    ViewData["Title"] = Model.Id is null ? C["Cms.NewDownload"] : C["Cms.EditDownload"];
+    var isNew = Model.Id is null;
+}
+<h1>@ViewData["Title"]</h1>
+<partial name="_Tabs" />
+<partial name="_Alerts" model="Model" />
+<nav class="ct-crumbs" aria-label="@C["Kb.Breadcrumb"]"><a href="/admin/descargas">@C["Cms.Downloads"]</a></nav>
+@if (!isNew)
+{
+    <dl class="facts">
+        <dt>@C["Cms.State"]</dt>
+        <dd><partial name="_Pill" model="ContentUi.PublishPill(Model.Status, C)" /></dd>
+        <dt>@C["Cms.Downloaded"]</dt>
+        <dd>@Model.Count.ToString("N0", System.Globalization.CultureInfo.CurrentCulture)</dd>
+        <dt>@C["Cms.File"]</dt>
+        <dd>
+            @if (Model.FileName is not null)
+            {
+                @Model.FileName <span class="muted">(@ContentUi.Size(Model.Size))</span>
+                <br><code class="ct-hash">SHA-256 @Model.Sha256</code>
+            }
+            else
+            {
+                @C["Cms.WithoutFile"]
+            }
+        </dd>
+    </dl>
+}
+<form method="post" asp-page-handler="Save" asp-route-key="@Model.Key" class="ct-form">
+    <input type="hidden" name="Input.Revision" value="@Model.Input.Revision">
+    <fieldset>
+        <legend>@C["Cms.General"]</legend>
+        <label for="d-cat">@C["Cms.Category"]</label>
+        <select id="d-cat" name="Input.CategoryId" required>
+            <option value="">@C["Cms.Choose"]</option>
+            @foreach (var c in Model.Categories)
+            {
+                <option value="@c.Id" selected="@(Model.Input.CategoryId == c.Id)">@c.Name</option>
+            }
+        </select>
+        <label for="d-order">@C["Cms.Order"]</label>
+        <input id="d-order" name="Input.SortOrder" type="number" value="@Model.Input.SortOrder" inputmode="numeric">
+    </fieldset>
+    <partial name="_Audience" model="Model.AudienceFields" />
+    <partial name="_Texts" model="Model.TextFields" />
+    <p class="ct-actions">
+        <button type="submit">@C["Cms.Save"]</button>
+        <a href="/admin/descargas">@C["Cms.Cancel"]</a>
+    </p>
+</form>
+@if (!isNew)
+{
+    <section aria-labelledby="file">
+        <h2 id="file">@C["Cms.UploadTitle"]</h2>
+        <p class="muted">@C["Cms.UploadHelp", ContentUi.Size(Model.MaxBytes), string.Join(", ", Model.Extensions)]</p>
+        <form method="post" enctype="multipart/form-data" asp-page-handler="Upload" asp-route-key="@Model.Key" class="ct-form">
+            <label for="d-file">@C["Cms.ChooseFile"]</label>
+            <input id="d-file" name="file" type="file" required>
+            <p><button type="submit">@(Model.FileName is null ? C["Cms.UploadFile"] : C["Cms.ReplaceFile"])</button></p>
+        </form>
+        @if (Model.FileName is not null)
+        {
+            <p><a asp-page-handler="File" asp-route-key="@Model.Key">@C["Cms.GetFile"]</a> <span class="muted">@C["Cms.GetFileHelp"]</span></p>
+        }
+    </section>
+    <section aria-labelledby="publication">
+        <h2 id="publication">@C["Cms.Publication"]</h2>
+        <p class="muted">@C["Cms.DownloadPublicationHelp"]</p>
+        <div class="ct-actions">
+            @if (Model.Status != PublishState.Published)
+            {
+                <form method="post" asp-page-handler="Publish" asp-route-key="@Model.Key" class="inline">
+                    <input type="hidden" name="revision" value="@Model.Input.Revision">
+                    <button type="submit">@C["Cms.PublishDownload"]</button>
+                </form>
+            }
+            @if (Model.Status == PublishState.Published)
+            {
+                <form method="post" asp-page-handler="Unpublish" asp-route-key="@Model.Key" class="inline">
+                    <input type="hidden" name="revision" value="@Model.Input.Revision">
+                    <button type="submit" class="secondary">@C["Cms.Unpublish"]</button>
+                </form>
+            }
+            @if (Model.Status != PublishState.Archived)
+            {
+                <form method="post" asp-page-handler="Archive" asp-route-key="@Model.Key" class="inline">
+                    <input type="hidden" name="revision" value="@Model.Input.Revision">
+                    <button type="submit" class="secondary">@C["Cms.Archive"]</button>
+                </form>
+            }
+        </div>
+    </section>
+    <details>
+        <summary>@C["Cms.DeleteTitle"]</summary>
+        <form method="post" asp-page-handler="Delete" asp-route-key="@Model.Key" class="ct-form">
+            <p>@C["Cms.DeleteDownloadHelp"]</p>
+            <label class="check"><input type="checkbox" name="confirm" value="true"> @C["Cms.DeleteConfirm"]</label>
+            <p><button type="submit" class="danger">@C["Cms.DeleteDownload"]</button></p>
+        </form>
+    </details>
+}

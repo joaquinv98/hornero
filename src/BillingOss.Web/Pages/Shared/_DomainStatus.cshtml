@@ -1,0 +1,5 @@
+@model BillingOss.Domain.Domains.DomainStatus
+@{
+    var (tone, shape) = Ui.Tone(Model);
+}
+<span class="bo-status" data-tone="@tone" data-shape="@shape">@L["DomainStatus." + Model]</span>

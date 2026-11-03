@@ -1,0 +1,60 @@
+@using BillingOss.App.UseCases
+@model UsageView
+@* La ventana abierta de cada métrica. Con ViewData["Staff"] muestra también lo que el cliente no ve, como un precio que falta. *@
+@{
+    var staff = ViewData["Staff"] is true;
+}
+@if (Model.Metrics.Count == 0)
+{
+    <p>@L["Usage.None"]</p>
+}
+else
+{
+    <div class="cards">
+        @foreach (var m in Model.Metrics)
+        {
+            var unit = m.Unit.Length > 0 ? m.Unit : L["Usage.UnitFallback"].Value;
+            <section class="card usage" aria-labelledby="metric-@m.Code">
+                <h3 id="metric-@m.Code">@m.Name</h3>
+                @if (m.Since is null)
+                {
+                    <p class="muted">@L["Usage.NoReadings"]</p>
+                }
+                else
+                {
+                    <p class="muted">@L["Usage.Since", Ui.Date(m.Since)]</p>
+                    <p>
+                        <strong class="num">@UsageBilling.Amount(m.Used, m.Unit, CultureInfo.CurrentCulture)</strong>
+                        @(m.Included > 0m ? L["Usage.OfIncluded", UsageBilling.Amount(m.Included, m.Unit, CultureInfo.CurrentCulture)] : L["Usage.NothingIncluded"])
+                    </p>
+                    @if (m.Percent is { } percent)
+                    {
+                        <meter min="0" max="100" low="80" high="99" optimum="0" value="@Math.Min(percent, 100)" aria-describedby="percent-@m.Code">@percent %</meter>
+                        <p id="percent-@m.Code" class="bo-small">@L["Usage.PercentOfIncluded", percent]</p>
+                    }
+                    @if (m.Excess > 0m)
+                    {
+                        <p>
+                            @L["Usage.Excess"]: <strong>@UsageBilling.Amount(m.Excess, m.Unit, CultureInfo.CurrentCulture)</strong>
+                            @if (m.Estimated is { } estimated)
+                            {
+                                <span>@L["Usage.Estimated", Ui.Money(estimated, Model.Currency)]</span>
+                            }
+                            else if (staff)
+                            {
+                                <span class="alert">@L["Usage.NoPrice", Model.Currency.Code]</span>
+                            }
+                        </p>
+                    }
+                }
+                <p class="bo-small bo-muted">
+                    @L["Usage.Cycle." + m.Cycle]
+                    @if (m.UnitPrice is { } price)
+                    {
+                        <span>@L["Usage.PricePer", UsageBilling.Price(price, Model.Currency, CultureInfo.CurrentCulture), unit]</span>
+                    }
+                </p>
+            </section>
+        }
+    </div>
+}

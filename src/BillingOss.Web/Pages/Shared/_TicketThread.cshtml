@@ -1,0 +1,54 @@
+@model SupportUi.ThreadView
+@using BillingOss.App.Support
+<ol class="bo-thread">
+    @foreach (var entry in Model.Entries)
+    {
+        var m = entry.Message;
+        var kind = m.Internal ? "bo-message--note" : m.Author switch { MessageAuthor.Staff => "bo-message--staff", MessageAuthor.System => "bo-message--system", _ => null };
+        <li class="bo-message @kind" id="m@(m.Id)">
+            <p class="bo-message__head">
+                <span>
+                    <strong>@(m.Author == MessageAuthor.System ? L["Support.System"] : m.AuthorName)</strong>
+                    @if (m.Author == MessageAuthor.Staff)
+                    {
+                        <span>@L["Support.StaffTag"]</span>
+                    }
+                    @if (m.Internal)
+                    {
+                        <span class="bo-status" data-tone="warn">@L["Support.InternalNote"]</span>
+                    }
+                    @if (Model.Staff && m.AuthorEmail is { Length: > 0 } email)
+                    {
+                        <span>@email</span>
+                    }
+                </span>
+                <span>
+                    @if (Model.Staff)
+                    {
+                        @L["MessageSource." + m.Source]<text> · </text>
+                    }
+                    <time datetime="@SupportUi.Iso(m.CreatedAt)">@SupportUi.When(m.CreatedAt, Model.Billing)</time>
+                </span>
+            </p>
+            <div class="bo-body">@m.Body</div>
+            @if (entry.Files.Count > 0)
+            {
+                <ul class="bo-files" aria-label="@L["Support.Files"]">
+                    @foreach (var f in entry.Files)
+                    {
+                        <li>
+                            @if (f.Missing)
+                            {
+                                @f.FileName <span class="muted">@L["Support.FileMissing"]</span>
+                            }
+                            else
+                            {
+                                <a href="@(Model.FileUrl + f.Id)" download>@f.FileName</a> <span class="muted">(@SupportUi.Size(f.Size))</span>
+                            }
+                        </li>
+                    }
+                </ul>
+            }
+        </li>
+    }
+</ol>

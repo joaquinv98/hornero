@@ -1,0 +1,106 @@
+@page "/admin/presupuestos/{id}"
+@model BillingOss.Web.Pages.Admin.Billing.QuoteModel
+@using BillingOss.Domain.Billing
+@using BillingOss.Web.Pages.Admin.Billing
+@{
+    var q = Model.Quote;
+    ViewData["Title"] = q is null ? L["Billing.NewQuote"] : L["Billing.QuoteNumber", q.Id];
+    var editable = Model.CanWrite && (q is null || q.IsOpen);
+}
+<p><a href="/admin/presupuestos">@L["Billing.BackToQuotes"]</a></p>
+<h1>
+    @ViewData["Title"]
+    @if (q is not null)
+    {
+        <span class="bo-status" data-tone="@(q.Status is QuoteStatus.Invoiced or QuoteStatus.Ordered ? "ok" : q.Status == QuoteStatus.Declined ? "danger" : "warn")">@L["QuoteStatus." + q.Status]</span>
+    }
+</h1>
+@if (Model.Error is not null)
+{
+    <p class="alert" role="alert">@Model.Error</p>
+}
+@if (q is not null)
+{
+    <dl class="facts">
+        <dt>@L["Billing.Account"]</dt>
+        <dd><a href="/admin/cuentas/@q.AccountId">@Model.Account?.Name</a></dd>
+        <dt>@L["Invoices.Total"]</dt>
+        <dd class="bo-money">@Ui.Money(q.Total, q.Currency)</dd>
+        @if (q.SentAt is { } sent)
+        {
+            <dt>@L["Billing.SentAt"]</dt>
+            <dd>@sent.ToString("g", CultureInfo.CurrentCulture)</dd>
+        }
+        @if (q.DocumentId is { } doc)
+        {
+            <dt>@L["Billing.Invoice"]</dt>
+            <dd><a href="/admin/facturas/@doc">@L["Billing.SeeInvoice"]</a></dd>
+        }
+        @if (q.OrderId is { } order)
+        {
+            <dt>@L["Billing.Order"]</dt>
+            <dd>#@order</dd>
+        }
+    </dl>
+}
+@if (editable)
+{
+    <form method="post" class="stack">
+        <div class="bo-actions">
+            @if (q is null)
+            {
+                <label>@L["Billing.Account"] <input name="cuenta" type="number" min="1" value="@Model.AccountId" required></label>
+                @if (Model.Account is { } a)
+                {
+                    <a href="/admin/cuentas/@a.Id">@a.Name</a>
+                }
+            }
+            <label>@L["Admin.Currency"] <input name="Currency" value="@Model.Currency" maxlength="3" size="4"></label>
+            <label>@L["Billing.ValidUntil"] <input name="ValidUntil" type="date" value="@Model.ValidUntil?.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture)"></label>
+        </div>
+        <label>@L["Billing.Subject"] <input name="Subject" value="@Model.Subject" maxlength="200" required></label>
+        <partial name="_Lines" model="new LinesEditor(Model.Lines, Model.Plans)" />
+        <label>@L["Billing.Notes"] <textarea name="Notes" rows="3" maxlength="4000">@Model.Notes</textarea></label>
+        <p class="muted">@L["Billing.QuoteHelp"]</p>
+        <div class="bo-actions"><button type="submit" asp-page-handler="Save">@L["Billing.Save"]</button></div>
+    </form>
+}
+else if (q is not null)
+{
+    <h2>@q.Subject</h2>
+    <div class="table">
+        <table>
+            <thead><tr><th scope="col">@L["Billing.Description"]</th><th scope="col" class="num">@L["Billing.Quantity"]</th><th scope="col" class="num">@L["Billing.UnitPrice"]</th><th scope="col">@L["Billing.Treatment"]</th></tr></thead>
+            <tbody>
+                @foreach (var l in q.Lines)
+                {
+                    <tr><td>@l.Description</td><td class="num">@l.Quantity.ToString("0.####", CultureInfo.CurrentCulture)</td><td class="num bo-money">@Ui.Money(l.UnitPrice, q.Currency)</td><td>@L["TaxTreatment." + l.Treatment]</td></tr>
+                }
+            </tbody>
+        </table>
+    </div>
+    @if (q.Notes is { Length: > 0 } notes)
+    {
+        <p>@notes</p>
+    }
+}
+@if (q is not null && Model.CanWrite)
+{
+    <div class="bo-actions">
+        @if (q.IsOpen)
+        {
+            <form method="post" asp-page-handler="Send"><button type="submit">@(q.Status == QuoteStatus.Sent ? L["Billing.SendAgain"] : L["Billing.Send"])</button></form>
+            <form method="post" asp-page-handler="Invoice"><button type="submit" class="secondary">@L["Billing.ToInvoice"]</button></form>
+            @if (q.HasPlans)
+            {
+                <form method="post" asp-page-handler="Order"><button type="submit" class="secondary">@L["Billing.ToOrder"]</button></form>
+            }
+            <form method="post" asp-page-handler="Decline"><button type="submit" class="secondary">@L["Billing.Decline"]</button></form>
+            @if (q.Status == QuoteStatus.Draft)
+            {
+                <form method="post" asp-page-handler="Delete"><button type="submit" class="secondary">@L["Billing.Delete"]</button></form>
+            }
+        }
+        <form method="post" asp-page-handler="Duplicate"><button type="submit" class="secondary">@L["Billing.Duplicate"]</button></form>
+    </div>
+}

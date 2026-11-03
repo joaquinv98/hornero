@@ -1,0 +1,91 @@
+@model BillingOss.Web.Pages.Admin.Reports.ReportTableView
+@using BillingOss.App.Reports
+@{
+    var table = Model.Table;
+    var shown = table.Rows.Take(ReportFormat.ScreenRows).ToList();
+
+    // Importes y cantidades a la derecha con números tabulares, el valor para máquinas en data y las fechas en time.
+    void Cell(object? value, ReportColumn column)
+    {
+        var text = ReportFormat.Text(value, column, L);
+        if (value is null)
+        {
+            <td>@text</td>
+        }
+        else if (column.Kind is CellKind.Month or CellKind.Date)
+        {
+            <td><time datetime="@ReportFormat.Machine(value, column, L)">@text</time></td>
+        }
+        else if (column.Kind == CellKind.Account)
+        {
+            <td><a href="/admin/cuentas/@text">@text</a></td>
+        }
+        else if (ReportFormat.IsNumeric(column))
+        {
+            <td class="num"><data value="@ReportFormat.Machine(value, column, L)">@text</data></td>
+        }
+        else
+        {
+            <td>@text</td>
+        }
+    }
+}
+<section class="report-table" aria-labelledby="t-@table.Id">
+    <div class="report-head">
+        <h2 id="t-@table.Id">@L["ReportTable." + table.Id]</h2>
+        @if (Model.CsvUrl is { } csv && table.Rows.Count > 0)
+        {
+            <a class="button secondary" href="@csv" download>@L["Reports.Csv"]</a>
+        }
+    </div>
+    @if (table.Rows.Count == 0)
+    {
+        <p class="muted">@L["Reports.Empty"]</p>
+    }
+    else
+    {
+        @if (table.Rows.Count > shown.Count)
+        {
+            <p class="muted">@L["Reports.Truncated", shown.Count, table.Rows.Count]</p>
+        }
+
+        <div class="table">
+            <table>
+                <thead>
+                    <tr>
+                        @foreach (var column in table.Columns)
+                        {
+                            <th scope="col" class="@(ReportFormat.IsNumeric(column) ? "num" : null)">@ReportFormat.Header(column, L)</th>
+                        }
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var row in shown)
+                    {
+                        <tr>
+                            @for (var i = 0; i < table.Columns.Count; i++)
+                            {
+                                Cell(row[i], table.Columns[i]);
+                            }
+                        </tr>
+                    }
+                </tbody>
+                @if (table.Totals.Count > 0)
+                {
+                    <tfoot>
+                        @foreach (var total in table.Totals)
+                        {
+                            <tr>
+                                <th scope="row" class="label">@L["Reports.Total"]</th>
+                                @for (var i = 1; i < table.Columns.Count; i++)
+                                {
+                                    Cell(total[i], table.Columns[i]);
+                                }
+                            </tr>
+                        }
+                    </tfoot>
+                }
+            </table>
+        </div>
+    }
+</section>

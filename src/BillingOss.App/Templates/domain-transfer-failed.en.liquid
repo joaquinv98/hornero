@@ -1,0 +1,5 @@
+The transfer of {{ domain }} could not be completed
+<p>Hi {{ account_name }},</p>
+<p>The transfer of <strong>{{ domain }}</strong> could not be completed.</p>
+{% if reason == "invalid_auth_code" %}<p>The registry rejected the authorization (EPP) code. Ask your current provider for a new one and retry the transfer from the domain page in {% if portal_url %}<a href="{{ portal_url }}">your account</a>{% else %}your account{% endif %}.</p>{% else %}<p>We are looking into it and will write to you with the next steps. If you have a new authorization (EPP) code, you can retry it from the domain page in your account.</p>{% endif %}
+<p>Retrying it is not charged again.</p>

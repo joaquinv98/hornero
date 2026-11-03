@@ -1,0 +1,3 @@
+@model Pill
+@* Estado con punto, palabra y forma (lleno: vigente o resuelto, hueco: en curso o pendiente, anillo: pide acción). *@
+<span class="bo-status" data-tone="@Model.Tone" data-shape="@Model.Shape"><span class="bo-dot" aria-hidden="true"></span>@Model.Text</span>

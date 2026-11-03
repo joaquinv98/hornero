@@ -1,0 +1,219 @@
+@page "/dominios/nuevo"
+@model DomainNewModel
+@{
+    var confirming = Model.Name is not null && Model.Offers.Count > 0;
+    var title = confirming ? L[Model.Transfer ? "DomainNew.TransferTitle" : "DomainNew.RegisterTitle", Model.Name!] : L["DomainNew.Title"];
+    ViewData["Title"] = title;
+}
+<div class="bo-head">
+    <ol class="bo-crumbs"><li><a href="/dominios">@L["Nav.Domains"]</a></li><li aria-current="page">@title</li></ol>
+    <h1>@title</h1>
+</div>
+
+@if (Model.Error is not null)
+{
+    <p class="bo-alert" data-tone="danger" role="alert">@L[Model.Error]</p>
+}
+
+@if (confirming)
+{
+    var account = Model.Account!;
+    <form method="post" class="bo-stack">
+        <input type="hidden" name="nombre" value="@Model.Name">
+        <input type="hidden" name="transferir" value="@(Model.Transfer ? "true" : "false")">
+        <input type="hidden" name="cuenta" value="@account.Id">
+        @if (Model.ShowRegistrantForm)
+        {
+            <input type="hidden" name="titular" value="true">
+        }
+
+        <section class="bo-card" aria-labelledby="precio">
+            <div class="bo-card__head"><h2 id="precio">@L["DomainNew.PriceTitle"]</h2>@if (Model.Accounts.Count > 1) {<span class="bo-small bo-muted">@L["DomainNew.ForAccount", account.Name]</span>}</div>
+            @if (Model.Transfer)
+            {
+                var offer = Model.Offers[0];
+                <p>@L["DomainNew.TransferPrice", Ui.Money(offer.Transfer!.Value, offer.Currency)]</p>
+                @if (offer.Renew is { } renew)
+                {
+                    <p class="bo-small bo-muted">@L["DomainNew.ThenRenews", Ui.Money(renew, offer.Currency)]</p>
+                }
+            }
+            else
+            {
+                <fieldset class="bo-stack bo-stack--sm">
+                    <legend class="bo-strong">@L["DomainNew.HowLong"]</legend>
+                    @foreach (var offer in Model.Offers)
+                    {
+                        <label class="bo-check">
+                            <input type="radio" name="Years" value="@offer.Years" checked="@(offer.Years == Model.Years)">
+                            <span>
+                                <strong>@(offer.Years == 1 ? L["DomainNew.OneYear"] : L["DomainNew.NYears", offer.Years])</strong>:
+                                <data class="bo-money" value="@Ui.Value(offer.Register!.Value)">@Ui.Money(offer.Register!.Value, offer.Currency)</data>
+                                @if (offer.Renew is { } renew)
+                                {
+                                    <span class="bo-small bo-muted">@L["DomainNew.RenewsAt", Ui.Money(renew, offer.Currency)]</span>
+                                }
+                            </span>
+                        </label>
+                    }
+                </fieldset>
+            }
+            <p class="bo-small bo-muted">@L["DomainNew.TaxNote"]</p>
+        </section>
+
+        @if (Model.Transfer)
+        {
+            <section class="bo-card" aria-labelledby="codigo">
+                <div class="bo-card__head"><h2 id="codigo">@L["Domain.AuthCode"]</h2></div>
+                <div class="bo-field">
+                    <label for="AuthCode">@L["DomainNew.AuthCode"]</label>
+                    <input id="AuthCode" class="bo-input bo-data" name="AuthCode" value="@Model.AuthCode" autocomplete="off" spellcheck="false" maxlength="255" required aria-describedby="authHelp">
+                    <p id="authHelp" class="bo-help">@L["DomainNew.AuthCodeHelp"]</p>
+                </div>
+            </section>
+        }
+
+        @if (Model.PaidOptions.Count > 0)
+        {
+            <section class="bo-card" aria-labelledby="opciones">
+                <div class="bo-card__head"><h2 id="opciones">@L["Domain.Options"]</h2></div>
+                <p class="bo-small bo-muted">@L["DomainNew.OptionsHelp"]</p>
+                @foreach (var option in Model.PaidOptions)
+                {
+                    var dns = option == BillingOss.Domain.Domains.DomainOptions.Dns;
+                    <label class="bo-check"><input type="checkbox" name="@(dns ? "Dns" : "EmailForwarding")" value="true" checked="@(dns ? Model.Dns : Model.EmailForwarding)"> <span>@L["DomainNew.PaidOption", L[Ui.Key("DomainOption", option)], Ui.Money(Model.OptionPrices[option], Model.Account!.Currency)]</span></label>
+                }
+            </section>
+        }
+
+        <section class="bo-card" aria-labelledby="titular">
+            <div class="bo-card__head"><h2 id="titular">@L["Domain.Registrant"]</h2></div>
+            @if (Model.PrivacyOffered)
+            {
+                var privacyPrice = Model.OptionPrices.GetValueOrDefault(BillingOss.Domain.Domains.DomainOptions.Privacy);
+                <label class="bo-check"><input type="checkbox" name="Privacy" value="true" checked="@Model.Privacy"> <span>@(privacyPrice > 0m ? L["DomainNew.PrivacyPaid", Ui.Money(privacyPrice, Model.Account!.Currency)] : L["DomainNew.Privacy"])</span></label>
+            }
+            @if (Model.ShowRegistrantForm)
+            {
+                <partial name="_Registrant" model="Model.Registrant" />
+            }
+            else
+            {
+                <p>
+                    @Model.Registrant["first_name"] @Model.Registrant["last_name"]@(Model.Registrant["company"] is { } company ? ", " + company : "")<br>
+                    <span class="bo-muted">@Model.Registrant["email"] · @Model.Registrant["address1"], @Model.Registrant["city"] (@Model.Registrant["country"])</span>
+                </p>
+                <p class="bo-small"><a href="@Model.ChooseUrl(Model.Name!, Model.Transfer)&titular=true">@L["DomainNew.OtherRegistrant"]</a></p>
+            }
+        </section>
+
+        <div class="bo-stack bo-stack--sm">
+            <div><button type="submit" class="bo-btn bo-btn--lg">@L[Model.Transfer ? "DomainNew.ConfirmTransfer" : "DomainNew.ConfirmRegister"]</button></div>
+            <p class="bo-small bo-muted">@L["DomainNew.AfterConfirm"]</p>
+        </div>
+    </form>
+}
+else
+{
+    <section class="bo-card" aria-labelledby="buscar">
+        <div class="bo-card__head"><h2 id="buscar">@L["DomainNew.SearchTitle"]</h2></div>
+        <form method="get" class="bo-stack bo-stack--sm" role="search">
+            @if (Model.Accounts.Count > 1)
+            {
+                <div class="bo-field">
+                    <label for="cuenta">@L["Field.Account"]</label>
+                    <select id="cuenta" class="bo-select" name="cuenta">
+                        @foreach (var a in Model.Accounts)
+                        {
+                            <option value="@a.Id" selected="@(a.Id == Model.Account?.Id)">@a.Name</option>
+                        }
+                    </select>
+                </div>
+            }
+            <div class="bo-field">
+                <label for="q">@L["DomainNew.SearchLabel"]</label>
+                <div class="bo-row">
+                    <input id="q" class="bo-input" type="search" name="q" value="@Model.Q" autocomplete="off" spellcheck="false" aria-describedby="qHelp" required>
+                    <button type="submit" class="bo-btn">@L["DomainNew.SearchButton"]</button>
+                </div>
+                <p id="qHelp" class="bo-help">@L["DomainNew.SearchHelp"]</p>
+            </div>
+        </form>
+
+        @if (Model.Results.Count > 0)
+        {
+            <div class="bo-table-wrap">
+                <table class="bo-table">
+                    <caption class="bo-sr">@L["DomainNew.Results"]</caption>
+                    <thead>
+                        <tr>
+                            <th scope="col">@L["Domains.Domain"]</th>
+                            <th scope="col">@L["DomainNew.Availability"]</th>
+                            <th scope="col" class="bo-num">@L["DomainNew.FirstYear"]</th>
+                            <th scope="col"><span class="bo-sr">@L["DomainNew.Actions"]</span></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var r in Model.Results)
+                        {
+                            var (tone, shape, label) = r.Available switch
+                            {
+                                true when r.Premium => ("warn", "solid", "DomainNew.Premium"),
+                                true => ("ok", "solid", "DomainNew.Free"),
+                                false => ("neutral", "solid", r.Source == "core" ? "DomainNew.InSystemShort" : "DomainNew.Taken"),
+                                null => ("warn", "hollow", "DomainNew.Unconfirmed"),
+                            };
+                            <tr>
+                                <th scope="row" class="bo-data">@r.Name</th>
+                                <td><span class="bo-status" data-tone="@tone" data-shape="@shape">@L[label]</span></td>
+                                <td class="bo-num">
+                                    @if (r.Offer?.Register is { } register)
+                                    {
+                                        <data class="bo-money" value="@Ui.Value(register)">@Ui.Money(register, r.Offer.Currency)</data>
+                                    }
+                                    else
+                                    {
+                                        <span class="bo-muted">@L["DomainNew.NotSold"]</span>
+                                    }
+                                </td>
+                                <td>
+                                    @if (r.Available != false && !r.Premium && r.Offer?.Register is not null)
+                                    {
+                                        <a class="bo-btn bo-btn--secondary" href="@Model.ChooseUrl(r.Name, false)">@L["DomainNew.Choose"]</a>
+                                    }
+                                    else if (r.Available == false && r.Source != "core" && r.Offer?.Transfer is not null)
+                                    {
+                                        <a class="bo-btn bo-btn--quiet" href="@Model.ChooseUrl(r.Name, true)">@L["DomainNew.TransferIt"]</a>
+                                    }
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+            @if (Model.Results.Any(r => r.Available is null))
+            {
+                <p class="bo-small bo-muted">@L["DomainNew.UnconfirmedHelp"]</p>
+            }
+        }
+    </section>
+
+    <section class="bo-card" id="transferir" aria-labelledby="transferir-titulo">
+        <div class="bo-card__head"><h2 id="transferir-titulo">@L["DomainNew.TransferSection"]</h2></div>
+        <p class="bo-small bo-muted">@L["DomainNew.TransferSectionHelp"]</p>
+        <form method="get" class="bo-stack bo-stack--sm">
+            <input type="hidden" name="transferir" value="true">
+            @if (Model.Account is { } chosen && Model.Accounts.Count > 1)
+            {
+                <input type="hidden" name="cuenta" value="@chosen.Id">
+            }
+            <div class="bo-field">
+                <label for="nombre">@L["DomainNew.TransferName"]</label>
+                <div class="bo-row">
+                    <input id="nombre" class="bo-input" name="nombre" autocomplete="off" spellcheck="false" placeholder="ejemplo.com" required>
+                    <button type="submit" class="bo-btn bo-btn--secondary">@L["DomainNew.Continue"]</button>
+                </div>
+            </div>
+        </form>
+    </section>
+}

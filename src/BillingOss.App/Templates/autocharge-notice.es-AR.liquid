@@ -1,0 +1,5 @@
+No pudimos debitar la factura N.º {{ number }}
+<p>Hola, {{ account_name }}:</p>
+<p>Intentamos debitar <strong>{{ pending }}</strong> de la factura N.º {{ number }} con {{ method }} y el pago no se aprobó.</p>
+{% if reason == "customer_action" %}<p>Tu banco pide que confirmes el pago.{% if pay_url %} Podés hacerlo desde <a href="{{ pay_url }}">este enlace</a>.{% endif %}</p>{% else %}<p>Ese medio no se puede volver a usar para el débito automático. Pagá la factura con otro medio{% if pay_url %} desde <a href="{{ pay_url }}">tu cuenta</a>{% endif %} y, si querés, guardá uno nuevo al pagar.</p>{% endif %}
+<p>Si ya la pagaste, ignorá este aviso.</p>

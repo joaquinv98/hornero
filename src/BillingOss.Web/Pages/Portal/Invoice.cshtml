@@ -1,0 +1,71 @@
+@page "/facturas/{id:long}"
+@model InvoiceModel
+@{
+    var d = Model.Document!;
+    ViewData["Title"] = L["DocumentKind." + d.Kind] + " " + (d.Number ?? d.Id);
+}
+<h1>@L["DocumentKind." + d.Kind] @(d.Number ?? d.Id)</h1>
+<dl class="facts">
+    <dt>@L["Field.Status"]</dt>
+    <dd><span class="status i-@d.Status.ToString().ToLowerInvariant()">@L["InvoiceStatus." + d.Status]</span></dd>
+    <dt>@L["Invoices.Date"]</dt>
+    <dd>@Ui.Date(d.IssueDate)</dd>
+    <dt>@L["Invoices.Due"]</dt>
+    <dd>@Ui.Date(d.DueDate)</dd>
+    @if (Model.Related is { } r)
+    {
+        <dt>@L["Invoice.Related"]</dt>
+        <dd><a href="/facturas/@r.Id">@L["DocumentKind." + r.Kind] @(r.Number ?? r.Id)</a></dd>
+    }
+    @foreach (var f in Model.Fiscal)
+    {
+        <dt>@L["Invoice.Fiscal"]</dt>
+        <dd>@f.PointOfSale.ToString("D5", CultureInfo.InvariantCulture)-@f.Number.ToString("D8", CultureInfo.InvariantCulture) (CAE @f.AuthorizationCode)</dd>
+    }
+</dl>
+<p><a href="/facturas/@d.Id/pdf" download>@L["Invoice.Pdf"]</a></p>
+<div class="table">
+    <table>
+        <caption>@L["Invoice.Lines"]</caption>
+        <thead>
+            <tr>
+                <th scope="col">@L["Invoice.Description"]</th>
+                <th scope="col" class="num">@L["Invoice.Quantity"]</th>
+                <th scope="col" class="num">@L["Invoice.Amount"]</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var l in d.Lines)
+            {
+                <tr>
+                    <td>@l.Description</td>
+                    <td class="num">@l.Quantity.ToString("0.##", CultureInfo.CurrentCulture)</td>
+                    <td class="num">@Ui.Money(l.Amount, d.Currency)</td>
+                </tr>
+            }
+        </tbody>
+        <tfoot>
+            <tr><th scope="row" colspan="2">@L["Invoice.Tax"]</th><td class="num">@Ui.Money(d.Tax, d.Currency)</td></tr>
+            <tr><th scope="row" colspan="2">@L["Invoices.Total"]</th><td class="num">@Ui.Money(d.Total, d.Currency)</td></tr>
+            <tr><th scope="row" colspan="2">@L["Invoices.Pending"]</th><td class="num strong">@Ui.Money(d.Pending, d.Currency)</td></tr>
+        </tfoot>
+    </table>
+</div>
+@if (Model.InFlight)
+{
+    <div class="bo-alert" data-tone="info" role="status">
+        <p class="bo-alert__title">@L["Pay.InFlightTitle"]</p>
+        <p>@L["Pay.InFlight"]</p>
+    </div>
+}
+else if (Model.CanPay)
+{
+    <section aria-labelledby="pay" class="pay bo-stack bo-stack--sm">
+        <h2 id="pay">@L["Invoice.Pay"]</h2>
+        @if (Model.Debit is { } debit)
+        {
+            <p>@L["Invoice.AutoChargeOn", Ui.Date(debit.Date), debit.Method]</p>
+        }
+        <p><a class="bo-btn" href="/pagar?factura=@d.Id">@L["Pay.Submit", Ui.Money(d.Pending, d.Currency)]</a></p>
+    </section>
+}

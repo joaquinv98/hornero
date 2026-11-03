@@ -1,0 +1,113 @@
+@page "/admin/configuracion/webhooks/{id:long}"
+@model WebhookModel
+@{
+    var e = Model.Endpoint!;
+    ViewData["Title"] = e.Url;
+}
+<p><a href="/admin/configuracion/webhooks">@L["Webhooks.Title"]</a></p>
+<h1>@e.Url <span class="muted">#@e.Id</span></h1>
+
+@if (Model.Secret is { } secret)
+{
+    <section class="notice" role="status" aria-labelledby="secret">
+        <h2 id="secret">@L["Webhooks.SecretTitle"]</h2>
+        <p>@L["Webhooks.SecretOnce"]</p>
+        <code class="key" data-secret>@secret</code>
+    </section>
+}
+@if (Model.Done is { } done)
+{
+    <p class="notice" role="status">@L[done]</p>
+}
+@if (Model.Error is { } error)
+{
+    <p class="alert" role="alert" tabindex="-1" autofocus>@L["Webhooks.ErrorPrefix"]: @error</p>
+}
+
+<dl class="facts">
+    <dt>@L["Webhooks.State"]</dt>
+    <dd>@(e.Active ? L["Webhooks.On"] : L["Webhooks.Off"])</dd>
+    <dt>@L["Webhooks.Events"]</dt>
+    <dd>@string.Join(", ", e.Events)</dd>
+    <dt>@L["Webhooks.Created"]</dt>
+    <dd><time datetime="@e.CreatedAt.ToString("O", CultureInfo.InvariantCulture)">@e.CreatedAt.ToString("g", CultureInfo.CurrentCulture)</time></dd>
+</dl>
+
+<section aria-labelledby="edit">
+    <h2 id="edit">@L["Webhooks.Edit"]</h2>
+    <form method="post" asp-page-handler="Save" class="stack narrow">
+        <label for="url">@L["Webhooks.Url"]</label>
+        <input id="url" name="Destination" type="url" value="@Model.Destination" required maxlength="500" aria-describedby="url-help" autocomplete="off">
+        <small id="url-help" class="muted">@L["Webhooks.UrlHelp"]</small>
+        <label for="description">@L["Webhooks.Description"]</label>
+        <input id="description" name="Description" value="@Model.Description" maxlength="200">
+        <partial name="_EventChoices" model="(IReadOnlyCollection<string>)Model.Events" />
+        <label class="check"><input type="checkbox" name="Active" value="true" checked="@Model.Active"> @L["Webhooks.Active"]</label>
+        <button type="submit">@L["Webhooks.Save"]</button>
+    </form>
+</section>
+
+<section aria-labelledby="actions">
+    <h2 id="actions">@L["Webhooks.Actions"]</h2>
+    <form method="post" asp-page-handler="Test" class="inline">
+        <button type="submit" class="secondary">@L["Webhooks.Test"]</button>
+    </form>
+    <form method="post" asp-page-handler="Rotate" class="stack narrow">
+        <p class="muted">@L["Webhooks.RotateHelp"]</p>
+        <button type="submit" class="secondary">@L["Webhooks.Rotate"]</button>
+    </form>
+    <form method="post" asp-page-handler="Delete" class="stack narrow">
+        <p class="muted">@L["Webhooks.DeleteHelp"]</p>
+        <button type="submit" class="secondary">@L["Webhooks.Delete"]</button>
+    </form>
+</section>
+
+<section aria-labelledby="deliveries">
+    <h2 id="deliveries">@L["Webhooks.Deliveries"]</h2>
+    @if (Model.Deliveries.Count == 0)
+    {
+        <p>@L["Webhooks.NoDeliveries"]</p>
+    }
+    else
+    {
+        <div class="table">
+            <table>
+                <caption>@L["Webhooks.DeliveriesCaption", WebhookModel.Shown]</caption>
+                <thead>
+                    <tr>
+                        <th scope="col">@L["Webhooks.WebhookId"]</th>
+                        <th scope="col">@L["Webhooks.Event"]</th>
+                        <th scope="col">@L["Webhooks.When"]</th>
+                        <th scope="col">@L["Webhooks.State"]</th>
+                        <th scope="col" class="num">@L["Webhooks.Attempts"]</th>
+                        <th scope="col" class="num">@L["Webhooks.HttpStatus"]</th>
+                        <th scope="col">@L["Webhooks.Error"]</th>
+                        <th scope="col"><span class="visually-hidden">@L["Webhooks.Resend"]</span></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var d in Model.Deliveries)
+                    {
+                        <tr>
+                            <td><code>@d.MessageId</code></td>
+                            <td><code>@d.EventType</code></td>
+                            <td><time datetime="@d.OccurredAt.ToString("O", CultureInfo.InvariantCulture)">@d.OccurredAt.ToString("g", CultureInfo.CurrentCulture)</time></td>
+                            <td><partial name="_DeliveryStatus" model="d.Status" /></td>
+                            <td class="num">@d.Attempts</td>
+                            <td class="num">@d.LastStatusCode</td>
+                            <td>@d.LastError</td>
+                            <td>
+                                @if (d.Status != BillingOss.App.Platform.WebhookDeliveryStatus.Pending)
+                                {
+                                    <form method="post" asp-page-handler="Resend" asp-route-deliveryId="@d.Id" class="inline">
+                                        <button type="submit" class="link">@L["Webhooks.Resend"]</button>
+                                    </form>
+                                }
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
+</section>

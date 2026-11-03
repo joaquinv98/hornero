@@ -1,0 +1,12 @@
+@model IReadOnlyCollection<string>
+@* Los eventos públicos del catálogo como casillas, con su nombre técnico al lado: es el que ve la integración. *@
+<fieldset class="stack">
+    <legend>@L["Webhooks.Events"]</legend>
+    @foreach (var e in BillingOss.App.Platform.PublicEvents.All)
+    {
+        <label class="check">
+            <input type="checkbox" name="Events" value="@e.Type" checked="@Model.Contains(e.Type)">
+            @L["Event." + e.Internal] <code>@e.Type</code>
+        </label>
+    }
+</fieldset>

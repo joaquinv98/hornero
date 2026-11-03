@@ -1,0 +1,5 @@
+[#{{ number }}] Mensaje de {{ requester }}: {{ subject }}
+<p>{{ author }} escribió en el ticket N.º {{ number }} de {{ department }}{% if assigned %}, que tenés asignado{% endif %}:</p>
+<div style="margin:16px 0;padding:12px 16px;background:#f4f5f7;border-radius:6px;white-space:pre-wrap;">{{ message }}</div>
+{% if files.size > 0 %}<p>Adjuntos: {{ files | join: ", " }}</p>{% endif %}
+{% if portal_url %}<p><a href="{{ portal_url }}/admin/soporte/{{ ticket_id }}">Abrir el ticket en el panel</a></p>{% endif %}

@@ -1,0 +1,53 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/BillingOss.App/BillingOss.App.csproj" />
+    <Project Path="src/BillingOss.Domain/BillingOss.Domain.csproj" />
+    <Project Path="src/BillingOss.Importer/BillingOss.Importer.csproj" />
+    <Project Path="src/BillingOss.Modules.Hosting/BillingOss.Modules.Hosting.csproj" />
+    <Project Path="src/BillingOss.Modules.Protocol/BillingOss.Modules.Protocol.csproj" />
+    <Project Path="src/BillingOss.Modules.Sdk/BillingOss.Modules.Sdk.csproj" />
+    <Project Path="src/BillingOss.Releases/BillingOss.Releases.csproj" />
+    <Project Path="src/BillingOss.Updater/BillingOss.Updater.csproj" />
+    <Project Path="src/BillingOss.Updates/BillingOss.Updates.csproj" />
+    <Project Path="src/BillingOss.Web/BillingOss.Web.csproj" />
+  </Folder>
+  <Folder Name="/src/modules/">
+    <Project Path="src/modules/BillingOss.Module.Arca/BillingOss.Module.Arca.csproj" />
+    <Project Path="src/modules/BillingOss.Module.CPanel/BillingOss.Module.CPanel.csproj" />
+    <Project Path="src/modules/BillingOss.Module.CryptoCloud/BillingOss.Module.CryptoCloud.csproj" />
+    <Project Path="src/modules/BillingOss.Module.DirectAdmin/BillingOss.Module.DirectAdmin.csproj" />
+    <Project Path="src/modules/BillingOss.Module.Hestia/BillingOss.Module.Hestia.csproj" />
+    <Project Path="src/modules/BillingOss.Module.MercadoPago/BillingOss.Module.MercadoPago.csproj" />
+    <Project Path="src/modules/BillingOss.Module.MinFraud/BillingOss.Module.MinFraud.csproj" />
+    <Project Path="src/modules/BillingOss.Module.OneTrial/BillingOss.Module.OneTrial.csproj" />
+    <Project Path="src/modules/BillingOss.Module.PayPal/BillingOss.Module.PayPal.csproj" />
+    <Project Path="src/modules/BillingOss.Module.Plesk/BillingOss.Module.Plesk.csproj" />
+    <Project Path="src/modules/BillingOss.Module.Proxmox/BillingOss.Module.Proxmox.csproj" />
+    <Project Path="src/modules/BillingOss.Module.Pterodactyl/BillingOss.Module.Pterodactyl.csproj" />
+    <Project Path="src/modules/BillingOss.Module.Registrars/BillingOss.Module.Registrars.csproj" />
+    <Project Path="src/modules/BillingOss.Module.Stripe/BillingOss.Module.Stripe.csproj" />
+    <Project Path="src/modules/BillingOss.Module.TacticalRmm/BillingOss.Module.TacticalRmm.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/BillingOss.App.Tests/BillingOss.App.Tests.csproj" />
+    <Project Path="tests/BillingOss.Domain.Tests/BillingOss.Domain.Tests.csproj" />
+    <Project Path="tests/BillingOss.Importer.Tests/BillingOss.Importer.Tests.csproj" />
+    <Project Path="tests/BillingOss.Module.Arca.Tests/BillingOss.Module.Arca.Tests.csproj" />
+    <Project Path="tests/BillingOss.Module.CPanel.Tests/BillingOss.Module.CPanel.Tests.csproj" />
+    <Project Path="tests/BillingOss.Module.CryptoCloud.Tests/BillingOss.Module.CryptoCloud.Tests.csproj" />
+    <Project Path="tests/BillingOss.Module.DirectAdmin.Tests/BillingOss.Module.DirectAdmin.Tests.csproj" />
+    <Project Path="tests/BillingOss.Module.Hestia.Tests/BillingOss.Module.Hestia.Tests.csproj" />
+    <Project Path="tests/BillingOss.Module.MercadoPago.Tests/BillingOss.Module.MercadoPago.Tests.csproj" />
+    <Project Path="tests/BillingOss.Module.MinFraud.Tests/BillingOss.Module.MinFraud.Tests.csproj" />
+    <Project Path="tests/BillingOss.Module.PayPal.Tests/BillingOss.Module.PayPal.Tests.csproj" />
+    <Project Path="tests/BillingOss.Module.Plesk.Tests/BillingOss.Module.Plesk.Tests.csproj" />
+    <Project Path="tests/BillingOss.Module.Proxmox.Tests/BillingOss.Module.Proxmox.Tests.csproj" />
+    <Project Path="tests/BillingOss.Module.Pterodactyl.Tests/BillingOss.Module.Pterodactyl.Tests.csproj" />
+    <Project Path="tests/BillingOss.Module.Registrars.Tests/BillingOss.Module.Registrars.Tests.csproj" />
+    <Project Path="tests/BillingOss.Module.Stripe.Tests/BillingOss.Module.Stripe.Tests.csproj" />
+    <Project Path="tests/BillingOss.Module.TacticalRmm.Tests/BillingOss.Module.TacticalRmm.Tests.csproj" />
+    <Project Path="tests/BillingOss.Modules.Hosting.Tests/BillingOss.Modules.Hosting.Tests.csproj" />
+    <Project Path="tests/BillingOss.Modules.Tests/BillingOss.Modules.Tests.csproj" />
+    <Project Path="tests/BillingOss.Updates.Tests/BillingOss.Updates.Tests.csproj" />
+  </Folder>
+</Solution>

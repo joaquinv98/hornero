@@ -1,0 +1,15 @@
+@page "/admin/ingresar/externo"
+@model StaffExternalModel
+@{
+    ViewData["Title"] = L["Admin.LoginTitle"];
+}
+@if (Model.Linked)
+{
+    <p><a href="/admin/ingresar/codigo">@L["Admin.Continue"]</a></p>
+}
+else
+{
+    <h1>@L["Admin.LoginTitle"]</h1>
+    <p class="alert" role="alert">@L["Admin.OidcNotLinked"]</p>
+    <p><a href="/admin/ingresar">@L["Status.Back"]</a></p>
+}

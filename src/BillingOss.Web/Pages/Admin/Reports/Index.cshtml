@@ -1,0 +1,27 @@
+@page "/admin/reportes"
+@model BillingOss.Web.Pages.Admin.Reports.ReportsIndexModel
+@using BillingOss.Web.Pages.Admin.Reports
+@{
+    ViewData["Title"] = L["Reports.Title"];
+}
+<h1>@L["Reports.Title"]</h1>
+<p class="muted lead">@L["Reports.Lead"]</p>
+@* La lista agrupada del menú de Reportes (sección 10 de la interfaz): cada grupo con los reportes que este staff puede
+   ver y una línea de qué muestran. *@
+<div class="report-groups">
+    @foreach (var group in ReportModel.Visible(User).GroupBy(e => e.Group))
+    {
+        <div>
+            <h2>@L[group.Key]</h2>
+            <ul class="report-list">
+                @foreach (var entry in group)
+                {
+                    <li>
+                        <a href="@entry.Href">@L[entry.Title]</a>
+                        <span class="muted">@L[entry.Help]</span>
+                    </li>
+                }
+            </ul>
+        </div>
+    }
+</div>

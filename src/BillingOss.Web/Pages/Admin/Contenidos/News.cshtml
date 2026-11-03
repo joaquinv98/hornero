@@ -1,0 +1,71 @@
+@page "/admin/anuncios"
+@model NewsModel
+@{
+    ViewData["Title"] = C["Cms.News"];
+}
+<h1>@C["Cms.News"]</h1>
+<partial name="_Tabs" />
+<partial name="_Alerts" model="Model" />
+@if (Model.CanWrite)
+{
+    <p class="ct-actions"><a class="button" href="/admin/anuncios/nueva">@C["Cms.NewAnnouncement"]</a></p>
+}
+<form method="get" class="ct-filters" role="search" aria-label="@C["Cms.Filters"]">
+    <div>
+        <label for="f-state">@C["Cms.State"]</label>
+        <select id="f-state" name="state">
+            <option value="">@C["Cms.All"]</option>
+            <option value="Draft" selected="@(Model.State == "Draft")">@C["Cms.StateDraft"]</option>
+            <option value="Published" selected="@(Model.State == "Published")">@C["Cms.StatePublished"]</option>
+            <option value="Archived" selected="@(Model.State == "Archived")">@C["Cms.StateArchived"]</option>
+        </select>
+    </div>
+    <button type="submit">@C["Cms.Filter"]</button>
+</form>
+@if (Model.Rows.Count == 0)
+{
+    <p>@C["Cms.NoAnnouncements"]</p>
+}
+else
+{
+    <div class="table">
+        <table>
+            <thead>
+                <tr>
+                    <th scope="col">#</th>
+                    <th scope="col">@C["Cms.Title"]</th>
+                    <th scope="col">@C["Cms.State"]</th>
+                    <th scope="col">@C["Cms.AudienceWho"]</th>
+                    <th scope="col">@C["Cms.PublishAt"]</th>
+                    <th scope="col">@C["Cms.ExpiresAt"]</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var r in Model.Rows)
+                {
+                    <tr>
+                        <td>@r.Announcement.Id</td>
+                        <td>
+                            @if (Model.CanWrite)
+                            {
+                                <a href="/admin/anuncios/@r.Announcement.Id">@Model.TitleOf(r)</a>
+                            }
+                            else
+                            {
+                                @Model.TitleOf(r)
+                            }
+                            @if (r.Announcement.Pinned)
+                            {
+                                <span class="muted">(@C["Cms.Pinned"])</span>
+                            }
+                        </td>
+                        <td><partial name="_Pill" model="ContentUi.PhasePill(r.Phase, C)" /></td>
+                        <td>@Model.AudienceName(r.Announcement.Audience)</td>
+                        <td>@if (r.Announcement.PublishAt is { } at) { <time datetime="@at.ToString("O")">@ContentUi.When(at, Model.Zone)</time> }</td>
+                        <td>@if (r.Announcement.ExpiresAt is { } end) { <time datetime="@end.ToString("O")">@ContentUi.When(end, Model.Zone)</time> }</td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+}

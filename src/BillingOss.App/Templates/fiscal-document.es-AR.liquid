@@ -1,0 +1,5 @@
+{% if credit_note %}Nota de crédito{% elsif debit_note %}Nota de débito{% else %}Comprobante fiscal{% endif %} {{ fiscal_number }} de {{ company }}
+<p>Hola, {{ account_name }}:</p>
+<p>Ya está disponible el comprobante fiscal {{ fiscal_number }} de {% if credit_note %}la nota de crédito{% elsif debit_note %}la nota de débito{% else %}la factura{% endif %} N.º {{ number }}, por <strong>{{ total }}</strong>.</p>
+<p>CAE: {{ cae }}.</p>
+{% if portal_url %}<p>Lo encontrás en <a href="{{ portal_url }}">tu cuenta</a>.</p>{% endif %}

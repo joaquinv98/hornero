@@ -1,0 +1,12 @@
+@model BillingOss.App.Platform.WebhookDeliveryStatus
+@* Estado de una entrega con la palabra siempre a la vista: el color solo acompaña (sección 4.4 de interfaz-y-temas). *@
+@{
+    var (tone, shape, color) = Model switch
+    {
+        BillingOss.App.Platform.WebhookDeliveryStatus.Delivered => ("ok", "filled", "s-active"),
+        BillingOss.App.Platform.WebhookDeliveryStatus.Pending => ("info", "hollow", "s-suspended"),
+        BillingOss.App.Platform.WebhookDeliveryStatus.Failed => ("danger", "ring", "s-failed"),
+        _ => ("neutral", "filled", "s-cancelled"),
+    };
+}
+<span class="status bo-status @color" data-tone="@tone" data-shape="@shape"><span class="dot" aria-hidden="true"></span>@L["WebhookStatus." + Model]</span>

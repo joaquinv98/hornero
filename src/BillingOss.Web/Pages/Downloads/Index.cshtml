@@ -1,0 +1,52 @@
+@page "/descargas"
+@model IndexModel
+@section Head {
+    <link rel="stylesheet" href="~/css/contenidos.css" asp-append-version="true">
+}
+@{
+    ViewData["Title"] = C["Downloads.Title"];
+}
+<h1>@C["Downloads.Title"]</h1>
+<p class="muted">@C["Downloads.Intro"]</p>
+@if (Model.Groups.Count == 0)
+{
+    <p>@C["Downloads.Empty"]</p>
+}
+else
+{
+    @foreach (var group in Model.Groups)
+    {
+        <section aria-labelledby="cat-@group.CategoryId">
+            <h2 id="cat-@group.CategoryId">@group.Title</h2>
+            <div class="cards">
+                @foreach (var d in group.Items)
+                {
+                    <article class="card ct-download">
+                        <h3 lang="@d.Language">@d.Title</h3>
+                        @if (d.Fallback)
+                        {
+                            <partial name="_OtherLanguage" model="d.Language" />
+                        }
+                        @if (!string.IsNullOrWhiteSpace(d.Description))
+                        {
+                            <p lang="@d.Language">@d.Description</p>
+                        }
+                        <dl class="facts">
+                            <dt>@C["Downloads.File"]</dt>
+                            <dd>@d.FileName</dd>
+                            <dt>@C["Downloads.Size"]</dt>
+                            <dd>@ContentUi.Size(d.Size)</dd>
+                            <dt>@C["Downloads.Updated"]</dt>
+                            <dd>@ContentUi.Day(d.UpdatedAt, Model.Zone)</dd>
+                            <dt>@C["Downloads.Count"]</dt>
+                            <dd>@d.Count.ToString("N0", System.Globalization.CultureInfo.CurrentCulture)</dd>
+                            <dt>SHA-256</dt>
+                            <dd><code class="ct-hash">@d.Sha256</code></dd>
+                        </dl>
+                        <p><a class="button" href="/descargas/@d.Id/archivo">@C["Downloads.Download"]</a></p>
+                    </article>
+                }
+            </div>
+        </section>
+    }
+}

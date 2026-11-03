@@ -1,0 +1,187 @@
+@page "/admin/cuentas/{id:long}/seguridad"
+@using BillingOss.Domain.Orders
+@model CustomerSecurityModel
+@inject Microsoft.Extensions.Options.IOptions<BillingOss.App.BillingOptions> Billing
+@{
+    var a = Model.Account!;
+    ViewData["Title"] = S["Customer.SecurityTitle", a.Name];
+}
+<h1>@S["Customer.SecurityTitle", a.Name]</h1>
+<p><a href="/admin/cuentas/@a.Id">@a.Name <span class="muted">#@a.Id</span></a></p>
+@if (Model.Reset)
+{
+    <p class="notice" role="status">@S["Customer.TwoFactorReset"]</p>
+}
+@if (Model.Notice is not null)
+{
+    <p class="notice" role="status">@S[Model.Notice]</p>
+}
+
+<section aria-labelledby="users">
+    <h2 id="users">@L["Admin.Users"]</h2>
+    @if (Model.Users.Count == 0)
+    {
+        <p>@L["Admin.NoUsers"]</p>
+    }
+    else
+    {
+        <div class="table">
+            <table>
+                <thead>
+                    <tr>
+                        <th scope="col">@L["Field.Email"]</th>
+                        <th scope="col">@S["Customer.Role"]</th>
+                        <th scope="col">@S["Mail.Title"]</th>
+                        <th scope="col">@S["TwoFa.Title"]</th>
+                        <th scope="col">@S["Customer.LastLogin"]</th>
+                        <th scope="col">@S["External.Section"]</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var u in Model.Users)
+                    {
+                        <tr>
+                            <td>
+                                @u.Email
+                                @if (u.LockedOut)
+                                {
+                                    <span class="status" data-tone="danger">@S["LoginResult.Locked"]</span>
+                                }
+                            </td>
+                            <td>@(u.IsOwner ? L["Admin.Owner"] : string.Join(", ", u.Capabilities))</td>
+                            <td><span class="status" data-tone="@(u.EmailConfirmed ? "ok" : "warn")">@(u.EmailConfirmed ? S["Mail.IsVerified"] : S["Mail.NotVerified"])</span></td>
+                            <td>
+                                <span class="status" data-tone="@(u.TwoFactor ? "ok" : "neutral")">@(u.TwoFactor ? S["TwoFa.On"] : S["TwoFa.Off"])</span>
+                                @if (u.Required)
+                                {
+                                    <span class="status" data-tone="warn" data-shape="ring">@S["Customer.Required"]</span>
+                                }
+                                @if (u.TwoFactor && Model.CanManage)
+                                {
+                                    <form method="post" asp-page-handler="ResetTwoFactor" asp-route-userId="@u.Id" class="inline">
+                                        <button type="submit" class="link">@S["Customer.ResetTwoFactor"]</button>
+                                    </form>
+                                }
+                                @if (Model.CanManage)
+                                {
+                                    <form method="post" asp-page-handler="RequireTwoFactor" asp-route-userId="@u.Id" asp-route-required="@(!u.Required)" class="inline">
+                                        <button type="submit" class="link">@(u.Required ? S["Customer.StopRequiring"] : S["Customer.Require"])</button>
+                                    </form>
+                                }
+                            </td>
+                            <td>
+                                @if (u.LastLogin is { } last)
+                                {
+                                    <time datetime="@last.ToString("O", CultureInfo.InvariantCulture)">@UiText.When(last, Billing.Value.TimeZone)</time>
+                                }
+                            </td>
+                            <td>
+                                @foreach (var (linkId, provider, email) in Model.Links[u.Id])
+                                {
+                                    <div>
+                                        @provider <span class="muted">@email</span>
+                                        @if (Model.CanManage)
+                                        {
+                                            <form method="post" asp-page-handler="Unlink" asp-route-userId="@u.Id" asp-route-linkId="@linkId" class="inline">
+                                                <button type="submit" class="link">@S["External.Unlink"]</button>
+                                            </form>
+                                        }
+                                    </div>
+                                }
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+        @if (Model.CanManage)
+        {
+            <p class="muted">@S["Customer.ResetHelp"]</p>
+        }
+    }
+</section>
+
+<section aria-labelledby="checks">
+    <h2 id="checks">@S["Customer.FraudChecks"]</h2>
+    @if (Model.Checks.Count == 0)
+    {
+        <p class="muted">@S["Customer.NoChecks"]</p>
+    }
+    else
+    {
+        <div class="table">
+            <table>
+                <thead>
+                    <tr>
+                        <th scope="col">@S["Review.OrderColumn"]</th>
+                        <th scope="col">@S["Review.Score"]</th>
+                        <th scope="col">@L["Field.Status"]</th>
+                        <th scope="col">@S["Review.Reasons"]</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var c in Model.Checks)
+                    {
+                        <tr>
+                            <td>@c.OrderId</td>
+                            <td>@(c.Score?.ToString("0.##", CultureInfo.CurrentCulture) ?? "")</td>
+                            <td>
+                                <span class="status" data-tone="@(c.Holds ? "warn" : c.Status == ScreeningStatus.Rejected ? "danger" : "ok")">@S["Screening." + c.Status]</span>
+                                @if (c.Holds)
+                                {
+                                    <a href="/admin/pedidos/revision">@S["Review.Title"]</a>
+                                }
+                            </td>
+                            <td>@string.Join(", ", c.ReasonList.Select(r => r.Code))</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
+</section>
+
+@if (Model.CanRead)
+{
+    <section aria-labelledby="logins">
+        <h2 id="logins">@S["History.Title"]</h2>
+        @if (Model.Logins.Count == 0)
+        {
+            <p class="muted">@S["History.Empty"]</p>
+        }
+        else
+        {
+            <div class="table">
+                <table>
+                    <thead>
+                        <tr>
+                            <th scope="col">@S["History.When"]</th>
+                            <th scope="col">@L["Field.Email"]</th>
+                            <th scope="col">@S["History.Ip"]</th>
+                            <th scope="col">@S["History.Device"]</th>
+                            <th scope="col">@S["History.Result"]</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var (e, email) in Model.Logins)
+                        {
+                            <tr>
+                                <td><time datetime="@e.CreatedAt.ToString("O", CultureInfo.InvariantCulture)">@UiText.When(e.CreatedAt, Billing.Value.TimeZone)</time></td>
+                                <td>@email</td>
+                                <td>
+                                    <code>@e.Ip</code>
+                                    @if (e.NewLocation)
+                                    {
+                                        <span class="status" data-tone="warn">@S["History.NewLocation"]</span>
+                                    }
+                                </td>
+                                <td>@BillingOss.App.Identity.Devices.Describe(e.UserAgent)</td>
+                                <td><span class="status" data-tone="@UiText.Tone(e.Result)">@S["LoginResult." + e.Result]</span></td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
+    </section>
+}

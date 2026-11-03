@@ -1,0 +1,9 @@
+Quote #{{ number }}: {{ subject }}
+<p>Hi {{ account_name }},</p>
+<p>Here is quote #{{ number }}, {{ subject }}, for <strong>{{ total }}</strong>. It is valid until {{ valid_until }}.</p>
+<table role="presentation" width="100%" cellpadding="6" cellspacing="0" style="border-collapse:collapse;font-size:14px;">
+{% for line in lines %}<tr><td style="border-bottom:1px solid #e4e7eb;">{{ line.description }}</td><td align="right" style="border-bottom:1px solid #e4e7eb;white-space:nowrap;">{{ line.amount }}</td></tr>
+{% endfor %}<tr><td><strong>Total</strong></td><td align="right" style="white-space:nowrap;"><strong>{{ total }}</strong></td></tr>
+</table>
+{% if notes %}<p>{{ notes }}</p>{% endif %}
+{% if portal_url %}<p>You can review and accept it from <a href="{{ portal_url }}/presupuestos/{{ number }}">your account</a>.</p>{% endif %}

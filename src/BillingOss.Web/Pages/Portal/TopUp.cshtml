@@ -1,0 +1,73 @@
+@page "/cargar-saldo"
+@model TopUpModel
+@{
+    ViewData["Title"] = L["TopUp.Title"];
+    var limits = Model.Limits!;
+    var currency = new BillingOss.Domain.Shared.Currency(Model.CurrencyCode!);
+}
+<h1>@L["TopUp.Title"]</h1>
+<p>@L["TopUp.Intro"]</p>
+@if (Model.Error is not null)
+{
+    <p class="alert" role="alert">@Model.Error</p>
+}
+@if (Model.Balances.Count > 0)
+{
+    <p>@L["TopUp.Balance"] @string.Join(", ", Model.Balances.Select(b => Ui.Money(b.Balance, b.Currency)))</p>
+}
+<form method="get" class="bo-actions">
+    @if (Model.Accounts.Count > 1)
+    {
+        <label>@L["Billing.Account"]
+            <select name="cuenta">
+                @foreach (var a in Model.Accounts)
+                {
+                    <option value="@a.Id" selected="@(a.Id == Model.AccountId)">@a.Name</option>
+                }
+            </select>
+        </label>
+    }
+    else
+    {
+        <input type="hidden" name="cuenta" value="@Model.AccountId">
+    }
+    @if (Model.Currencies.Count > 1)
+    {
+        <label>@L["Admin.Currency"]
+            <select name="moneda">
+                @foreach (var c in Model.Currencies)
+                {
+                    <option value="@c.Code" selected="@(c.Code == Model.CurrencyCode)">@c.Code</option>
+                }
+            </select>
+        </label>
+        <button type="submit" class="secondary">@L["TopUp.Change"]</button>
+    }
+</form>
+@if (Model.Methods.Count == 0)
+{
+    <p class="alert">@L["Pay.NoMethods"]</p>
+}
+else
+{
+    <form method="post" class="stack">
+        <input type="hidden" name="cuenta" value="@Model.AccountId">
+        <input type="hidden" name="moneda" value="@Model.CurrencyCode">
+        <label>@L["TopUp.Amount", currency.Code]
+            <input name="Amount" value="@Model.Amount" inputmode="decimal" required>
+        </label>
+        <p class="muted">@L["TopUp.Limits", Ui.Money(limits.Min, currency), Ui.Money(limits.Max, currency)]</p>
+        <fieldset class="bo-choices">
+            <legend><h2>@L["Pay.Choose"]</h2></legend>
+            @foreach (var m in Model.Methods)
+            {
+                <label class="bo-choice">
+                    <input type="radio" name="Instance" value="@m.Id" checked="@(m == Model.Methods[0])">
+                    <span class="bo-choice__text"><span class="bo-choice__title">@m.Name</span></span>
+                </label>
+            }
+        </fieldset>
+        <p><button type="submit">@L["TopUp.Submit"]</button></p>
+        <p class="muted">@L["TopUp.Note"]</p>
+    </form>
+}

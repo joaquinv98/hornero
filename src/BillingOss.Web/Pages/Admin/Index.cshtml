@@ -1,0 +1,47 @@
+@page "/admin"
+@model AdminIndexModel
+@{
+    ViewData["Title"] = L["Admin.Accounts"];
+}
+<h1>@L["Admin.Accounts"]</h1>
+<form method="get" action="/admin" role="search" class="search">
+    <label for="q">@L["Admin.Search"]</label>
+    <input id="q" name="q" type="search" value="@Model.Q" autocomplete="off"
+           hx-get="/admin" hx-trigger="input changed delay:300ms, search" hx-target="#results" hx-select="#results" hx-swap="outerHTML" hx-push-url="true">
+    <button type="submit">@L["Admin.SearchButton"]</button>
+</form>
+<div id="results" aria-live="polite">
+    @if (Model.Q is { Length: > 0 })
+    {
+        @if (Model.Results.Count == 0)
+        {
+            <p>@L["Admin.NoResults"]</p>
+        }
+        else
+        {
+            <div class="table">
+                <table>
+                    <thead>
+                        <tr>
+                            <th scope="col">#</th>
+                            <th scope="col">@L["Field.Name"]</th>
+                            <th scope="col">@L["Field.Email"]</th>
+                            <th scope="col">@L["Field.Status"]</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var a in Model.Results)
+                        {
+                            <tr>
+                                <td><a href="/admin/cuentas/@a.Id">@a.Id</a></td>
+                                <td><a href="/admin/cuentas/@a.Id">@a.Name</a> @if (a.CompanyName is { Length: > 0 } company) { <span class="muted">@company</span> }</td>
+                                <td>@a.Email</td>
+                                <td>@L["AccountStatus." + a.Status]</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
+    }
+</div>

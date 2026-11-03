@@ -1,0 +1,36 @@
+@page "/anuncios"
+@model IndexModel
+@section Head {
+    <link rel="stylesheet" href="~/css/contenidos.css" asp-append-version="true">
+    <link rel="alternate" type="application/rss+xml" title="@C["News.Title"]" href="/anuncios.rss">
+}
+@{
+    ViewData["Title"] = C["News.Title"];
+    var pinned = new Pill("info", "solid", C["News.Pinned"]);
+}
+<h1>@C["News.Title"]</h1>
+<p class="muted">@C["News.Intro"] <a href="/anuncios.rss">@C["News.Rss"]</a></p>
+@if (Model.Items.Count == 0)
+{
+    <p>@C["News.Empty"]</p>
+}
+else
+{
+    @foreach (var item in Model.Items)
+    {
+        <article class="card ct-news">
+            <h2 lang="@item.Language"><a href="/anuncios/@item.Id">@item.Title</a>
+                @if (item.Pinned)
+                {
+                    <partial name="_Pill" model="pinned" />
+                }
+            </h2>
+            <p class="muted"><time datetime="@item.PublishedAt.ToString("O")">@ContentUi.Day(item.PublishedAt, Model.Zone)</time></p>
+            @if (item.Fallback)
+            {
+                <partial name="_OtherLanguage" model="item.Language" />
+            }
+            <p lang="@item.Language">@item.Summary</p>
+        </article>
+    }
+}

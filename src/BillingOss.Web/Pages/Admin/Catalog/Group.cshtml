@@ -1,0 +1,35 @@
+@page "/admin/catalogo/grupos/{id}"
+@model BillingOss.Web.Pages.Admin.Catalog.GroupModel
+@{
+    var title = Model.GroupId is null ? L["Catalog.NewGroup"].Value : Model.Input.Name ?? "";
+    ViewData["Title"] = title;
+}
+<nav aria-label="@L["Catalog.Breadcrumb"]"><a href="/admin/catalogo">@L["Catalog.Title"]</a></nav>
+<h1>@title</h1>
+@if (Model.Error is { } error)
+{
+    <div class="alert" role="alert" tabindex="-1" autofocus><p><strong>@L["Catalog.ErrorTitle"]</strong> @error</p></div>
+}
+@if (Model.Saved)
+{
+    <p class="notice" role="status">@L["Catalog.Saved"]</p>
+}
+<form method="post" class="stack narrow">
+    <div class="field">
+        <label asp-for="Input.Name">@L["Catalog.Name"]</label>
+        <input asp-for="Input.Name" required maxlength="200">
+    </div>
+    <div class="field">
+        <label asp-for="Input.Headline">@L["Catalog.Headline"]</label>
+        <input asp-for="Input.Headline" maxlength="500">
+    </div>
+    <div class="field">
+        <label asp-for="Input.SortOrder">@L["Catalog.SortOrder"]</label>
+        <input asp-for="Input.SortOrder">
+    </div>
+    <label class="check"><input asp-for="Input.Visible"> @L["Catalog.VisibleHelp"]</label>
+    @if (Model.CanWrite)
+    {
+        <p><button type="submit">@L["Catalog.SaveGroup"]</button></p>
+    }
+</form>

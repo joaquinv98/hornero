@@ -1,0 +1,11 @@
+{% if debit_note %}Debit note{% else %}Invoice{% endif %} #{{ number }} from {{ company }}
+<p>Hi {{ account_name }},</p>
+<p>We have issued {% if debit_note %}debit note{% else %}invoice{% endif %} #{{ number }} dated {{ issue_date }} for <strong>{{ total }}</strong>.</p>
+<table role="presentation" width="100%" cellpadding="6" cellspacing="0" style="border-collapse:collapse;font-size:14px;">
+{% for line in lines %}<tr><td style="border-bottom:1px solid #e4e7eb;">{{ line.description }}</td><td align="right" style="border-bottom:1px solid #e4e7eb;white-space:nowrap;">{{ line.amount }}</td></tr>
+{% endfor %}<tr><td><strong>Total</strong></td><td align="right" style="white-space:nowrap;"><strong>{{ total }}</strong></td></tr>
+</table>
+{% if paid %}<p>It is already paid. Thank you!</p>{% else %}<p>It is due on {{ due_date }}. Amount due: <strong>{{ pending }}</strong>.</p>{% endif %}
+{% if autocharge_date %}<p>We will charge the balance on {{ autocharge_date }} to {{ autocharge_method }}, as set up in your automatic payments. If you prefer another method, pay it before from your account.</p>{% endif %}
+{% if fiscal %}<p>Tax document {{ fiscal_number }}, authorization code {{ cae }}.</p>{% endif %}
+{% if portal_url %}<p>You can view and pay it from <a href="{{ portal_url }}">your account</a>.</p>{% endif %}

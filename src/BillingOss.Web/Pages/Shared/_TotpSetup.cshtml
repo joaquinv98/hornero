@@ -1,0 +1,12 @@
+@model TotpSetup
+<ol class="steps">
+    <li>@L["Totp.StepApp"]</li>
+    <li>
+        @* El QR se arma en el servidor: la clave no sale a ningún servicio de afuera. *@
+        <img class="qr" src="@BillingOss.App.Documents.FiscalQr.ImageDataUri(Model.Uri)" alt="@S["Totp.Qr"]" width="176" height="176">
+        @L["Totp.StepKey"]
+        <code class="key" aria-label="@L["Totp.Key"]">@Model.Grouped</code>
+        <a href="@Model.Uri">@L["Totp.OpenApp"]</a>
+    </li>
+    <li>@L["Totp.StepCode"]</li>
+</ol>

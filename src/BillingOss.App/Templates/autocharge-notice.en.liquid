@@ -1,0 +1,5 @@
+We could not charge invoice #{{ number }}
+<p>Hi {{ account_name }},</p>
+<p>We tried to charge <strong>{{ pending }}</strong> for invoice #{{ number }} to {{ method }} and the payment was not approved.</p>
+{% if reason == "customer_action" %}<p>Your bank asks you to confirm the payment.{% if pay_url %} You can do it from <a href="{{ pay_url }}">this link</a>.{% endif %}</p>{% else %}<p>That payment method can no longer be used for automatic payments. Please pay the invoice with another method{% if pay_url %} from <a href="{{ pay_url }}">your account</a>{% endif %} and, if you like, save a new one when you pay.</p>{% endif %}
+<p>If you have already paid it, please ignore this notice.</p>

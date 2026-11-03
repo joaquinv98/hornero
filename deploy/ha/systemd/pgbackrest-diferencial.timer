@@ -1,0 +1,11 @@
+# Respaldo diferencial diario de billing-oss, de lunes a sábado.
+[Unit]
+Description=Respaldo diferencial diario de billing-oss
+
+[Timer]
+OnCalendar=Mon..Sat *-*-* 03:30:00 America/Argentina/Buenos_Aires
+Persistent=true
+Unit=pgbackrest-respaldo@diff.service
+
+[Install]
+WantedBy=timers.target

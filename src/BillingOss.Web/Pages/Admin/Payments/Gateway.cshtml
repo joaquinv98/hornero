@@ -1,0 +1,199 @@
+@page "/admin/cobros/{id:long}"
+@model GatewayModel
+@using BillingOss.App.UseCases
+@using BillingOss.Domain.Payments
+@{
+    var setup = Model.Setup!;
+    var live = setup.Environment == GatewaySetupService.Live;
+    ViewData["Title"] = setup.DisplayName;
+    var state = PaymentsIndexModel.StateOf(setup);
+}
+<div class="bo-stack">
+    <div class="bo-head">
+        <a class="bo-small" href="/admin/cobros">@L["Gateway.Back"]</a>
+        <h1>@setup.DisplayName</h1>
+        <p class="bo-muted">@L["Gateway.Subtitle", Model.ModuleName, live ? L["Gateway.Live"] : L["Gateway.Test"]]</p>
+    </div>
+
+    @if (Model.Done is not null)
+    {
+        <div class="bo-alert" data-tone="ok" role="status"><p>@L[Model.Done]</p></div>
+    }
+    @if (Model.Error is not null)
+    {
+        <div class="bo-error-summary" role="alert"><h2>@L["Pay.ErrorTitle"]</h2><p>@Model.Error</p></div>
+    }
+    @foreach (var w in Model.Warnings)
+    {
+        <div class="bo-alert" data-tone="warn"><p>@L[w]</p></div>
+    }
+
+    <section class="bo-card" aria-labelledby="credenciales">
+        <h2 id="credenciales">@L["Gateway.Credentials"]</h2>
+        <p class="bo-help">@L["Gateway.CredentialsHelp"]</p>
+        <form method="post" asp-page-handler="Credentials" class="bo-form">
+            @foreach (var f in Model.Fields)
+            {
+                <div class="bo-field">
+                    <label for="campo-@f.Name">@f.Name@(f.Required ? " *" : string.Empty)</label>
+                    @if (f.Options.Count > 0)
+                    {
+                        <select id="campo-@f.Name" name="@f.Name" class="bo-select">
+                            @foreach (var o in f.Options)
+                            {
+                                <option value="@o" selected="@(o == f.Value)">@o</option>
+                            }
+                        </select>
+                    }
+                    else if (f.Type == "boolean")
+                    {
+                        <select id="campo-@f.Name" name="@f.Name" class="bo-select">
+                            <option value="false" selected="@(f.Value != "true")">@L["Gateway.No"]</option>
+                            <option value="true" selected="@(f.Value == "true")">@L["Gateway.Yes"]</option>
+                        </select>
+                    }
+                    else
+                    {
+                        <input id="campo-@f.Name" name="@f.Name" class="bo-input" type="@(f.Secret ? "password" : "text")" value="@f.Value" autocomplete="off"
+                               placeholder="@(f.Secret && f.Saved ? L["Gateway.SecretSaved"] : string.Empty)" aria-describedby="ayuda-@f.Name">
+                    }
+                    <p id="ayuda-@f.Name" class="bo-help">
+                        @f.Description
+                        @if (f.Help is { Length: > 0 } help)
+                        {
+                            <br>@help
+                        }
+                        @if (f.HelpUrl is { } url)
+                        {
+                            <br><a href="@url" rel="noopener noreferrer" target="_blank">@L["Gateway.OpenPanel", Model.ModuleName]</a>
+                        }
+                    </p>
+                </div>
+            }
+            <button type="submit" class="bo-btn">@L["Gateway.SaveCredentials"]</button>
+        </form>
+    </section>
+
+    <section class="bo-card" aria-labelledby="avisos">
+        <h2 id="avisos">@L["Gateway.Webhooks"]</h2>
+        <p>@L["Gateway.WebhooksHelp", Model.ModuleName]</p>
+        <p><span class="bo-label">@L["Gateway.WebhookUrl"]</span><span class="bo-data">@Model.WebhookUrl</span></p>
+        @if (Model.Events.Count > 0)
+        {
+            <div>
+                <span class="bo-label">@L["Gateway.Events"]</span>
+                <ul>
+                    @foreach (var e in Model.Events)
+                    {
+                        <li><span class="bo-data">@e</span></li>
+                    }
+                </ul>
+            </div>
+        }
+    </section>
+
+    <section class="bo-card" aria-labelledby="probar" id="prueba">
+        <div class="bo-card__head">
+            <h2 id="probar">@L["Gateway.TestTitle"]</h2>
+            @if (state == GatewayState.Error)
+            {
+                <span class="bo-status" data-tone="danger" data-shape="ring">@L["Gateways.StateError"]</span>
+            }
+            else if (setup.LastTestOk == true)
+            {
+                <span class="bo-status" data-tone="ok">@L["Gateway.TestOk"]</span>
+            }
+        </div>
+        @if (setup.LastTestAt is { } at)
+        {
+            <p class="bo-small bo-muted">@L["Gateway.LastTest", at.ToLocalTime().ToString("g", CultureInfo.CurrentCulture)]</p>
+            <p>@setup.LastTestMessage</p>
+        }
+        <form method="post" asp-page-handler="Test" hx-post="/admin/cobros/@Model.Instance!.Id?handler=Test" hx-target="#prueba" hx-select="#prueba" hx-swap="outerHTML">
+            <button type="submit" class="bo-btn bo-btn--secondary">@L["Gateway.RunTest"]</button>
+        </form>
+    </section>
+
+    @if (!live && Model.CanCheckout)
+    {
+        <section class="bo-card" aria-labelledby="pago-prueba">
+            <h2 id="pago-prueba">@L["Gateway.TestPayment"]</h2>
+            <p class="bo-help">@L["Gateway.TestPaymentHelp"]</p>
+            <form method="post" asp-page-handler="TestPayment" class="bo-row">
+                <label for="moneda-prueba" class="bo-sr">@L["Gateway.Currency"]</label>
+                <input id="moneda-prueba" name="currency" class="bo-input" maxlength="3" required
+                       value="@(setup.Currencies.FirstOrDefault() ?? Model.Currencies.FirstOrDefault(c => c != "*") ?? "USD")">
+                <button type="submit" class="bo-btn bo-btn--secondary">@L["Gateway.StartTestPayment"]</button>
+            </form>
+            @if (Model.TestPayments.Count > 0)
+            {
+                <ul class="bo-list">
+                    @foreach (var t in Model.TestPayments)
+                    {
+                        <li>
+                            <div class="bo-list__main">
+                                <span class="bo-data">@t.Reference</span>
+                                <span class="bo-small bo-muted">@Ui.Money(t.Amount, t.Currency) · @t.CreatedAt.ToLocalTime().ToString("g", CultureInfo.CurrentCulture)</span>
+                            </div>
+                            @if (t.Status == AttemptStatus.Paid)
+                            {
+                                <span class="bo-status" data-tone="ok">@L["Gateway.TestPaymentVerified"]</span>
+                            }
+                            else
+                            {
+                                <span class="bo-status" data-tone="info" data-shape="hollow">@L["Gateway.TestPaymentWaiting"]</span>
+                            }
+                        </li>
+                    }
+                </ul>
+            }
+        </section>
+    }
+
+    <section class="bo-card" aria-labelledby="activar">
+        <h2 id="activar">@L["Gateway.Activate"]</h2>
+        <p class="bo-help">@L["Gateway.ActivateHelp"]</p>
+        <form method="post" asp-page-handler="Activate" class="bo-form">
+            <label class="bo-check">
+                <input type="checkbox" name="enabled" value="true" checked="@setup.Enabled">
+                <span>@L["Gateway.Enabled"]</span>
+            </label>
+            <div class="bo-field">
+                <label for="nombre">@L["Gateway.DisplayName"]</label>
+                <input id="nombre" name="displayName" class="bo-input" maxlength="100" required value="@setup.DisplayName">
+            </div>
+            <div class="bo-field">
+                <label for="orden">@L["Gateway.Position"]</label>
+                <input id="orden" name="position" type="number" class="bo-input" value="@setup.Position">
+            </div>
+            <fieldset class="bo-field">
+                <legend>@L["Gateway.Currencies"]</legend>
+                @foreach (var c in Model.Currencies.Where(c => c != "*"))
+                {
+                    <label class="bo-check">
+                        <input type="checkbox" name="currency" value="@c" checked="@setup.Currencies.Contains(c)">
+                        <span class="bo-data">@c</span>
+                    </label>
+                }
+                @if (Model.AnyCurrency)
+                {
+                    <label for="otras">@L["Gateway.OtherCurrencies"]</label>
+                    <input id="otras" name="otherCurrencies" class="bo-input" value="@string.Join(", ", setup.Currencies)" aria-describedby="otras-ayuda">
+                    <p id="otras-ayuda" class="bo-help">@L["Gateway.OtherCurrenciesHelp"]</p>
+                }
+            </fieldset>
+            <label class="bo-check">
+                <input type="checkbox" name="sameCurrencyCancel" value="true" checked="@setup.SameCurrencyCancel">
+                <span>@L["Gateway.SameCurrencyCancel"]</span>
+            </label>
+            @if (Model.CanAutoCharge)
+            {
+                <label class="bo-check">
+                    <input type="checkbox" name="autoCharge" value="true" checked="@setup.AutoCharge">
+                    <span>@L["Gateway.AutoCharge"]</span>
+                </label>
+            }
+            <button type="submit" class="bo-btn">@L["Gateway.SaveActivation"]</button>
+        </form>
+    </section>
+</div>

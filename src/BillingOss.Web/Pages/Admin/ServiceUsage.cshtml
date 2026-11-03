@@ -1,0 +1,48 @@
+@page "/admin/servicios/{id:long}/uso"
+@model ServiceUsageModel
+@{
+    var v = Model.View!;
+    var name = v.Label is { Length: > 0 } label ? $"{v.Product} ({label})" : v.Product;
+    ViewData["Title"] = L["Usage.Title", name];
+    ViewData["Staff"] = true;
+}
+<p><a href="/admin/cuentas/@v.AccountId">@L["Usage.BackToAccount", v.AccountId]</a></p>
+<h1>@L["Usage.Title", name] <span class="muted">#@v.ServiceId</span></h1>
+@if (Model.CanConfigure)
+{
+    <p><a href="/admin/catalogo/productos/@v.ProductId/uso">@L["Usage.Configure"]</a></p>
+}
+<section aria-labelledby="current">
+    <h2 id="current">@L["Usage.Current"]</h2>
+    <partial name="_UsageSummary" model="v" view-data="ViewData" />
+</section>
+<partial name="_UsageHistory" model="v" view-data="ViewData" />
+@if (Model.Samples.Count > 0)
+{
+    <div class="table">
+        <table>
+            <caption>@L["Usage.Samples"]</caption>
+            <thead>
+                <tr>
+                    <th scope="col">@L["Usage.Date"]</th>
+                    <th scope="col">@L["Usage.Metric"]</th>
+                    <th scope="col" class="num">@L["Usage.Reading"]</th>
+                    <th scope="col" class="num">@L["Usage.Value"]</th>
+                    <th scope="col">@L["Field.Status"]</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var s in Model.Samples)
+                {
+                    <tr>
+                        <td><time datetime="@s.Date.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture)">@Ui.Date(s.Date)</time></td>
+                        <td>@(Model.Names.GetValueOrDefault(s.Code) ?? s.Code)</td>
+                        <td class="num">@s.Reading.ToString("#,##0.######", CultureInfo.CurrentCulture)</td>
+                        <td class="num">@s.Value.ToString("#,##0.######", CultureInfo.CurrentCulture)</td>
+                        <td>@(s.ChargeId is null ? L["Usage.Open"] : L["Usage.Closed"])</td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+}

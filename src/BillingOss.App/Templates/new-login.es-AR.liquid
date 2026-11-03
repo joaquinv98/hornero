@@ -1,0 +1,6 @@
+Nuevo ingreso a tu cuenta de {{ company }}
+<p>Hola:</p>
+<p>Alguien ingresó a tu cuenta desde un lugar desde el que no habías entrado antes:</p>
+<p><strong>Cuándo:</strong> {{ when }}<br><strong>IP:</strong> {{ ip }}<br><strong>Navegador:</strong> {{ device }}</p>
+<p>Si fuiste vos, no hace falta que hagas nada.</p>
+<p>Si no fuiste vos, cambiá la contraseña ya y activá el segundo factor{% if link %} desde <a href="{{ link }}" style="color:#1f6feb;">la página de seguridad</a>{% endif %}.</p>

@@ -1,0 +1,203 @@
+@page "/admin/dominios/{id:long}"
+@model BillingOss.Web.Pages.Admin.DomainModel
+@{
+    var d = Model.Domain!;
+    ViewData["Title"] = d.Name;
+    var nameservers = Model.CurrentNameservers.Concat(Enumerable.Repeat(string.Empty, 4)).Take(Math.Max(4, Model.CurrentNameservers.Count)).ToList();
+    var lastOrder = Model.LastOrder;
+    var options = new BillingOss.Web.Pages.DomainOptionsView(d, Model.Options, Model.CanManage, null);
+}
+<div class="bo-head">
+    <ol class="bo-crumbs"><li><a href="/admin/dominios">@L["Nav.Domains"]</a></li><li aria-current="page">@d.Name</li></ol>
+    <div class="bo-row">
+        <h1>@d.Name</h1>
+        <partial name="_DomainStatus" model="d.Status" />
+        @if (d.RegistryStatus is { } registry)
+        {
+            <span class="bo-small bo-muted">@L["AdminDomain.RegistryIs"] <span class="bo-data">@registry</span></span>
+        }
+    </div>
+</div>
+
+@if (Model.Notice is not null)
+{
+    <p class="bo-alert" data-tone="ok" role="status">@L[Model.Notice]</p>
+}
+@if (Model.Error is not null)
+{
+    <p class="bo-alert" data-tone="danger" role="alert">@(Model.Error.StartsWith("Domain.", StringComparison.Ordinal) ? L[Model.Error] : Model.Error)</p>
+}
+
+<div class="bo-split">
+    <div class="bo-stack">
+        <section class="bo-card" aria-labelledby="datos">
+            <h2 id="datos" class="bo-sr">@L["Domain.Summary"]</h2>
+            <dl class="bo-facts">
+                <dt>@L["Field.Account"]</dt>
+                <dd><a href="/admin/cuentas/@d.AccountId">@Model.Account</a> <span class="bo-muted">#@d.AccountId</span></dd>
+                <dt>@L["AdminDomains.Registrar"]</dt>
+                <dd>@Model.Registrar <span class="bo-small bo-muted">@string.Join(", ", Model.Capabilities.Order())</span></dd>
+                <dt>@L["Domain.ExpiresOn"]</dt>
+                <dd><time datetime="@Ui.Iso(d.ExpiresOn)">@Ui.Date(d.ExpiresOn)</time></dd>
+                <dt>@L["Domain.PaidThrough"]</dt>
+                <dd><time datetime="@Ui.Iso(d.PaidThrough)">@Ui.Date(d.PaidThrough)</time></dd>
+                <dt>@L["AdminDomain.NextDue"]</dt>
+                <dd><time datetime="@Ui.Iso(d.NextDueDate)">@Ui.Date(d.NextDueDate)</time></dd>
+                <dt>@L["Domains.Price"]</dt>
+                <dd><data class="bo-money" value="@Ui.Value(d.RecurringAmount)">@Ui.Money(d.RecurringAmount, d.Currency)</data> <span class="bo-muted">@(d.Years == 1 ? L["Domains.PerYear"] : L["Domains.PerYears", d.Years])</span></dd>
+                <dt>@L["Domains.Renewal"]</dt>
+                <dd>@(d.AutoRenew ? L["Domains.AutoRenewOn"] : L["Domains.AutoRenewOff"])</dd>
+                <dt>@L["Domain.Lock"]</dt>
+                <dd>@(d.Locked is { } locked ? L[locked ? "Domain.LockOn" : "Domain.LockOff"] : L["Domain.Unknown"])</dd>
+                <dt>@L["Domain.Privacy"]</dt>
+                <dd>@L[d.IdProtection ? "Domain.PrivacyOn" : "Domain.PrivacyOff"]</dd>
+                <dt>@L["Domain.Nameservers"]</dt>
+                <dd class="bo-data">@string.Join(" ", Model.CurrentNameservers)</dd>
+                <dt>@L["AdminDomain.ExternalIds"]</dt>
+                <dd class="bo-data">@d.ExternalIds</dd>
+                <dt>@L["Domain.SyncedAt"]</dt>
+                <dd>@(d.SyncedAt?.ToString("g", CultureInfo.CurrentCulture) ?? L["AdminDomain.Never"])</dd>
+            </dl>
+        </section>
+
+        <section class="bo-card" aria-labelledby="operaciones">
+            <div class="bo-card__head"><h2 id="operaciones">@L["AdminDomain.Operations"]</h2></div>
+            @if (Model.Operations.Count == 0)
+            {
+                <p class="bo-muted">@L["AdminDomain.NoOperations"]</p>
+            }
+            else
+            {
+                <div class="bo-table-wrap">
+                    <table class="bo-table">
+                        <thead>
+                            <tr>
+                                <th scope="col">@L["AdminDomain.Operation"]</th>
+                                <th scope="col">@L["Field.Status"]</th>
+                                <th scope="col">@L["AdminDomain.Requested"]</th>
+                                <th scope="col">@L["AdminDomain.Finished"]</th>
+                                <th scope="col">@L["AdminDomain.Detail"]</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var op in Model.Operations.Reverse())
+                            {
+                                var (tone, shape) = op.Status switch
+                                {
+                                    BillingOss.Domain.Domains.DomainOperationStatus.Completed => ("ok", "solid"),
+                                    BillingOss.Domain.Domains.DomainOperationStatus.Failed => ("danger", "ring"),
+                                    _ => ("info", "hollow"),
+                                };
+                                <tr>
+                                    <th scope="row">@L[Ui.Key("DomainOperation", op.Operation)] <span class="bo-muted">#@op.Id</span></th>
+                                    <td><span class="bo-status" data-tone="@tone" data-shape="@shape">@L["DomainOperationStatus." + op.Status]</span></td>
+                                    <td>@op.CreatedAt.ToString("g", CultureInfo.CurrentCulture)</td>
+                                    <td>@op.FinishedAt?.ToString("g", CultureInfo.CurrentCulture)</td>
+                                    <td class="bo-small">@(op.LastError ?? (op.PendingOperation is not null ? L["AdminDomain.InRegistrar"].Value : ""))</td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            }
+        </section>
+    </div>
+
+    <aside class="bo-stack" aria-label="@L["AdminDomain.Actions"]">
+        @if (Model.Live && (Model.Capabilities.Contains("registrar.dns") || Model.Capabilities.Contains("registrar.email_forwarding")))
+        {
+            <a class="bo-btn bo-btn--secondary bo-btn--block" href="/admin/dominios/@d.Id/dns">@L["Domain.ManageDns"]</a>
+        }
+        @if (Model.OpenTask is { } task)
+        {
+            <section class="bo-card" aria-labelledby="tarea">
+                <div class="bo-card__head"><h2 id="tarea">@L["AdminDomain.OpenTask"]</h2></div>
+                <p>@L["AdminDomain.OpenTaskHelp", task.Id, L[Ui.Key("DomainOperation", task.Operation)]]</p>
+            </section>
+        }
+        @if (Model.RevealedCode is { } code)
+        {
+            <p class="bo-alert" data-tone="warn" role="status">@L["Domain.AuthCodeIs"] <code class="bo-data">@code</code></p>
+        }
+        @if (Model.CanManage)
+        {
+            @if (Model.FailedOperation is { } failed)
+            {
+                <section class="bo-card" aria-labelledby="fallida">
+                    <div class="bo-card__head"><h2 id="fallida">@L["AdminDomain.FailedOperation"]</h2></div>
+                    <p class="bo-small">@L["AdminDomain.FailedOperationHelp", L[Ui.Key("DomainOperation", failed.Operation)], failed.LastError ?? ""]</p>
+                    <form method="post" asp-page-handler="Retry" class="bo-stack bo-stack--sm">
+                        @if (failed.Operation == "transfer")
+                        {
+                            <div class="bo-field">
+                                <label for="authCode">@L["Domain.NewAuthCode"]</label>
+                                <input id="authCode" class="bo-input bo-data" name="authCode" autocomplete="off" spellcheck="false" maxlength="255">
+                            </div>
+                        }
+                        <div><button type="submit" class="bo-btn bo-btn--secondary">@L["Domain.Retry"]</button></div>
+                    </form>
+                </section>
+            }
+            @if (d.Status == BillingOss.Domain.Domains.DomainStatus.Pending && lastOrder is not null)
+            {
+                <section class="bo-card" aria-labelledby="pedido">
+                    <div class="bo-card__head"><h2 id="pedido">@L["Domain.OrderTitle"]</h2></div>
+                    <form method="post" asp-page-handler="Cancel" class="bo-stack bo-stack--sm">
+                        <div class="bo-field">
+                            <label for="reason">@L["AdminDomain.CancelReason"]</label>
+                            <input id="reason" class="bo-input" name="reason" required maxlength="200" aria-describedby="cancelHelp">
+                            <p id="cancelHelp" class="bo-help">@L["AdminDomain.CancelHelp"]</p>
+                        </div>
+                        <div><button type="submit" class="bo-btn bo-btn--danger">@L["AdminDomain.Cancel"]</button></div>
+                    </form>
+                </section>
+            }
+            @if (Model.Live)
+            {
+                <section class="bo-card" aria-labelledby="acciones">
+                    <div class="bo-card__head"><h2 id="acciones">@L["AdminDomain.Actions"]</h2></div>
+                    <form method="post" asp-page-handler="Sync"><button type="submit" class="bo-btn bo-btn--secondary bo-btn--block">@L["AdminDomain.Sync"]</button></form>
+                    @if (Model.CanRenewNow)
+                    {
+                        <form method="post" asp-page-handler="Renew"><button type="submit" class="bo-btn bo-btn--secondary bo-btn--block">@L["Domain.RenewNow"]</button></form>
+                    }
+                    <form method="post" asp-page-handler="AutoRenew">
+                        <input type="hidden" name="on" value="@(d.AutoRenew ? "false" : "true")">
+                        <button type="submit" class="bo-btn bo-btn--secondary bo-btn--block">@L[d.AutoRenew ? "Domain.StopRenewingButton" : "Domain.KeepRenewingButton"]</button>
+                    </form>
+                    @if (Model.Capabilities.Contains("registrar.lock"))
+                    {
+                        <form method="post" asp-page-handler="Lock">
+                            <input type="hidden" name="locked" value="@(d.Locked == true ? "false" : "true")">
+                            <button type="submit" class="bo-btn bo-btn--secondary bo-btn--block">@L[d.Locked == true ? "Domain.Unlock" : "Domain.LockButton"]</button>
+                        </form>
+                    }
+                    @if (Model.Capabilities.Contains("registrar.auth_code"))
+                    {
+                        <form method="post" asp-page-handler="AuthCode"><button type="submit" class="bo-btn bo-btn--secondary bo-btn--block">@L["Domain.RequestAuthCode"]</button></form>
+                    }
+                    @if (d.AuthCode is not null)
+                    {
+                        <form method="post" asp-page-handler="Reveal"><button type="submit" class="bo-btn bo-btn--quiet">@L["Domain.Reveal"]</button></form>
+                    }
+                </section>
+
+                <partial name="_DomainOptions" model="options" />
+
+                <section class="bo-card" aria-labelledby="dns">
+                    <div class="bo-card__head"><h2 id="dns">@L["Domain.Nameservers"]</h2></div>
+                    <form method="post" asp-page-handler="Nameservers" class="bo-stack bo-stack--sm">
+                        @for (var i = 0; i < nameservers.Count; i++)
+                        {
+                            <div class="bo-field">
+                                <label for="ns@(i)">@L["Domain.NameserverN", i + 1]</label>
+                                <input id="ns@(i)" class="bo-input bo-data" name="Nameservers" value="@nameservers[i]" autocomplete="off" spellcheck="false" required="@(i < 2)">
+                            </div>
+                        }
+                        <div><button type="submit" class="bo-btn bo-btn--secondary">@L["Domain.SaveNameservers"]</button></div>
+                    </form>
+                </section>
+            }
+        }
+    </aside>
+</div>

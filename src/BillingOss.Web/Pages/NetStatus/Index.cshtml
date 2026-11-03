@@ -1,0 +1,63 @@
+@page "/estado-red"
+@model IndexModel
+@section Head {
+    <link rel="stylesheet" href="~/css/contenidos.css" asp-append-version="true">
+}
+@{
+    ViewData["Title"] = C["Net.Title"];
+    var o = Model.Overview;
+    var overall = ContentUi.ComponentPill(o.Overall, C);
+}
+<h1>@C["Net.Title"]</h1>
+<section class="card ct-overall" aria-labelledby="overall" data-tone="@overall.Tone">
+    <h2 id="overall">@C["Net.Overall"]</h2>
+    <p class="ct-big"><partial name="_Pill" model="overall" /></p>
+    <p>@(o.Overall == ComponentStatus.Operational ? C["Net.AllOperational"] : C["Net.SomeIssues"])</p>
+</section>
+
+@if (o.Active.Count > 0)
+{
+    <section aria-labelledby="active">
+        <h2 id="active">@C["Net.Active"]</h2>
+        <partial name="_Events" model="new EventList(o.Active, Model.Zone, true)" />
+    </section>
+}
+
+@if (o.Upcoming.Count > 0)
+{
+    <section aria-labelledby="upcoming">
+        <h2 id="upcoming">@C["Net.Upcoming"]</h2>
+        <partial name="_Events" model="new EventList(o.Upcoming, Model.Zone)" />
+    </section>
+}
+
+<section aria-labelledby="components">
+    <h2 id="components">@C["Net.Components"]</h2>
+    @if (o.Components.Count == 0)
+    {
+        <p>@C["Net.NoComponents"]</p>
+    }
+    else
+    {
+        <partial name="_Components" model="o.Components" />
+    }
+</section>
+
+<section aria-labelledby="recent">
+    <h2 id="recent">@C["Net.Recent", StatusService.RecentDays]</h2>
+    @if (o.Recent.Count == 0)
+    {
+        <p>@C["Net.NoRecent"]</p>
+    }
+    else
+    {
+        <partial name="_Events" model="new EventList(o.Recent, Model.Zone)" />
+    }
+    <p><a href="/estado-red/historial">@C["Net.SeeHistory"]</a></p>
+</section>
+
+<section class="card" aria-labelledby="subscribe">
+    <h2 id="subscribe">@C["Net.Subscribe"]</h2>
+    <p>@C["Net.SubscribeIntro"]</p>
+    <p><a class="button" href="/estado-red/suscribirse">@C["Net.SubscribeButton"]</a></p>
+</section>

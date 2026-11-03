@@ -1,0 +1,57 @@
+@page "/conocimiento/{key}"
+@model ArticleModel
+@section Head {
+    <link rel="stylesheet" href="~/css/contenidos.css" asp-append-version="true">
+}
+@{
+    var a = Model.Data!;
+    ViewData["Title"] = a.Card.Title;
+}
+<nav aria-label="@C["Kb.Breadcrumb"]" class="ct-crumbs">
+    <a href="/conocimiento">@C["Kb.Title"]</a>
+    @foreach (var crumb in a.Crumbs)
+    {
+        <span aria-hidden="true">/</span>
+        <a href="/conocimiento/c/@crumb.Slug">@crumb.Name</a>
+    }
+</nav>
+<article class="ct-article">
+    <h1 lang="@a.Card.Language">@a.Card.Title</h1>
+    @if (a.Card.Fallback)
+    {
+        <partial name="_OtherLanguage" model="a.Card.Language" />
+    }
+    <p class="muted">@C["Kb.Updated", ContentUi.Day(a.Card.UpdatedAt, Model.Zone)]</p>
+    <div class="ct-body" lang="@a.Card.Language">@Html.Raw(a.Html)</div>
+    @if (a.Tags.Count > 0)
+    {
+        <ul class="ct-tags" aria-label="@C["Kb.Tags"]">
+            @foreach (var tag in a.Tags)
+            {
+                <li><a href="/conocimiento?q=@Uri.EscapeDataString(tag)">@tag</a></li>
+            }
+        </ul>
+    }
+</article>
+<section id="voto" class="card ct-vote" aria-labelledby="vote-title">
+    <h2 id="vote-title">@C["Kb.WasHelpful"]</h2>
+    @if (Model.Voted is not null)
+    {
+        <p class="notice" role="status">@C["Kb.VoteThanks"]</p>
+    }
+    <form method="post" asp-page-handler="Vote" asp-route-key="@a.Card.Slug">
+        <button type="submit" name="helpful" value="true">@C["Kb.Yes"]</button>
+        <button type="submit" name="helpful" value="false" class="secondary">@C["Kb.No"]</button>
+    </form>
+    @if (a.Card.Helpful + a.Card.Unhelpful > 0)
+    {
+        <p class="muted">@C["Kb.VoteCount", a.Card.Helpful, a.Card.Helpful + a.Card.Unhelpful]</p>
+    }
+</section>
+@if (a.Related.Count > 0)
+{
+    <section aria-labelledby="related">
+        <h2 id="related">@C["Kb.Related"]</h2>
+        <partial name="_Cards" model="a.Related" />
+    </section>
+}

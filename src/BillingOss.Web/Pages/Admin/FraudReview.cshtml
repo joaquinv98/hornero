@@ -1,0 +1,115 @@
+@page "/admin/pedidos/revision"
+@using BillingOss.Domain.Orders
+@model FraudReviewModel
+@inject Microsoft.Extensions.Options.IOptions<BillingOss.App.BillingOptions> Billing
+@{
+    ViewData["Title"] = S["Review.Title"];
+    string Tone(ScreeningStatus status) => status switch
+    {
+        ScreeningStatus.Passed or ScreeningStatus.Approved => "ok",
+        ScreeningStatus.Rejected => "danger",
+        _ => "warn",
+    };
+}
+<h1>@S["Review.Title"]</h1>
+<p class="muted">@S["Review.Help"]</p>
+@if (Model.Error is not null)
+{
+    <p class="alert" role="alert">@S[Model.Error]</p>
+}
+@if (Model.Result is { } result)
+{
+    <div class="notice" role="status">
+        <p>@S["Review.Done." + result.Status, result.OrderId]</p>
+        @if (result.PaidAmount > 0m)
+        {
+            <p>@S["Review.PaidLeft", result.PaidAmount.ToString("N2", CultureInfo.CurrentCulture)]</p>
+        }
+    </div>
+}
+
+<section aria-labelledby="holding">
+    <h2 id="holding">@S["Review.Holding", Model.Holding.Count]</h2>
+    @if (Model.Holding.Count == 0)
+    {
+        <p class="muted">@S["Review.Empty"]</p>
+    }
+    @foreach (var r in Model.Holding)
+    {
+        var c = r.Check;
+        <article class="card" aria-labelledby="order-@c.OrderId">
+            <h3 id="order-@c.OrderId">@S["Review.Order", c.OrderId] <span class="status" data-tone="@Tone(c.Status)" data-shape="@(c.Status == ScreeningStatus.Pending ? "hollow" : "ring")">@S["Screening." + c.Status]</span></h3>
+            <dl class="facts">
+                <dt>@S["Review.Account"]</dt>
+                <dd><a href="/admin/cuentas/@r.AccountId">@r.AccountName</a> <span class="muted">@r.AccountEmail</span></dd>
+                <dt>@S["Review.Placed"]</dt>
+                <dd><time datetime="@r.PlacedAt.ToString("O", CultureInfo.InvariantCulture)">@UiText.When(r.PlacedAt, Billing.Value.TimeZone)</time></dd>
+                <dt>@S["Review.Amount"]</dt>
+                <dd>
+                    @(r.Total is { } total ? Ui.Money(total, r.Currency) : S["Review.NoInvoice"])
+                    @if (r.Paid is > 0m)
+                    {
+                        <span class="muted">@S["Review.Paid", Ui.Money(r.Paid.Value, r.Currency)]</span>
+                    }
+                </dd>
+                <dt>@S["Review.Score"]</dt>
+                <dd>@(c.Score?.ToString("0.##", CultureInfo.CurrentCulture) ?? S["Review.NoScore"])</dd>
+                <dt>@S["History.Ip"]</dt>
+                <dd><code>@c.Ip</code></dd>
+                <dt>@S["Review.Reasons"]</dt>
+                <dd>
+                    <ul class="plain">
+                        @foreach (var reason in c.ReasonList)
+                        {
+                            <li><code>@reason.Code</code> @reason.Message</li>
+                        }
+                    </ul>
+                    @if (c.Error is { } error)
+                    {
+                        <p class="muted">@error</p>
+                    }
+                </dd>
+            </dl>
+            <form method="post" class="stack narrow">
+                <label for="note-@c.OrderId">@S["Review.Note"]</label>
+                <input id="note-@c.OrderId" name="Note" maxlength="1000">
+                <div>
+                    <button type="submit" asp-page-handler="Approve" asp-route-id="@c.OrderId">@S["Review.Approve"]</button>
+                    <button type="submit" class="secondary" asp-page-handler="Reject" asp-route-id="@c.OrderId">@S["Review.Reject"]</button>
+                </div>
+            </form>
+        </article>
+    }
+</section>
+
+@if (Model.Decided.Count > 0)
+{
+    <section aria-labelledby="decided">
+        <h2 id="decided">@S["Review.Decided"]</h2>
+        <div class="table">
+            <table>
+                <thead>
+                    <tr>
+                        <th scope="col">@S["Review.OrderColumn"]</th>
+                        <th scope="col">@S["Review.Account"]</th>
+                        <th scope="col">@S["Review.Score"]</th>
+                        <th scope="col">@L["Field.Status"]</th>
+                        <th scope="col">@S["Review.DecidedBy"]</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var r in Model.Decided)
+                    {
+                        <tr>
+                            <td>@r.Check.OrderId</td>
+                            <td><a href="/admin/cuentas/@r.AccountId">@r.AccountName</a></td>
+                            <td>@(r.Check.Score?.ToString("0.##", CultureInfo.CurrentCulture) ?? "")</td>
+                            <td><span class="status" data-tone="@Tone(r.Check.Status)">@S["Screening." + r.Check.Status]</span></td>
+                            <td>@r.Check.DecidedBy @r.Check.Note</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </section>
+}

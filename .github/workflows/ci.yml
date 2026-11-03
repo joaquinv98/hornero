@@ -1,0 +1,57 @@
+# Integración continua en GitHub: la misma de .forgejo/workflows/ci.yml, con el PostgreSQL del trabajo publicado en
+# el puerto local del ejecutor. Corre en cada PR y en cada empuje a main, sin ningún secreto.
+name: ci
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+env:
+  DOTNET_CLI_TELEMETRY_OPTOUT: '1'
+  DOTNET_NOLOGO: '1'
+  # PostgreSQL efímero del trabajo, sin contraseña: solo lo ve este trabajo.
+  BILLINGOSS_TEST_PG: Host=localhost;Port=5432;Username=postgres;Database=postgres;Maximum Pool Size=20
+
+jobs:
+  pruebas:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:18
+        env:
+          POSTGRES_HOST_AUTH_METHOD: trust
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          global-json-file: global.json
+      - name: Restaurar con los archivos de bloqueo
+        run: dotnet restore BillingOss.slnx --locked-mode
+      - name: Compilar (las advertencias son error, salvo los avisos de NuGetAudit)
+        run: dotnet build BillingOss.slnx --no-restore -c Release
+      - name: El modelo no tiene cambios sin migración
+        run: |
+          dotnet tool restore
+          dotnet ef migrations has-pending-model-changes --project src/BillingOss.App --startup-project src/BillingOss.Web --no-build --configuration Release
+      - name: Pruebas, proyecto por proyecto
+        run: |
+          fallas=0
+          for proyecto in tests/*/*.csproj; do
+            dotnet test "$proyecto" --no-build -c Release || fallas=1
+          done
+          exit $fallas
+      - name: Ninguna CVE crítica con arreglo en las dependencias
+        uses: docker://aquasec/trivy:0.69.3
+        with:
+          args: fs --scanners vuln --severity CRITICAL --ignore-unfixed --exit-code 1 --skip-dirs tests .

@@ -1,0 +1,59 @@
+@page "/conocimiento"
+@model IndexModel
+@section Head {
+    <link rel="stylesheet" href="~/css/contenidos.css" asp-append-version="true">
+}
+@{
+    ViewData["Title"] = C["Kb.Title"];
+}
+<h1>@C["Kb.Title"]</h1>
+<p class="muted">@C["Kb.Intro"]</p>
+<form method="get" action="/conocimiento" role="search" class="search">
+    <label for="q">@C["Kb.SearchLabel"]</label>
+    <input id="q" name="q" type="search" value="@Model.Q" maxlength="300" autocomplete="off">
+    <button type="submit">@C["Kb.SearchButton"]</button>
+</form>
+@if (Model.Searching)
+{
+    <section aria-labelledby="results" aria-live="polite">
+        <h2 id="results">@C["Kb.Results", Model.Results.Count]</h2>
+        @if (Model.Results.Count == 0)
+        {
+            <p>@C["Kb.NoResults", Model.Q!]</p>
+            <p><a href="/conocimiento">@C["Kb.SeeAll"]</a></p>
+        }
+        else
+        {
+            <partial name="_Cards" model="Model.Results" />
+        }
+    </section>
+}
+else if (Model.Tree.Count == 0 && Model.Featured.Count == 0 && Model.Latest.Count == 0)
+{
+    <p>@C["Kb.Empty"]</p>
+}
+else
+{
+    <div class="ct-columns">
+        <section class="card" aria-labelledby="categories">
+            <h2 id="categories">@C["Kb.Categories"]</h2>
+            <partial name="_Categories" model="Model.Tree" />
+        </section>
+        <div>
+            @if (Model.Featured.Count > 0)
+            {
+                <section class="card" aria-labelledby="featured">
+                    <h2 id="featured">@C["Kb.Featured"]</h2>
+                    <partial name="_Cards" model="Model.Featured" />
+                </section>
+            }
+            @if (Model.Latest.Count > 0)
+            {
+                <section class="card" aria-labelledby="latest">
+                    <h2 id="latest">@C["Kb.Latest"]</h2>
+                    <partial name="_Cards" model="Model.Latest" />
+                </section>
+            }
+        </div>
+    </div>
+}

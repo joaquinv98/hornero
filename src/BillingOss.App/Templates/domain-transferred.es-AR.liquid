@@ -1,0 +1,5 @@
+La transferencia de {{ domain }} terminó
+<p>Hola, {{ account_name }}:</p>
+<p>La transferencia de <strong>{{ domain }}</strong> terminó y el dominio ya está con nosotros. Vence el {{ expires_on }}.</p>
+{% if auto_renew %}<p>Se renueva solo: antes del vencimiento te llega la factura de la renovación, por {{ amount }}.</p>{% else %}<p>No tiene la renovación automática: acordate de renovarlo antes del {{ expires_on }}.</p>{% endif %}
+<p>Revisá desde {% if portal_url %}<a href="{{ portal_url }}">tu cuenta</a>{% else %}tu cuenta{% endif %} que los servidores DNS y los datos del titular sean los que querés.</p>

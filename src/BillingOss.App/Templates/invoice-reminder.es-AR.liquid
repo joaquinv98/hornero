@@ -1,0 +1,5 @@
+Recordatorio: la {% if debit_note %}nota de débito{% else %}factura{% endif %} N.º {{ number }} vence el {{ due_date }}
+<p>Hola, {{ account_name }}:</p>
+<p>Te recordamos que la {% if debit_note %}nota de débito{% else %}factura{% endif %} N.º {{ number }} vence el {{ due_date }} y tiene un saldo de <strong>{{ pending }}</strong>.</p>
+{% if portal_url %}<p>Podés pagarla desde <a href="{{ portal_url }}">tu cuenta</a>.</p>{% endif %}
+<p>Si ya la pagaste, no hace falta que hagas nada.</p>

@@ -1,0 +1,88 @@
+@page "/pagar/transferencia"
+@model PayTransferModel
+@{
+    ViewData["Title"] = L["PayTransfer.Title"];
+    var numbers = string.Join(", ", Model.Documents.Select(d => (d.Number ?? d.Id).ToString(CultureInfo.InvariantCulture)));
+    var total = Ui.Money(Model.Total, Model.Documents[0].Currency);
+}
+<div class="bo-stack bo-wrap--narrow">
+    <div class="bo-head">
+        <a class="bo-small" href="/pagar?@string.Join("&", Model.Documents.Select(d => "factura=" + d.Id.ToString(CultureInfo.InvariantCulture)))">@L["PayTransfer.Back"]</a>
+        <h1>@L["PayTransfer.Title"]</h1>
+        <ol class="bo-steps" aria-label="@L["Pay.Steps"]">
+            <li data-done>@L["Pay.StepReview"]</li>
+            <li data-done>@L["Pay.StepMethod"]</li>
+            <li aria-current="step">@L["Pay.StepDone"]</li>
+        </ol>
+    </div>
+
+    @if (Model.Sent)
+    {
+        <div class="bo-alert" data-tone="ok" role="status">
+            <p class="bo-alert__title">@L["PayTransfer.SentTitle"]</p>
+            <p>@L["PayTransfer.Sent"]</p>
+        </div>
+    }
+
+    <section class="bo-card" aria-labelledby="importe">
+        <h2 id="importe" class="bo-label">@L["PayTransfer.Amount"]</h2>
+        <data class="bo-amount" value="@Model.Total.ToString("0.00", CultureInfo.InvariantCulture)">@total</data>
+        <p>@L["PayTransfer.Exact", total, numbers]</p>
+        <p>@(Model.PayerCuit is { } cuit ? L["PayTransfer.FromCuit", PayTransferModel.Cuit(cuit)] : L["PayTransfer.FromOwn"])</p>
+    </section>
+
+    @foreach (var a in Model.Accounts)
+    {
+        <section class="bo-card" aria-label="@L["PayTransfer.Account", a.Bank]">
+            <dl class="bo-facts">
+                <dt>@L["PayTransfer.Bank"]</dt>
+                <dd>@a.Bank</dd>
+                <dt>@L["PayTransfer.Holder"]</dt>
+                <dd>@a.Holder</dd>
+                <dt>@L["PayTransfer.HolderCuit"]</dt>
+                <dd><span class="bo-data">@PayTransferModel.Cuit(a.Cuit)</span></dd>
+                <dt>@L["PayTransfer.Cbu"]</dt>
+                <dd><span class="bo-data">@a.Cbu</span></dd>
+                @if (a.Alias is { Length: > 0 } alias)
+                {
+                    <dt>@L["PayTransfer.Alias"]</dt>
+                    <dd><span class="bo-data">@alias</span></dd>
+                }
+            </dl>
+        </section>
+    }
+
+    @if (!Model.Sent)
+    {
+        <form method="post" enctype="multipart/form-data" class="bo-form" aria-labelledby="ya-transferi">
+            <h2 id="ya-transferi">@L["PayTransfer.Done"]</h2>
+            <p class="bo-help">@L["PayTransfer.DoneHelp"]</p>
+            @if (Model.Error is not null)
+            {
+                <div class="bo-error-summary" role="alert">
+                    <h2>@L["Pay.ErrorTitle"]</h2>
+                    <p>@L[Model.Error]</p>
+                </div>
+            }
+            @foreach (var d in Model.Documents)
+            {
+                <input type="hidden" name="factura" value="@d.Id">
+            }
+            <div class="bo-field">
+                <label for="fecha">@L["PayTransfer.Date"]</label>
+                <input id="fecha" name="transferredOn" type="date" class="bo-input" required value="@Model.Today.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture)" max="@Model.Today.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture)">
+            </div>
+            <div class="bo-field">
+                <label for="referencia">@L["PayTransfer.Reference"]</label>
+                <input id="referencia" name="reference" class="bo-input" maxlength="200" autocomplete="off" aria-describedby="referencia-ayuda">
+                <p id="referencia-ayuda" class="bo-help">@L["PayTransfer.ReferenceHelp"]</p>
+            </div>
+            <div class="bo-field">
+                <label for="comprobante">@L["PayTransfer.Receipt"]</label>
+                <input id="comprobante" name="receipt" type="file" accept=".pdf,.png,.jpg,.jpeg,application/pdf,image/png,image/jpeg" aria-describedby="comprobante-ayuda">
+                <p id="comprobante-ayuda" class="bo-help">@L["PayTransfer.ReceiptHelp"]</p>
+            </div>
+            <button type="submit" class="bo-btn">@L["PayTransfer.Submit"]</button>
+        </form>
+    }
+</div>

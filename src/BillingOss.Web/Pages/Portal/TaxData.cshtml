@@ -1,0 +1,129 @@
+@page "/cuenta/datos-fiscales"
+@model TaxDataModel
+@using BillingOss.Domain.Accounts
+@{
+    ViewData["Title"] = L["Customer.TaxData"];
+    var many = Model.Rows.Count > 1;
+}
+<h1>@L["Customer.TaxData"]</h1>
+@if (Model.New)
+{
+    <p class="notice" role="status">@S["Register.Welcome"]</p>
+}
+<p class="muted">@L["Portal.TaxDataHelp"]</p>
+@if (Model.Continue is { Length: > 0 } next)
+{
+    <p>@S["Register.TaxDataStep"] <a class="button secondary" href="@Ui.SafeReturn(next)">@S["Register.Skip"]</a></p>
+}
+@if (Model.Error is not null)
+{
+    <p class="alert" role="alert">@Model.Error</p>
+}
+@if (Model.Done is { Length: > 0 })
+{
+    <p class="notice" role="status">@L["Taxes.Done"]</p>
+}
+@if (Model.Rows.Count == 0)
+{
+    <p>@L["Portal.TaxDataNoAccounts"]</p>
+}
+@foreach (var row in Model.Rows)
+{
+    var a = row.Account;
+    var tx = row.Tax;
+    var prefix = $"a{a.Id}-";
+    <section class="card" aria-labelledby="@(prefix)title">
+        <h2 id="@(prefix)title">@(many ? $"{a.Name} #{a.Id}" : a.Name)</h2>
+        @if (tx is not null)
+        {
+            <dl class="facts">
+                <dt>@L["Admin.TaxId"]</dt><dd>@L["TaxDocumentType." + tx.DocumentType] @tx.DocumentNumber (@tx.LegalName)</dd>
+                <dt>@L["Fiscal.VatCondition"]</dt><dd>@tx.VatCondition. @VatConditions.Describe(tx.VatCondition)</dd>
+                <dt>@L["Taxes.Country"]</dt><dd>@tx.Country @(tx.Province is { Length: > 0 } p && ArgentinaProvinces.Table.TryGetValue(p, out var provinceName) ? provinceName : tx.Province)</dd>
+                @if (tx.VatNumber is { Length: > 0 })
+                {
+                    <dt>@L["Customer.VatNumber"]</dt><dd>@tx.Country@tx.VatNumber @if (tx.ValidatedBusiness) { <span class="status" data-tone="ok">@L["Customer.VatValidated", tx.VatValidationRef ?? ""]</span> } else { <span class="status" data-tone="warn" data-shape="hollow">@L["Customer.VatNotValidated"]</span> }</dd>
+                }
+            </dl>
+        }
+        else
+        {
+            <p class="warn">@L["Customer.NoTaxData"]</p>
+        }
+        <div class="actions">
+            @if (tx is { DocumentType: TaxDocumentType.Cuit or TaxDocumentType.Cuil })
+            {
+                <form method="post" asp-page-handler="Lookup"><input type="hidden" name="accountId" value="@a.Id"><input type="hidden" name="volver" value="@Model.Continue"><input type="hidden" name="taxId" value="@tx.DocumentNumber"><button type="submit" class="secondary">@L["Fiscal.FillFromArca"]</button></form>
+            }
+            @if (TaxDataModel.CanValidateVat(tx))
+            {
+                <form method="post" asp-page-handler="ValidateVat"><input type="hidden" name="accountId" value="@a.Id"><input type="hidden" name="volver" value="@Model.Continue"><button type="submit" class="secondary">@L["Customer.ValidateVat"]</button></form>
+            }
+        </div>
+        @if (Model.Registry is { } r && Model.RegistryAccount == a.Id)
+        {
+            <section class="card" aria-labelledby="@(prefix)registry">
+                <h3 id="@(prefix)registry">@L["Customer.RegistrySays"]</h3>
+                <dl class="facts">
+                    <dt>@L["Field.Name"]</dt><dd>@r.Name</dd>
+                    <dt>@L["Fiscal.Address"]</dt><dd>@string.Join(", ", new[] { r.Street, r.City, r.Province, r.PostalCode }.Where(p => !string.IsNullOrWhiteSpace(p)))</dd>
+                    <dt>@L["Customer.RegistryTaxes"]</dt><dd>@string.Join(", ", r.Taxes) @r.MonotaxCategory</dd>
+                </dl>
+                <form method="post" asp-page-handler="Fill" class="stack narrow">
+                    <input type="hidden" name="accountId" value="@a.Id"><input type="hidden" name="volver" value="@Model.Continue">
+                    <input type="hidden" name="taxId" value="@r.TaxId">
+                    <div class="field"><label for="@(prefix)confirmed">@L["Fiscal.VatCondition"]</label>
+                        <select id="@(prefix)confirmed" name="confirmedCondition">
+                            @foreach (var c in Model.Conditions(tx))
+                            {
+                                <option value="@c.Code" selected="@(c.Code == (r.SuggestedVatCondition ?? tx?.VatCondition))">@c.Code. @c.Description</option>
+                            }
+                        </select>
+                        <span class="help">@L["Customer.RegistrySuggestion"]</span></div>
+                    <div><button type="submit">@L["Customer.SaveRegistry"]</button></div>
+                </form>
+            </section>
+        }
+        <details open="@(Model.New ? "open" : null)">
+            <summary>@L["Customer.EditTax"]</summary>
+            <form method="post" asp-page-handler="Tax" class="stack narrow">
+                <input type="hidden" name="accountId" value="@a.Id"><input type="hidden" name="volver" value="@Model.Continue">
+                <div class="field"><label for="@(prefix)documentType">@L["Customer.DocumentType"]</label>
+                    <select id="@(prefix)documentType" name="documentType">
+                        @foreach (var kind in Enum.GetValues<TaxDocumentType>())
+                        {
+                            <option value="@kind" selected="@(kind == (tx?.DocumentType ?? TaxDocumentType.Cuit))">@L["TaxDocumentType." + kind]</option>
+                        }
+                    </select></div>
+                <div class="field"><label for="@(prefix)documentNumber">@L["Admin.TaxId"]</label><input id="@(prefix)documentNumber" name="documentNumber" value="@tx?.DocumentNumber" inputmode="numeric" required></div>
+                <div class="field"><label for="@(prefix)legalName">@L["Fiscal.LegalName"]</label><input id="@(prefix)legalName" name="legalName" value="@(tx?.LegalName ?? a.CompanyName ?? a.Name)" required></div>
+                <div class="field"><label for="@(prefix)vatCondition">@L["Fiscal.VatCondition"]</label>
+                    <select id="@(prefix)vatCondition" name="vatCondition">
+                        @foreach (var c in Model.Conditions(tx))
+                        {
+                            <option value="@c.Code" selected="@(c.Code == tx?.VatCondition)">@c.Code. @c.Description</option>
+                        }
+                    </select>
+                    <span class="help">@L["Portal.ConditionHelp"]</span></div>
+                <div class="field"><label for="@(prefix)country">@L["Taxes.Country"]</label><input id="@(prefix)country" name="country" value="@(tx?.Country ?? "AR")" maxlength="2" required><span class="help">@L["Taxes.CountryHelp"]</span></div>
+                @if ((tx?.Country ?? "AR") == "AR")
+                {
+                    <div class="field"><label for="@(prefix)province">@L["Taxes.Province"]</label>
+                        <select id="@(prefix)province" name="province">
+                            <option value="">@L["Customer.NoProvince"]</option>
+                            @foreach (var (iso, name) in ArgentinaProvinces.Table)
+                            {
+                                <option value="@iso" selected="@(iso == tx?.Province)">@name</option>
+                            }
+                        </select></div>
+                }
+                else
+                {
+                    <div class="field"><label for="@(prefix)province">@L["Taxes.Province"]</label><input id="@(prefix)province" name="province" value="@tx?.Province" maxlength="6"></div>
+                    <div class="field"><label for="@(prefix)vatNumber">@L["Customer.VatNumber"]</label><input id="@(prefix)vatNumber" name="vatNumber" value="@tx?.VatNumber"><span class="help">@L["Customer.VatNumberHelp"]</span></div>
+                }
+                <div><button type="submit">@L["Taxes.Save"]</button></div>
+            </form>
+        </details>
+    </section>
+}

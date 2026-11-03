@@ -1,0 +1,4 @@
+Your automatic payment with {{ gateway }} was cancelled
+<p>Hi {{ account_name }},</p>
+<p>{{ gateway }} cancelled the automatic payment of your services, for example because it could not collect several payments in a row. Nothing will be charged from now on.</p>
+<p>Your services stay as they are. Please pay your next invoices with the method you prefer{% if methods_url %}, and you can turn the automatic payment back on from <a href="{{ methods_url }}">Payment methods</a>{% endif %}.</p>

@@ -1,0 +1,52 @@
+@page "/admin/contenidos"
+@model IndexModel
+@{
+    ViewData["Title"] = C["Cms.Menu"];
+    var d = Model.Data;
+}
+<h1>@C["Cms.Menu"]</h1>
+<partial name="_Tabs" />
+<p class="muted">@C["Cms.SummaryIntro"]</p>
+<div class="ct-counts">
+    <section class="card" aria-labelledby="sum-help">
+        <h2 id="sum-help"><a href="/admin/conocimiento">@C["Cms.Help"]</a></h2>
+        <dl class="facts">
+            <dt>@C["Cms.SumPublishedArticles"]</dt>
+            <dd>@d.PublishedArticles</dd>
+            <dt>@C["Cms.SumDraftArticles"]</dt>
+            <dd>@if (d.DraftArticles > 0) { <a href="/admin/conocimiento?state=Draft">@d.DraftArticles</a> } else { @d.DraftArticles }</dd>
+        </dl>
+    </section>
+    <section class="card" aria-labelledby="sum-news">
+        <h2 id="sum-news"><a href="/admin/anuncios">@C["Cms.News"]</a></h2>
+        <dl class="facts">
+            <dt>@C["Cms.SumLiveAnnouncements"]</dt>
+            <dd>@d.LiveAnnouncements</dd>
+            <dt>@C["Cms.SumScheduledAnnouncements"]</dt>
+            <dd>@d.ScheduledAnnouncements</dd>
+        </dl>
+    </section>
+    <section class="card" aria-labelledby="sum-downloads">
+        <h2 id="sum-downloads"><a href="/admin/descargas">@C["Cms.Downloads"]</a></h2>
+        <dl class="facts">
+            <dt>@C["Cms.SumDraftDownloads"]</dt>
+            <dd>@d.DraftDownloads</dd>
+            <dt>@C["Cms.SumWithoutFile"]</dt>
+            <dd>@d.DownloadsWithoutFile</dd>
+        </dl>
+    </section>
+    @if (Model.CanStatus)
+    {
+        <section class="card" aria-labelledby="sum-net">
+            <h2 id="sum-net"><a href="/admin/estado-red">@C["Cms.Network"]</a></h2>
+            <dl class="facts">
+                <dt>@C["Cms.SumOpenIncidents"]</dt>
+                <dd>@if (d.OpenIncidents > 0) { <a href="/admin/estado-red?vista=abiertas">@d.OpenIncidents</a> } else { @d.OpenIncidents }</dd>
+                <dt>@C["Cms.SumUpcomingMaintenances"]</dt>
+                <dd>@if (d.UpcomingMaintenances > 0) { <a href="/admin/estado-red?vista=programadas">@d.UpcomingMaintenances</a> } else { @d.UpcomingMaintenances }</dd>
+                <dt>@C["Cms.SumSubscribers"]</dt>
+                <dd>@d.ConfirmedSubscribers <span class="muted">(@C["Cms.SumPending", d.PendingSubscribers])</span></dd>
+            </dl>
+        </section>
+    }
+</div>

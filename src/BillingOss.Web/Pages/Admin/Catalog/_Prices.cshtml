@@ -1,0 +1,40 @@
+@model BillingOss.Web.Pages.Admin.Catalog.PriceTable
+@using BillingOss.Web.Pages.Admin.Catalog
+@{
+    string CycleName(string code) => L["CycleOption." + code] is { ResourceNotFound: false } text ? text.Value : code;
+}
+<div class="table">
+    <table class="prices">
+        <caption>@Model.Caption</caption>
+        <thead>
+            <tr>
+                <th scope="col">@L["Catalog.Cycle"]</th>
+                <th scope="col">@L["Catalog.Currency"]</th>
+                <th scope="col" class="num">@L["Catalog.Price"]</th>
+                <th scope="col" class="num">@L["Catalog.SetupFee"]</th>
+            </tr>
+        </thead>
+        <tbody>
+            @for (var k = 0; k < Model.Rows.Count; k++)
+            {
+                var row = Model.Rows[k];
+                var n = k + 1;
+                IEnumerable<string> codes = row.Cycle is { Length: > 0 } saved && !CatalogForm.Cycles.Contains(saved) ? [.. CatalogForm.Cycles, saved] : CatalogForm.Cycles;
+                <tr>
+                    <td>
+                        <select name="@($"{Model.Prefix}[{k}].Cycle")" aria-label="@L["Catalog.CycleRow", n]">
+                            <option value=""></option>
+                            @foreach (var code in codes)
+                            {
+                                <option value="@code" selected="@(code == row.Cycle)">@CycleName(code)</option>
+                            }
+                        </select>
+                    </td>
+                    <td><input name="@($"{Model.Prefix}[{k}].Currency")" value="@row.Currency" maxlength="3" list="currencies" autocomplete="off" aria-label="@L["Catalog.CurrencyRow", n]"></td>
+                    <td class="num"><input type="number" step="any" min="0" inputmode="decimal" name="@($"{Model.Prefix}[{k}].Amount")" value="@row.Amount" aria-label="@L["Catalog.PriceRow", n]"></td>
+                    <td class="num"><input type="number" step="any" min="0" inputmode="decimal" name="@($"{Model.Prefix}[{k}].SetupFee")" value="@row.SetupFee" aria-label="@L["Catalog.SetupFeeRow", n]"></td>
+                </tr>
+            }
+        </tbody>
+    </table>
+</div>

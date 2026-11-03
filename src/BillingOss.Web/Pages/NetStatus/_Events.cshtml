@@ -1,0 +1,35 @@
+@model EventList
+<ul class="ct-events">
+    @foreach (var e in Model.Items)
+    {
+        <li class="card">
+            <div class="ct-row">
+                <a class="ct-name" href="/estado-red/@e.Id" lang="@e.Language">@e.Title</a>
+                <partial name="_Pill" model="ContentUi.EventPill(e, C)" />
+            </div>
+            <p class="muted">
+                @if (e.Kind == StatusEventKind.Maintenance)
+                {
+                    <span>@C["Net.FromTo", ContentUi.When(e.StartsAt, Model.Zone), ContentUi.When(e.EndsAt!.Value, Model.Zone)]</span>
+                }
+                else
+                {
+                    <span>@C["Net.Since", ContentUi.When(e.StartsAt, Model.Zone)]</span>
+                    @if (e.EndsAt is { } end)
+                    {
+                        <span> &middot; @C["Net.ResolvedAt", ContentUi.When(end, Model.Zone)]</span>
+                    }
+                }
+            </p>
+            @if (e.Components.Count > 0)
+            {
+                <p>@C["Net.Affects"]: @string.Join(", ", e.Components.Select(c => c.Name))</p>
+            }
+            @if (Model.ShowLatest && e.Updates.Count > 0)
+            {
+                var last = e.Updates[^1];
+                <p class="ct-latest"><strong><time datetime="@last.PostedAt.ToString("O")">@ContentUi.When(last.PostedAt, Model.Zone)</time></strong> @last.Text</p>
+            }
+        </li>
+    }
+</ul>

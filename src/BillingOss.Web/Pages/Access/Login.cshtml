@@ -1,0 +1,37 @@
+@page "/ingresar"
+@model LoginModel
+@{
+    ViewData["Title"] = L["Login.Title"];
+    var back = Ui.SafeReturn(Model.ReturnUrl);
+}
+<h1>@L["Login.Title"]</h1>
+@if (Model.Error is not null)
+{
+    <p class="alert" role="alert">@UiText.Get(L, S, Model.Error, Model.LockMinutes)</p>
+}
+@foreach (var provider in Model.Providers)
+{
+    <form method="post" asp-page-handler="External">
+        <input type="hidden" name="provider" value="@provider.Key">
+        <input type="hidden" name="ReturnUrl" value="@back">
+        <button type="submit" class="secondary">@S["External.ContinueWith", provider.Name]</button>
+    </form>
+}
+@if (Model.Providers.Count > 0)
+{
+    <p class="muted">@S["External.OrPassword"]</p>
+}
+<form method="post" class="stack narrow">
+    <label for="email">@L["Field.Email"]</label>
+    <input id="email" name="Email" type="email" autocomplete="username" required value="@Model.Email">
+    <label for="password">@L["Field.Password"]</label>
+    <input id="password" name="Password" type="password" autocomplete="current-password" required>
+    <label class="check"><input type="checkbox" name="Remember" value="true"> @L["Login.Remember"]</label>
+    <partial name="_Challenge" model="Model.AntiBot" />
+    <button type="submit">@L["Login.Submit"]</button>
+</form>
+<p><a href="/recuperar">@L["Login.Forgot"]</a></p>
+@if (Model.RegistrationOpen)
+{
+    <p>@S["Register.NoAccount"] <a href="/registro?ReturnUrl=@Uri.EscapeDataString(back)">@S["Register.Title"]</a></p>
+}

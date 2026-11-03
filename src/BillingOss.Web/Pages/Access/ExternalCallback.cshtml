@@ -1,0 +1,15 @@
+@page "/ingresar/externo/{provider}/vuelta"
+@model ExternalCallbackModel
+@{
+    ViewData["Title"] = L["Login.Title"];
+}
+@if (Model.Error is null)
+{
+    <p><a href="/ingresar/externo">@L["Admin.Continue"]</a></p>
+}
+else
+{
+    <h1>@L["Login.Title"]</h1>
+    <p class="alert" role="alert">@S[Model.Error]</p>
+    <p><a href="@Model.Back">@L["Status.Back"]</a></p>
+}

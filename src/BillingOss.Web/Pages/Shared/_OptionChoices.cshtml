@@ -1,0 +1,38 @@
+@model OptionChoices
+@using BillingOss.Domain.Catalog
+@{
+    // Los campos van con el prefijo del formulario: un pedido de paquete lleva las opciones de cada línea.
+    var idPrefix = Model.Prefix.Replace('.', '-').Replace('[', '-').Replace("]", "", StringComparison.Ordinal);
+}
+@for (var i = 0; i < Model.Choices.Count; i++)
+{
+    var choice = Model.Choices[i];
+    var option = Model.Options.Options.First(o => o.Id == choice.OptionId);
+    var single = option.SingleValue ? Model.Options.PriceOf(Model.Options.ValuesOf(option.Id).First().Id, Model.Currency, Model.Cycle) : null;
+    var field = $"{Model.Prefix}[{i}]";
+    var fieldId = $"{idPrefix}-{i}";
+    <div class="field">
+        <input type="hidden" name="@(field).OptionId" value="@choice.OptionId">
+        @switch (option.Kind)
+        {
+            case OptionKind.Quantity:
+                <label for="@fieldId">@option.Name @if (single is { Amount: > 0 } each) { <span class="muted">@L["Change.EachUnit", Ui.Money(each.Amount, Model.Currency)]</span> }</label>
+                <input id="@fieldId" type="number" name="@(field).Quantity" value="@choice.Quantity" min="@option.MinQuantity" max="@(option.MaxQuantity > 0 ? option.MaxQuantity : null)">
+                break;
+            case OptionKind.YesNo:
+                <label class="check"><input type="checkbox" name="@(field).Quantity" value="1" checked="@(choice.Quantity > 0)"> @option.Name @if (single is { Amount: > 0 } extra) { <span class="muted">(+@Ui.Money(extra.Amount, Model.Currency))</span> }</label>
+                <input type="hidden" name="@(field).Quantity" value="0">
+                break;
+            default:
+                <label for="@fieldId">@option.Name</label>
+                <select id="@fieldId" name="@(field).ValueId">
+                    @foreach (var value in Model.Options.ValuesOf(option.Id).Where(v => Model.ShowHidden || !v.Hidden || v.Id == choice.ValueId))
+                    {
+                        var price = Model.Options.PriceOf(value.Id, Model.Currency, Model.Cycle);
+                        <option value="@value.Id" selected="@(value.Id == choice.ValueId)">@value.Name@(price is { Amount: > 0 } p ? $" (+{Ui.Money(p.Amount, Model.Currency)})" : "")@(value.Hidden && Model.ShowHidden ? " " + L["Change.HiddenValue"].Value : "")</option>
+                    }
+                </select>
+                break;
+        }
+    </div>
+}

@@ -1,0 +1,6 @@
+Cancellation receipt {{ code }}
+<p>Hi{% if account_name %} {{ account_name }}{% endif %},</p>
+<p>We have recorded your cancellation request{% if service %} for <strong>{{ service }}</strong>{% endif %} on {{ requested }}.</p>
+<p>Your receipt code is <strong>{{ code }}</strong>. Please keep it for any question about this request.</p>
+{% if date %}<p>The cancellation takes effect on {{ date }}.</p>{% endif %}
+<p>Cancelling a service is free of charge.</p>

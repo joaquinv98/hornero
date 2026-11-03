@@ -1,0 +1,55 @@
+# El vigía diario (D-20, sección 3.2 y paso A4). Todos los días a las 06:00 de Argentina, y a mano.
+#
+# Por cada línea soportada: NuGet con las transitivas (dotnet list package --vulnerable), el runtime de .NET que trae
+# la imagen contra la metadata oficial de .NET (que NuGetAudit no ve) y Trivy sobre los archivos de bloqueo. Junta todo,
+# deduplica por aviso y por línea, actualiza el issue fijado de estado y abre uno por hallazgo nuevo. Si un hallazgo
+# pasa su plazo objetivo sin versión, menciona a los mantenedores y Forgejo les manda el correo. Falla mientras haya
+# hallazgos. Un monitoreo externo puede mirar la fecha de la última corrida en el issue fijado.
+#
+# Forgejo corre los cron solo desde la rama por defecto: por eso este trabajo saca cada línea con git worktree.
+name: vigia
+
+on:
+  schedule:
+    # En UTC: 06:00 de Argentina.
+    - cron: '0 9 * * *'
+  workflow_dispatch:
+
+env:
+  DOTNET_CLI_TELEMETRY_OPTOUT: '1'
+  DOTNET_NOLOGO: '1'
+  # Antes de la 1.0, solo la última versión. Después, main y las release/x.y soportadas, separadas por espacios.
+  LINEAS: main
+
+jobs:
+  vigia:
+    runs-on: docker
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-dotnet@v4
+        with:
+          global-json-file: global.json
+      - name: NuGet de cada línea, con las transitivas
+        run: |
+          for linea in $LINEAS; do
+            carpeta="lineas/$(echo "$linea" | tr '/' '-')"
+            git worktree add --detach "$carpeta" "origin/$linea"
+            # Con AuditPipeline=true un aviso es error y el restore falla a la vista. El listado necesita un restore que
+            # termine, así que si falla se repite el normal, que deja los avisos como advertencia.
+            dotnet restore "$carpeta/BillingOss.slnx" -p:AuditPipeline=true || dotnet restore "$carpeta/BillingOss.slnx"
+            dotnet list "$carpeta/BillingOss.slnx" package --vulnerable --include-transitive --format json > "$carpeta/vigia-nuget.json"
+          done
+      - name: Trivy sobre los archivos de bloqueo de todas las líneas
+        uses: docker://aquasec/trivy:0.69.3
+        with:
+          args: fs --scanners vuln --format json --output vigia-trivy.json lineas
+      - name: Hallazgos e issues
+        env:
+          FORGEJO_TOKEN: ${{ github.token }}
+        run: |
+          lineas=""
+          for linea in $LINEAS; do lineas="$lineas --linea $linea=lineas/$(echo "$linea" | tr '/' '-')"; done
+          dotnet run --project src/BillingOss.Releases -c Release -- vigia $lineas --trivy vigia-trivy.json --salida vigia.json \
+            --forgejo "${{ github.server_url }}" --repo "${{ github.repository }}" --mantenedores "${{ vars.MANTENEDORES }}"

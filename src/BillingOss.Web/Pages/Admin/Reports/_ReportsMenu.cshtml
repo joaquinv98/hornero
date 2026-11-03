@@ -1,0 +1,18 @@
+@using BillingOss.Web.Pages.Admin.Reports
+@* El ítem Reportes del menú del admin con su lista agrupada, que se despliega al pasar o al llegar con el teclado
+   (sección 10 de la interfaz). Sin JavaScript: el enlace lleva al índice, que tiene la misma lista. *@
+<div class="menu-item">
+    <a href="/admin/reportes" aria-current="@(Context.Request.Path.StartsWithSegments("/admin/reportes") ? "page" : null)">@L["Reports.Title"]</a>
+    <div class="submenu submenu-wide">
+        @foreach (var group in ReportModel.Visible(User).GroupBy(e => e.Group))
+        {
+            <div class="submenu-group">
+                <span class="submenu-title">@L[group.Key]</span>
+                @foreach (var entry in group)
+                {
+                    <a href="@entry.Href">@L[entry.Title]</a>
+                }
+            </div>
+        }
+    </div>
+</div>

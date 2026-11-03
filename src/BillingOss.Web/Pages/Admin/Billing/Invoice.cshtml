@@ -1,0 +1,103 @@
+@page "/admin/facturas/{id:long}"
+@model BillingOss.Web.Pages.Admin.Billing.InvoiceModel
+@using BillingOss.App.UseCases
+@using BillingOss.Domain.Billing
+@{
+    var d = Model.Document!;
+    var number = d.Number?.ToString(CultureInfo.InvariantCulture) ?? L["Billing.DraftNumber", d.Id];
+    ViewData["Title"] = $"{L["DocumentKind." + d.Kind]} {number}";
+    var payable = d.IsIssued && d.Kind != DocumentKind.CreditNote && d.Pending > 0m;
+}
+<p><a href="/admin/facturas">@L["Billing.BackToInvoices"]</a></p>
+<h1>@L["DocumentKind." + d.Kind] @number <span class="status i-@d.Status.ToString().ToLowerInvariant()">@L["InvoiceStatus." + d.Status]</span></h1>
+@if (Model.Error is not null)
+{
+    <p class="alert" role="alert">@Model.Error</p>
+}
+<dl class="facts">
+    <dt>@L["Billing.Account"]</dt>
+    <dd><a href="/admin/cuentas/@d.AccountId">@Model.Account!.Name</a></dd>
+    <dt>@L["Invoices.Date"]</dt>
+    <dd>@Ui.Date(d.IssueDate)</dd>
+    <dt>@L["Invoices.Due"]</dt>
+    <dd>@Ui.Date(d.DueDate)</dd>
+    @if (d.Reason is { Length: > 0 } reason && reason != DocumentReasons.Manual && reason != DocumentReasons.Renewal)
+    {
+        <dt>@L["Billing.Reason"]</dt>
+        <dd>@reason</dd>
+    }
+</dl>
+<div class="table">
+    <table>
+        <thead>
+            <tr>
+                <th scope="col">@L["Billing.Description"]</th>
+                <th scope="col" class="num">@L["Billing.Quantity"]</th>
+                <th scope="col" class="num">@L["Billing.UnitPrice"]</th>
+                <th scope="col">@L["Billing.Treatment"]</th>
+                <th scope="col" class="num">@L["Invoice.Amount"]</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var l in d.Lines.OrderBy(l => l.Id))
+            {
+                <tr>
+                    <td>@l.Description</td>
+                    <td class="num">@l.Quantity.ToString("0.####", CultureInfo.CurrentCulture)</td>
+                    <td class="num bo-money">@Ui.Money(l.UnitPrice, d.Currency)</td>
+                    <td>@L["TaxTreatment." + l.Treatment] @(l.Treatment == TaxTreatment.Taxed ? (l.Rate * 100m).ToString("0.##", CultureInfo.CurrentCulture) + " %" : string.Empty)</td>
+                    <td class="num bo-money">@Ui.Money(l.Amount, d.Currency)</td>
+                </tr>
+            }
+        </tbody>
+        @if (d.IsIssued)
+        {
+            <tfoot>
+                <tr><th scope="row" colspan="4">@L["Billing.NetTaxed"]</th><td class="num bo-money">@Ui.Money(d.NetTaxed, d.Currency)</td></tr>
+                <tr><th scope="row" colspan="4">@L["Billing.Tax"]</th><td class="num bo-money">@Ui.Money(d.Tax, d.Currency)</td></tr>
+                @if (d.Exempt + d.NotTaxed > 0m)
+                {
+                    <tr><th scope="row" colspan="4">@L["Billing.ExemptAndNotTaxed"]</th><td class="num bo-money">@Ui.Money(d.Exempt + d.NotTaxed, d.Currency)</td></tr>
+                }
+                <tr><th scope="row" colspan="4">@L["Invoices.Total"]</th><td class="num bo-money strong">@Ui.Money(d.Total, d.Currency)</td></tr>
+                <tr><th scope="row" colspan="4">@L["Admin.Applied"]</th><td class="num bo-money">@Ui.Money(d.Allocated, d.Currency)</td></tr>
+                <tr><th scope="row" colspan="4">@L["Billing.Credited"]</th><td class="num bo-money">@Ui.Money(d.Credited, d.Currency)</td></tr>
+                <tr><th scope="row" colspan="4">@L["Invoices.Pending"]</th><td class="num bo-money strong">@Ui.Money(d.Pending, d.Currency)</td></tr>
+            </tfoot>
+        }
+    </table>
+</div>
+@if (Model.Related.Count > 0)
+{
+    <h2>@L["Billing.Related"]</h2>
+    <ul class="plain">
+        @foreach (var r in Model.Related)
+        {
+            <li><a href="/admin/facturas/@r.Id">@L["DocumentKind." + r.Kind] @r.Number</a> @Ui.Money(r.Total, r.Currency) <span class="muted">@r.Reason</span>
+                @if (r.Kind != DocumentKind.CreditNote)
+                {
+                    @* Un recargo cobrado de una factura anulada queda a la vista: lo resuelve el staff. *@
+                    <span class="status i-@r.Status.ToString().ToLowerInvariant()">@L["InvoiceStatus." + r.Status]</span>
+                }
+            </li>
+        }
+    </ul>
+}
+@if (Model.CanWrite)
+{
+    <div class="bo-actions">
+        @if (!d.IsIssued && d.Reason == DocumentReasons.Manual)
+        {
+            <form method="post" asp-page-handler="Issue"><button type="submit">@L["Billing.Issue"]</button></form>
+            <form method="post" asp-page-handler="Discard"><button type="submit" class="secondary">@L["Billing.Discard"]</button></form>
+        }
+        @if (payable && Model.Credit > 0m)
+        {
+            <form method="post" asp-page-handler="Credit"><button type="submit">@L["Billing.ApplyCredit", Ui.Money(Model.Credit, d.Currency)]</button></form>
+        }
+        @if (Model.CanChargeLateFee)
+        {
+            <form method="post" asp-page-handler="LateFee"><button type="submit" class="secondary">@L["Billing.LateFee"]</button></form>
+        }
+    </div>
+}

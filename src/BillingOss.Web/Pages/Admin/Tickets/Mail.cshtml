@@ -1,0 +1,111 @@
+@page "/admin/registros/correo-entrante"
+@model BillingOss.Web.Pages.Admin.Tickets.InboundMailModel
+@using BillingOss.App.Support
+@{
+    ViewData["Title"] = L["SupportAdmin.Mail"];
+}
+<p><a href="/admin/soporte">@L["Support.Back"]</a></p>
+<h1>@L["SupportAdmin.Mail"]</h1>
+<p class="muted">@L["SupportAdmin.MailLogHelp"] <a href="/admin/soporte/correo">@L["SupportAdmin.SpamControl"]</a></p>
+@if (Model.Done is { } done)
+{
+    <p class="notice" role="status">@L[done > 0 ? "SupportAdmin.SenderBlocked" : "SupportAdmin.SenderAlreadyBlocked"]</p>
+}
+<form method="get" action="@Request.Path" role="search" class="bo-listbar">
+    <div class="bo-field bo-grow">
+        <label for="q">@L["SupportAdmin.MailSearch"]</label>
+        <input id="q" name="q" type="search" value="@Model.Q" autocomplete="off">
+    </div>
+    <div class="bo-field">
+        <label for="resultado">@L["SupportAdmin.Outcome"]</label>
+        <select id="resultado" name="resultado">
+            <option value="">@L["SupportAdmin.AnyOutcome"]</option>
+            @foreach (var outcome in Enum.GetValues<InboundOutcome>())
+            {
+                <option value="@outcome" selected="@(outcome == Model.Outcome)">@L["InboundOutcome." + outcome]</option>
+            }
+        </select>
+    </div>
+    <div class="bo-field">
+        <label for="departamento">@L["Support.Department"]</label>
+        <select id="departamento" name="departamento">
+            <option value="">@L["SupportAdmin.AllDepartments"]</option>
+            @foreach (var (departmentId, name) in Model.Departments)
+            {
+                <option value="@departmentId" selected="@(departmentId == Model.Department)">@name</option>
+            }
+        </select>
+    </div>
+    <button type="submit" class="secondary">@L["SupportAdmin.Filter"]</button>
+</form>
+
+@if (Model.Log.Count == 0)
+{
+    <p>@L["SupportAdmin.MailLogEmpty"]</p>
+}
+else
+{
+    <div class="table">
+        <table class="bo-dense">
+            <caption class="bo-sr">@L["SupportAdmin.MailLog"], @L["SupportAdmin.PageOf", Model.PageNumber, Model.Pages]</caption>
+            <thead>
+                <tr>
+                    <th scope="col">@L["Admin.Date"]</th>
+                    <th scope="col">@L["Support.Department"]</th>
+                    <th scope="col">@L["SupportAdmin.Sender"]</th>
+                    <th scope="col">@L["Support.Subject"]</th>
+                    <th scope="col">@L["SupportAdmin.Outcome"]</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var (e, department) in Model.Log)
+                {
+                    var tone = e.Outcome switch { InboundOutcome.Opened or InboundOutcome.Replied => "ok", InboundOutcome.Rejected => "warn", _ => "neutral" };
+                    <tr>
+                        <td><time datetime="@SupportUi.Iso(e.ReceivedAt)">@SupportUi.When(e.ReceivedAt, Model.Billing)</time></td>
+                        <td>@department</td>
+                        <td>
+                            @e.Sender
+                            @if (e.Sender.Contains('@') && !Model.Blocked.Contains(e.Sender))
+                            {
+                                <form method="post" action="@Model.Link(("handler", "Block"))" asp-antiforgery="true" class="inline">
+                                    <input type="hidden" name="sender" value="@e.Sender">
+                                    <button type="submit" class="link" aria-label="@L["SupportAdmin.BlockSenderOf", e.Sender]">@L["SupportAdmin.BlockSender"]</button>
+                                </form>
+                            }
+                        </td>
+                        <th scope="row">@e.Subject</th>
+                        <td>
+                            <span class="bo-status" data-tone="@tone">@L["InboundOutcome." + e.Outcome]</span>
+                            @if (e.TicketId is { } ticket)
+                            {
+                                <a href="/admin/soporte/@ticket">@L["SupportAdmin.SeeTicket"]</a>
+                            }
+                            @if (e.Reason is { Length: > 0 } reason)
+                            {
+                                <span class="muted">@reason</span>
+                            }
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+    <div class="bo-pager">
+        <p>@L["SupportAdmin.Showing", ((Model.PageNumber - 1) * InboundMailModel.Size) + 1, Math.Min(Model.Total, Model.PageNumber * InboundMailModel.Size), Model.Total]</p>
+        @if (Model.Pages > 1)
+        {
+            <nav aria-label="@L["SupportAdmin.Pages"]">
+                @if (Model.PageNumber > 1)
+                {
+                    <a href="@Model.Link(("pagina", (Model.PageNumber - 1).ToString(CultureInfo.InvariantCulture)))">@L["SupportAdmin.PagePrevious"]</a>
+                }
+                <span>@L["SupportAdmin.PageOf", Model.PageNumber, Model.Pages]</span>
+                @if (Model.PageNumber < Model.Pages)
+                {
+                    <a href="@Model.Link(("pagina", (Model.PageNumber + 1).ToString(CultureInfo.InvariantCulture)))">@L["SupportAdmin.PageNext"]</a>
+                }
+            </nav>
+        }
+    </div>
+}

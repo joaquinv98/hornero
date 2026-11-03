@@ -1,0 +1,21 @@
+@page "/anuncios/{id:long}"
+@model DetailModel
+@section Head {
+    <link rel="stylesheet" href="~/css/contenidos.css" asp-append-version="true">
+}
+@{
+    var item = Model.Item!;
+    ViewData["Title"] = item.Title;
+}
+<nav aria-label="@C["Kb.Breadcrumb"]" class="ct-crumbs">
+    <a href="/anuncios">@C["News.Title"]</a>
+</nav>
+<article class="ct-article">
+    <h1 lang="@item.Language">@item.Title</h1>
+    <p class="muted"><time datetime="@item.PublishedAt.ToString("O")">@ContentUi.When(item.PublishedAt, Model.Zone)</time></p>
+    @if (item.Fallback)
+    {
+        <partial name="_OtherLanguage" model="item.Language" />
+    }
+    <div class="ct-body" lang="@item.Language">@Html.Raw(item.Html)</div>
+</article>

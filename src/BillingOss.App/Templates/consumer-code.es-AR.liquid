@@ -1,0 +1,6 @@
+Código para confirmar tu pedido de {% if withdrawal %}arrepentimiento{% else %}baja{% endif %}
+<p>Hola:</p>
+<p>Recibimos un pedido de {% if withdrawal %}arrepentimiento{% else %}baja{% endif %} con este correo. Para confirmarlo, escribí este código en la página del trámite:</p>
+<p style="font-size:24px;font-weight:bold;letter-spacing:4px;">{{ code }}</p>
+<p>El código vence en {{ minutes }} minutos.</p>
+<p>Si no lo pediste, ignorá este correo: sin el código no se registra nada.</p>

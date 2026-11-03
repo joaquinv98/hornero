@@ -1,0 +1,16 @@
+@page "/ingresar/codigo"
+@model LoginCodeModel
+@{
+    ViewData["Title"] = L["Code.Title"];
+}
+<h1>@L["Code.Title"]</h1>
+<p>@L["Code.Help"]</p>
+@if (Model.Error is not null)
+{
+    <p class="alert" role="alert">@UiText.Get(L, S, Model.Error, Model.LockMinutes)</p>
+}
+<form method="post" class="stack narrow">
+    <label for="code">@L["Field.Code"]</label>
+    <input id="code" name="Code" inputmode="numeric" autocomplete="one-time-code" required autofocus>
+    <button type="submit">@L["Code.Submit"]</button>
+</form>

@@ -1,0 +1,108 @@
+@page "/admin/servicios/{id:long}/cambio"
+@model ServiceChangeModel
+@using BillingOss.Domain.Catalog
+@using BillingOss.Domain.Services
+@{
+    var s = Model.Service!;
+    var title = L["Change.Title", s.Id].Value;
+    ViewData["Title"] = title;
+    string CycleName(string code) => L["CycleOption." + code] is { ResourceNotFound: false } text ? text.Value : code;
+    var cycle = Model.Input.Cycle is { } code && Model.Cycles.Contains(code) ? BillingCycle.Parse(code) : s.Cycle;
+}
+<nav aria-label="@L["Catalog.Breadcrumb"]"><a href="/admin/cuentas/@s.AccountId">@Model.AccountName</a></nav>
+<h1>@title</h1>
+<p class="muted">@Model.ProductName · @L["ServiceStatus." + s.Status] · @Ui.Money(s.UnitPrice * s.Quantity, s.Currency) @L["Cycle." + s.Cycle.Code] · @L["Services.NextDue"] @Ui.Date(s.NextDueDate)</p>
+
+@if (Model.Done is { } done)
+{
+    <p class="notice" role="status">
+        @(done.Status switch
+        {
+            ServiceChangeStatus.Pending => L["Change.DonePending", done.DocumentId ?? 0].Value,
+            ServiceChangeStatus.Applied => L["Change.DoneApplied"].Value,
+            _ => L["Change.DoneCancelled"].Value,
+        })
+    </p>
+}
+@if (Model.Error is { } error)
+{
+    <div class="alert" role="alert" tabindex="-1" autofocus><p><strong>@L["Change.ErrorTitle"]</strong> @error</p></div>
+}
+@if (Model.Pending is { } pending)
+{
+    <section class="card" aria-labelledby="pending">
+        <h2 id="pending">@L["Change.PendingTitle"]</h2>
+        <p>@L["Change.PendingText", Ui.Money(pending.Amount, s.Currency), pending.DocumentId ?? 0]</p>
+        <form method="post" asp-page-handler="Cancel" asp-route-change="@pending.Id">
+            <button type="submit" class="secondary">@L["Change.CancelPending"]</button>
+        </form>
+    </section>
+}
+else if (s.Status == ServiceStatus.Active)
+{
+    <form method="get" class="search" action="/admin/servicios/@s.Id/cambio">
+        <label for="producto">@L["Catalog.Product"]</label>
+        <select id="producto" name="producto">
+            @foreach (var (id, name) in Model.Products)
+            {
+                <option value="@id" selected="@(id == Model.Input.ProductId)">@name @(id == s.ProductId ? L["Change.Current"].Value : "")</option>
+            }
+        </select>
+        <button type="submit" class="secondary">@L["Change.ShowOptions"]</button>
+    </form>
+
+    <form method="post" class="stack">
+        <input type="hidden" asp-for="Input.ProductId">
+        <fieldset class="card">
+            <legend>@L["Change.NewPlan"]</legend>
+            <div class="grid">
+                <div class="field">
+                    <label asp-for="Input.Cycle">@L["Catalog.Cycle"]</label>
+                    <select asp-for="Input.Cycle" aria-describedby="cycle-help">
+                        @foreach (var c in Model.Cycles)
+                        {
+                            <option value="@c" selected="@(c == Model.Input.Cycle)">@CycleName(c)</option>
+                        }
+                    </select>
+                    <small id="cycle-help" class="muted">@L["Change.CycleHelp"]</small>
+                </div>
+                <partial name="_OptionChoices" model="new OptionChoices(Model.Options!, Model.Input.Choices, s.Currency, cycle, ShowHidden: true)" />
+            </div>
+            <label class="check"><input asp-for="Input.Prorate"> @L["Change.Prorate"]</label>
+        </fieldset>
+        <p class="actions">
+            <button type="submit" asp-page-handler="Preview" class="secondary">@L["Change.Preview"]</button>
+            @if (Model.Quote is not null)
+            {
+                <button type="submit" asp-page-handler="Confirm">@L["Change.Confirm"]</button>
+            }
+        </p>
+    </form>
+
+    @if (Model.Quote is { } q)
+    {
+        <section class="card" aria-labelledby="quote" role="status">
+            <h2 id="quote">@L["Change.QuoteTitle"]</h2>
+            <dl class="facts">
+                <dt>@L["Change.UnitPrice"]</dt>
+                <dd>@L["Change.FromTo", Ui.Money(q.FromUnitPrice, s.Currency), Ui.Money(q.ToUnitPrice, s.Currency)]</dd>
+                <dt>@L["Change.Period"]</dt>
+                <dd>@(q.Until is { } until && until > q.From ? L["Change.PeriodRange", Ui.Date(q.From), Ui.Date(until.AddDays(-1))].Value : L["Change.NoPeriod"].Value)</dd>
+            </dl>
+            <p class="strong">
+                @(q.Amount > 0m ? L["Change.WillCharge", Ui.Money(q.Amount, s.Currency)].Value
+                    : q.Amount < 0m ? L["Change.WillCredit", Ui.Money(-q.Amount, s.Currency)].Value
+                    : L["Change.NoMoney"].Value)
+            </p>
+            @if (q.DiscountEnds)
+            {
+                <p>@L["Change.DiscountEnds"]</p>
+            }
+            <p class="muted">@L["Change.ConfirmHelp"]</p>
+        </section>
+    }
+}
+else
+{
+    <p>@L["Change.OnlyActive"]</p>
+}

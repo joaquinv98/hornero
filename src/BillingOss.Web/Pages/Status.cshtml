@@ -1,0 +1,16 @@
+@page "/estado/{code:int}"
+@model StatusModel
+@{
+    var key = Model.Code switch
+    {
+        400 => "Status.400",
+        403 => "Status.403",
+        404 => "Status.404",
+        429 => "Status.429",
+        _ => "Status.Other",
+    };
+    ViewData["Title"] = L[key];
+    Layout = Model.Admin ? "_AdminLayout" : "_Layout";
+}
+<h1>@L[key]</h1>
+<p><a href="@(Model.Admin ? "/admin" : "/")">@L["Status.Back"]</a></p>

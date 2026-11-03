@@ -1,0 +1,16 @@
+# Ejemplo de /etc/zabbix/billing-oss/pg_service.conf para el UserParameter billing.metrics. La contraseña va en
+# /etc/zabbix/billing-oss/pgpass (0600, dueño zabbix), cargada desde la bóveda, con el mismo host que acá. Con alta
+# disponibilidad, host puede listar varios nodos y target_session_attrs=prefer-standby lee de una réplica sin cargar
+# la primaria.
+#
+# host es el nombre que figura en el certificado del servidor: con verify-full, 127.0.0.1 solo anda si el
+# certificado trae esa IP. sslrootcert es la CA que firmó ese certificado, copiada con dueño zabbix. Si lo firma
+# una CA pública alcanza con sslrootcert=system.
+[billing_metrics]
+host=db.billing.interno
+port=5432
+dbname=billing_oss
+user=billing_metrics
+sslmode=verify-full
+sslrootcert=/etc/zabbix/billing-oss/root.crt
+connect_timeout=5

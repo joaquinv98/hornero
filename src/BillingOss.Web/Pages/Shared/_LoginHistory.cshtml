@@ -1,0 +1,42 @@
+@using BillingOss.App.Identity
+@model IReadOnlyList<LoginEvent>
+@inject Microsoft.Extensions.Options.IOptions<BillingOss.App.BillingOptions> Billing
+@if (Model.Count == 0)
+{
+    <p class="muted">@S["History.Empty"]</p>
+}
+else
+{
+    <div class="table">
+        <table>
+            <thead>
+                <tr>
+                    <th scope="col">@S["History.When"]</th>
+                    <th scope="col">@S["History.Ip"]</th>
+                    <th scope="col">@S["History.Device"]</th>
+                    <th scope="col">@S["History.Result"]</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var e in Model)
+                {
+                    <tr>
+                        <td><time datetime="@e.CreatedAt.ToString("O", CultureInfo.InvariantCulture)">@UiText.When(e.CreatedAt, Billing.Value.TimeZone)</time></td>
+                        <td>
+                            <code>@e.Ip</code>
+                            @if (e.NewLocation)
+                            {
+                                <span class="status" data-tone="warn">@S["History.NewLocation"]</span>
+                            }
+                        </td>
+                        <td>@Devices.Describe(e.UserAgent)</td>
+                        <td>
+                            <span class="status" data-tone="@UiText.Tone(e.Result)">@S["LoginResult." + e.Result]</span>
+                            <span class="muted">@S["LoginMethod." + e.Method]</span>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+}

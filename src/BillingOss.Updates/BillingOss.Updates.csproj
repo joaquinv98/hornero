@@ -1,0 +1,6 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!--
+    Formato del canal de versiones, su verificación, el camino de actualización y el estado que muestra el panel
+    (D-20). Sin dependencias: lo usan el núcleo y el actualizador, que corre en el host.
+  -->
+</Project>

@@ -1,0 +1,95 @@
+@page "/admin/soporte/departamentos/{id:long}"
+@model BillingOss.Web.Pages.Admin.Tickets.DepartmentModel
+@using BillingOss.App.Support
+@{
+    var title = Model.IsNew ? L["SupportAdmin.NewDepartment"].Value : Model.Name;
+    ViewData["Title"] = (Model.Problems.Count > 0 ? L["Support.ErrorPrefix"] + " " : string.Empty) + title;
+}
+<p><a href="/admin/soporte/departamentos">@L["Support.Back"]</a></p>
+<h1>@title</h1>
+@if (Model.Problems.Count > 0)
+{
+    <div class="alert" role="alert">
+        <p class="strong">@L["Support.FixBelow"]</p>
+        <ul>
+            @foreach (var (field, message) in Model.Problems)
+            {
+                <li><a href="#@field">@message</a></li>
+            }
+        </ul>
+    </div>
+}
+@if (Model.Test is { } test)
+{
+    <p class="@(test.Ok ? "notice" : "alert")" role="status">@test.Text</p>
+}
+<form method="post" class="bo-form" novalidate>
+    <div class="bo-field">
+        <label for="Name">@L["Field.Name"]</label>
+        <input id="Name" name="Name" value="@Model.Name" maxlength="200" aria-invalid="@(Model.Invalid("Name") ? "true" : null)">
+    </div>
+    <div class="bo-field">
+        <label for="Description">@L["SupportAdmin.Description"] <span class="muted">@L["Support.Optional"]</span></label>
+        <input id="Description" name="Description" value="@Model.Description" maxlength="1000">
+        <p class="bo-help">@L["SupportAdmin.DescriptionHelp"]</p>
+    </div>
+    <div class="bo-field">
+        <label for="Email">@L["SupportAdmin.DepartmentEmail"] <span class="muted">@L["Support.Optional"]</span></label>
+        <input id="Email" name="Email" type="email" value="@Model.Email" aria-describedby="correo-ayuda" aria-invalid="@(Model.Invalid("Email") ? "true" : null)">
+        <p class="bo-help" id="correo-ayuda">@L["SupportAdmin.DepartmentEmailHelp"]</p>
+    </div>
+    <div class="bo-field">
+        <label for="StaffAlertEmail">@L["SupportAdmin.StaffAlertEmail"] <span class="muted">@L["Support.Optional"]</span></label>
+        <input id="StaffAlertEmail" name="StaffAlertEmail" type="email" value="@Model.StaffAlertEmail" aria-describedby="aviso-ayuda" aria-invalid="@(Model.Invalid("StaffAlertEmail") ? "true" : null)">
+        <p class="bo-help" id="aviso-ayuda">@L["SupportAdmin.StaffAlertHelp"]</p>
+    </div>
+    <div class="bo-field">
+        <label for="SortOrder">@L["SupportAdmin.SortOrder"]</label>
+        <input id="SortOrder" name="SortOrder" type="number" value="@Model.SortOrder" inputmode="numeric">
+    </div>
+    <label class="check"><input type="checkbox" name="Hidden" value="true" checked="@Model.Hidden"> @L["SupportAdmin.HiddenHelp"]</label>
+    <label class="check"><input type="checkbox" name="ClientsOnly" value="true" checked="@Model.ClientsOnly"> @L["SupportAdmin.ClientsOnlyHelp"]</label>
+    <label class="check"><input type="checkbox" name="AutoReply" value="true" checked="@Model.AutoReply"> @L["SupportAdmin.AutoReplyHelp"]</label>
+    <label class="check"><input type="checkbox" name="RequestFeedback" value="true" checked="@Model.RequestFeedback"> @L["SupportAdmin.RequestFeedbackHelp"]</label>
+
+    <fieldset class="bo-fieldset">
+        <legend>@L["SupportAdmin.Mailbox"]</legend>
+        @if (!Model.CanStoreSecrets)
+        {
+            <p class="alert">@L["SupportAdmin.NoKeys"]</p>
+        }
+        @if (Model.MailError is { Length: > 0 } error)
+        {
+            <p class="alert">@L["SupportAdmin.LastError", error]</p>
+        }
+        <label class="check"><input type="checkbox" name="MailEnabled" value="true" checked="@Model.MailEnabled"> @L["SupportAdmin.MailEnabledHelp"]</label>
+        <div class="bo-field">
+            <label for="ImapHost">@L["SupportAdmin.ImapHost"]</label>
+            <input id="ImapHost" name="ImapHost" value="@Model.ImapHost" autocomplete="off" aria-invalid="@(Model.Invalid("ImapHost") ? "true" : null)">
+        </div>
+        <div class="bo-field">
+            <label for="ImapPort">@L["SupportAdmin.ImapPort"]</label>
+            <input id="ImapPort" name="ImapPort" type="number" value="@Model.ImapPort" inputmode="numeric">
+        </div>
+        <div class="bo-field">
+            <label for="ImapSecurity">@L["SupportAdmin.ImapSecurity"]</label>
+            <select id="ImapSecurity" name="ImapSecurity">
+                @foreach (var s in Enum.GetValues<MailSecurity>())
+                {
+                    <option value="@s" selected="@(s == Model.ImapSecurity)">@L["MailSecurity." + s]</option>
+                }
+            </select>
+        </div>
+        <div class="bo-field">
+            <label for="ImapUser">@L["SupportAdmin.ImapUser"]</label>
+            <input id="ImapUser" name="ImapUser" value="@Model.ImapUser" autocomplete="off">
+        </div>
+        <div class="bo-field">
+            <label for="ImapPassword">@L["Field.Password"]</label>
+            <input id="ImapPassword" name="ImapPassword" type="password" autocomplete="new-password" aria-describedby="clave-ayuda" aria-invalid="@(Model.Invalid("ImapPassword") ? "true" : null)">
+            <p class="bo-help" id="clave-ayuda">@(Model.HasPassword ? L["SupportAdmin.PasswordKept"] : L["SupportAdmin.PasswordNone"])</p>
+        </div>
+        <div><button type="submit" class="secondary" asp-page-handler="Test" asp-route-id="@RouteData.Values["id"]">@L["SupportAdmin.Test"]</button></div>
+    </fieldset>
+    <div><button type="submit">@L["SupportAdmin.Save"]</button></div>
+</form>

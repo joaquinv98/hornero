@@ -1,0 +1,5 @@
+Tu dominio {{ domain }} vence el {{ expires_on }}
+<p>Hola, {{ account_name }}:</p>
+{% if invoice_id %}<p>La renovación de <strong>{{ domain }}</strong> está facturada y todavía no se pagó. Si no se paga antes del {{ expires_on }}, el dominio vence.</p>{% else %}<p>Tu dominio <strong>{{ domain }}</strong> vence el {{ expires_on }} y no se va a renovar solo.</p>{% endif %}
+<p>Renovarlo cuesta {{ amount }}.{% if portal_url %} Podés hacerlo desde <a href="{{ portal_url }}">tu cuenta</a>.{% endif %}</p>
+<p>Si no querés renovarlo, no hace falta que hagas nada.</p>

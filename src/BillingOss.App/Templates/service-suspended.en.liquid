@@ -1,0 +1,5 @@
+Your service {{ service }} has been suspended
+<p>Hi {{ account_name }},</p>
+{% if unpaid %}<p>Your service <strong>{{ service }}</strong> has been suspended due to non-payment.</p>
+<p>It will be reactivated automatically once the outstanding invoices are paid.{% if portal_url %} You can pay them from <a href="{{ portal_url }}">your account</a>.{% endif %}</p>{% else %}<p>Your service <strong>{{ service }}</strong> has been suspended.</p>
+<p>If you have any questions, please contact us.</p>{% endif %}

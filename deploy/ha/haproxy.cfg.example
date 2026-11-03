@@ -1,0 +1,60 @@
+# HAProxy de billing-oss (docs/despliegue/ha-vms.md): entrada HTTP a los nodos de aplicación y, opcional, un
+# endpoint único hacia la primaria de PostgreSQL. Va en cada nodo de entrada (en la HA compacta, los tres nodos),
+# con la IP virtual de keepalived delante. Si ya hay un proxy, alcanza con copiar el backend billing_web a ese proxy.
+
+global
+    log /dev/log local0
+    maxconn 4000
+    stats socket /run/haproxy/admin.sock mode 660 level admin
+    ssl-default-bind-options ssl-min-ver TLSv1.2
+
+defaults
+    log global
+    mode http
+    option httplog
+    timeout connect 5s
+    # Por encima del Command Timeout de la aplicación (90 s): un COMMIT que espera a la réplica sincrónica dura hasta
+    # eso, y la respuesta (503 reintentable) tiene que llegarle al cliente en vez de un corte del proxy.
+    timeout client 100s
+    timeout server 100s
+    # Solo reintenta en otro nodo si la conexión no se pudo abrir: el pedido no llegó, así que un POST no se repite.
+    retries 2
+    option redispatch
+    retry-on conn-failure
+
+frontend billing
+    bind :80
+    # CAMBIAR: certificado público con su clave, en un solo archivo PEM.
+    bind :443 ssl crt /etc/haproxy/billing.pem
+    http-request redirect scheme https unless { ssl_fc }
+    # La IP real del cliente para las listas de IP de las API keys, y el esquema original.
+    option forwardfor
+    http-request set-header X-Forwarded-Proto https
+    default_backend billing_web
+
+backend billing_web
+    balance roundrobin
+    # Listo: el nodo tiene base y no se está apagando. Sin afinidad: la aplicación no guarda estado.
+    option httpchk GET /health/ready
+    http-check expect status 200
+    default-server inter 2s fall 3 rise 2
+    # CAMBIAR: los nodos de aplicación, en el puerto que publica el rol web (BILLING_HTTP).
+    server billnode01 192.0.2.11:8080 check
+    server billnode02 192.0.2.12:8080 check
+    server billnode03 192.0.2.13:8080 check
+
+# Opcional: endpoint único de escritura en el puerto 5000, para herramientas que no aceptan varios hosts.
+# La aplicación no lo necesita: usa la cadena con los tres hosts. Pregunta a Patroni quién es la primaria y
+# corta las sesiones del nodo que deja de serlo.
+listen postgres_primaria
+    bind :5000
+    mode tcp
+    option tcplog
+    timeout client 30m
+    timeout server 30m
+    option httpchk GET /primary
+    http-check expect status 200
+    default-server inter 3s fall 3 rise 2 on-marked-down shutdown-sessions check-ssl ca-file /etc/billing-ha/tls/ca.crt verify required port 8008
+    server billnode01 192.0.2.11:5432 check
+    server billnode02 192.0.2.12:5432 check
+    server billnode03 192.0.2.13:5432 check

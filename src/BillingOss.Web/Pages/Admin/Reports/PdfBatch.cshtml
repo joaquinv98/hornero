@@ -1,0 +1,41 @@
+@page "/admin/reportes/pdf-facturas"
+@model BillingOss.Web.Pages.Admin.Reports.PdfBatchModel
+@using BillingOss.Web.Pages.Admin.Reports
+@{
+    ViewData["Title"] = L["Reports.InvoicePdfs"];
+}
+<p class="crumbs"><a href="/admin/reportes">@L["Reports.Back"]</a></p>
+<h1>@L["Reports.InvoicePdfs"]</h1>
+<p class="muted lead">@L["Reports.InvoicePdfsHelp"]</p>
+<form method="get" class="period" hx-get="/admin/reportes/pdf-facturas" hx-target="#report" hx-select="#report" hx-swap="outerHTML" hx-push-url="true">
+    <div class="field">
+        <label for="mes">@L["Reports.Month"]</label>
+        <input id="mes" name="mes" type="month" value="@(Model.InvalidMonth ? Model.Mes : Model.MonthText)" placeholder="2026-10" pattern="[0-9]{4}-[0-9]{2}" required>
+    </div>
+    <button type="submit">@L["Reports.Show"]</button>
+</form>
+<div id="report" aria-live="polite">
+    @if (Model.InvalidMonth)
+    {
+        <p class="alert" role="alert">@L["Reports.InvalidMonth"]</p>
+    }
+    else if (Model.Result is { } report)
+    {
+        @foreach (var note in report.Notes)
+        {
+            <p class="warn" role="status">@L["ReportNote." + note.Key, [.. note.Args]]</p>
+        }
+
+        @if (Model.WithPdf > 0)
+        {
+            <p class="downloads">
+                <a class="button" href="/admin/reportes/pdf-facturas?handler=zip&amp;mes=@Model.MonthText" download>@L["Reports.InvoicePdfsZip", Model.WithPdf]</a>
+            </p>
+        }
+
+        @foreach (var table in report.Tables)
+        {
+            <partial name="_ReportTable" model="new ReportTableView(table, null)" />
+        }
+    }
+</div>

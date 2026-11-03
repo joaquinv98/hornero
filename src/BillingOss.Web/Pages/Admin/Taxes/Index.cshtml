@@ -1,0 +1,98 @@
+@page "/admin/impuestos"
+@model TaxesIndexModel
+@using BillingOss.Domain.Accounts
+@using BillingOss.Domain.Billing
+@{
+    ViewData["Title"] = L["Taxes.Title"];
+}
+<h1>@L["Taxes.Title"]</h1>
+<partial name="_Nav" model="@("/admin/impuestos")" />
+@if (Model.Done is "preset")
+{
+    <p class="notice" role="status">@L["Taxes.PresetDone"]</p>
+}
+@if (!Model.HasRules)
+{
+    <div class="warn" role="status">
+        <p class="strong">@L["Taxes.NoRulesTitle"]</p>
+        <p>@L["Taxes.NoRulesHelp"] <a href="/admin/impuestos/empezar">@L["Taxes.Start"]</a></p>
+    </div>
+}
+
+<section aria-labelledby="today">
+    <h2 id="today">@L["Taxes.Today"]</h2>
+    <p class="muted">@L["Taxes.TodayHelp"]</p>
+    <div class="table">
+        <table>
+            <thead><tr><th scope="col">@L["Taxes.SampleClient"]</th><th scope="col">@L["Taxes.Class"]</th><th scope="col" class="num">@L["Taxes.Net"]</th><th scope="col">@L["Taxes.TaxesColumn"]</th><th scope="col" class="num">@L["Invoices.Total"]</th><th scope="col">@L["Taxes.Why"]</th></tr></thead>
+            <tbody>
+                @foreach (var s in Model.Samples)
+                {
+                    <partial name="_SimulationRow" model='(L["Taxes.Sample." + s.Key].Value, s)' />
+                }
+            </tbody>
+        </table>
+    </div>
+</section>
+
+<section aria-labelledby="simulator">
+    <h2 id="simulator">@L["Taxes.Simulator"]</h2>
+    <p class="muted">@L["Taxes.SimulatorHelp"]</p>
+    <form method="get" action="/admin/impuestos" class="stack">
+        <div class="field-row">
+            <div class="field"><label for="country">@L["Taxes.Country"]</label><input id="country" name="pais" value="@Model.SimCountry" maxlength="2" required><span class="help">@L["Taxes.CountryHelp"]</span></div>
+            <div class="field"><label for="province">@L["Taxes.Province"]</label><input id="province" name="provincia" value="@Model.SimProvince" maxlength="6"><span class="help">@L["Taxes.ProvinceHelp"]</span></div>
+            <div class="field"><label for="condition">@L["Taxes.Condition"]</label>
+                <select id="condition" name="condicion">
+                    @foreach (var c in VatConditions.Table)
+                    {
+                        <option value="@c.Code" selected="@(c.Code == Model.SimVatCondition)">@c.Code. @c.Description</option>
+                    }
+                </select></div>
+            <div class="field"><label for="category">@L["Taxes.Category"]</label>
+                <select id="category" name="categoria">
+                    @foreach (var c in Model.Categories)
+                    {
+                        <option value="@c.Code" selected="@(c.Code == Model.SimCategory)">@c.Name</option>
+                    }
+                </select></div>
+            <div class="field"><label for="price">@L["Taxes.Price"]</label><input id="price" name="precio" value="@Model.SimPrice" inputmode="decimal" required></div>
+            <div class="field"><label for="currency">@L["Admin.Currency"]</label><input id="currency" name="moneda" value="@Model.SimCurrency" maxlength="3" required></div>
+            <div class="field"><label for="mode">@L["Taxes.Mode"]</label>
+                <select id="mode" name="modo">
+                    <option value="TaxIncluded" selected="@(Model.SimMode == PriceMode.TaxIncluded)">@L["PriceMode.TaxIncluded"]</option>
+                    <option value="TaxExcluded" selected="@(Model.SimMode == PriceMode.TaxExcluded)">@L["PriceMode.TaxExcluded"]</option>
+                </select></div>
+        </div>
+        <div><button type="submit">@L["Taxes.Simulate"]</button></div>
+    </form>
+    @if (Model.Custom is { } custom)
+    {
+        <div class="table" id="custom" aria-live="polite">
+            <table>
+                <thead><tr><th scope="col">@L["Taxes.SampleClient"]</th><th scope="col">@L["Taxes.Class"]</th><th scope="col" class="num">@L["Taxes.Net"]</th><th scope="col">@L["Taxes.TaxesColumn"]</th><th scope="col" class="num">@L["Invoices.Total"]</th><th scope="col">@L["Taxes.Why"]</th></tr></thead>
+                <tbody>
+                    <partial name="_SimulationRow" model='(L["Taxes.Sample.custom"].Value, custom)' />
+                </tbody>
+            </table>
+        </div>
+    }
+</section>
+
+<section aria-labelledby="warnings">
+    <h2 id="warnings">@L["Taxes.Warnings"]</h2>
+    @if (Model.Warnings.Count == 0)
+    {
+        <p class="notice" role="status">@L["Taxes.NoWarnings"]</p>
+    }
+    else
+    {
+        <ul class="checks">
+            @foreach (var w in Model.Warnings)
+            {
+                <li><span class="status" data-tone="warn" data-shape="ring">@L["Taxes.Warning." + w.Code, w.Detail]</span> <a href="@(w.Code.StartsWith("certificado", StringComparison.Ordinal) ? "/admin/fiscal" : "/admin/impuestos/reglas")">@L["Taxes.Fix"]</a></li>
+            }
+        </ul>
+    }
+    <p class="muted">@L["Taxes.Rounding"]</p>
+</section>

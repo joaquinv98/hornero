@@ -1,0 +1,38 @@
+@page "/presupuestos"
+@model QuotesModel
+@{
+    ViewData["Title"] = L["Billing.Quotes"];
+}
+<h1>@L["Billing.Quotes"]</h1>
+@if (Model.Quotes.Count == 0)
+{
+    <p>@L["Quotes.None"]</p>
+}
+else
+{
+    <div class="table">
+        <table>
+            <thead>
+                <tr>
+                    <th scope="col">@L["Billing.Number"]</th>
+                    <th scope="col">@L["Billing.Subject"]</th>
+                    <th scope="col">@L["Billing.ValidUntil"]</th>
+                    <th scope="col" class="num">@L["Invoices.Total"]</th>
+                    <th scope="col">@L["Field.Status"]</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var q in Model.Quotes)
+                {
+                    <tr>
+                        <td><a href="/presupuestos/@q.Id">@q.Id</a></td>
+                        <td>@q.Subject</td>
+                        <td>@Ui.Date(q.ValidUntil)</td>
+                        <td class="num bo-money">@Ui.Money(q.Total, q.Currency)</td>
+                        <td>@L["QuoteStatus." + q.Status]</td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+}

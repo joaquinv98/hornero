@@ -1,0 +1,5 @@
+La {% if debit_note %}nota de débito{% else %}factura{% endif %} N.º {{ number }} está vencida
+<p>Hola, {{ account_name }}:</p>
+<p>La {% if debit_note %}nota de débito{% else %}factura{% endif %} N.º {{ number }} venció el {{ due_date }} y todavía tiene un saldo de <strong>{{ pending }}</strong>.</p>
+<p>{% if debit_note %}Pagala{% else %}Para que tus servicios sigan activos, pagala{% endif %} lo antes posible.{% if portal_url %} Podés hacerlo desde <a href="{{ portal_url }}">tu cuenta</a>.{% endif %}</p>
+<p>Si ya la pagaste, ignorá este aviso.</p>

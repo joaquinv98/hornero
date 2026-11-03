@@ -1,0 +1,11 @@
+{% if debit_note %}Nota de débito{% else %}Factura{% endif %} N.º {{ number }} de {{ company }}
+<p>Hola, {{ account_name }}:</p>
+<p>Emitimos la {% if debit_note %}nota de débito{% else %}factura{% endif %} N.º {{ number }} del {{ issue_date }} por <strong>{{ total }}</strong>.</p>
+<table role="presentation" width="100%" cellpadding="6" cellspacing="0" style="border-collapse:collapse;font-size:14px;">
+{% for line in lines %}<tr><td style="border-bottom:1px solid #e4e7eb;">{{ line.description }}</td><td align="right" style="border-bottom:1px solid #e4e7eb;white-space:nowrap;">{{ line.amount }}</td></tr>
+{% endfor %}<tr><td><strong>Total</strong></td><td align="right" style="white-space:nowrap;"><strong>{{ total }}</strong></td></tr>
+</table>
+{% if paid %}<p>Ya está paga. ¡Gracias!</p>{% else %}<p>Vence el {{ due_date }}. Saldo a pagar: <strong>{{ pending }}</strong>.</p>{% endif %}
+{% if autocharge_date %}<p>Vamos a debitar el saldo el {{ autocharge_date }} de {{ autocharge_method }}, por el débito automático que activaste. Si preferís otro medio, pagala antes desde tu cuenta.</p>{% endif %}
+{% if fiscal %}<p>Comprobante fiscal {{ fiscal_number }}, CAE {{ cae }}.</p>{% endif %}
+{% if portal_url %}<p>Podés verla y pagarla desde <a href="{{ portal_url }}">tu cuenta</a>.</p>{% endif %}

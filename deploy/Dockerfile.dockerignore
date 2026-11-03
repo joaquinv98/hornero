@@ -1,0 +1,9 @@
+# Lo que no entra al contexto de la imagen: compilados locales, secretos de las recetas y el historial.
+**/bin/
+**/obj/
+**/TestResults/
+**/data/
+.git/
+.vs/
+deploy/compose/secrets/
+deploy/compose/.env

@@ -1,0 +1,137 @@
+@page "/pagar"
+@model PayModel
+@{
+    ViewData["Title"] = L["Pay.Title"];
+    var savers = Model.Choices.Where(c => c.CanSave).Select(c => c.Name).ToList();
+}
+<div class="bo-stack bo-wrap--narrow">
+    <div class="bo-head">
+        @if (Model.Documents.Count == 1)
+        {
+            <a class="bo-small" href="/facturas/@Model.Documents[0].Id">@L["Pay.BackToInvoice"]</a>
+        }
+        else
+        {
+            <a class="bo-small" href="/facturas">@L["Pay.BackToInvoices"]</a>
+        }
+        <h1>@L["Pay.Title"]</h1>
+        <ol class="bo-steps" aria-label="@L["Pay.Steps"]">
+            <li data-done>@L["Pay.StepReview"]</li>
+            <li aria-current="step">@L["Pay.StepMethod"]</li>
+            <li>@L["Pay.StepDone"]</li>
+        </ol>
+    </div>
+
+    @if (Model.Error is not null)
+    {
+        <div class="bo-error-summary" role="alert">
+            <h2>@L["Pay.ErrorTitle"]</h2>
+            <p>@L[Model.Error]</p>
+        </div>
+    }
+
+    @if (Model.Ready)
+    {
+        <section class="bo-card" aria-labelledby="revisar">
+            <h2 id="revisar" class="bo-sr">@L["Pay.WhatYouPay"]</h2>
+            <ul class="bo-list">
+                @foreach (var d in Model.Documents)
+                {
+                    <li>
+                        <div class="bo-list__main">
+                            <a href="/facturas/@d.Id">@L["DocumentKind." + d.Kind] @(d.Number ?? d.Id)</a>
+                            <span class="bo-small bo-muted">@L["Invoice.DueOn", Ui.Date(d.DueDate)]</span>
+                        </div>
+                        <data class="bo-money" value="@d.Pending.ToString("0.00", CultureInfo.InvariantCulture)">@Ui.Money(d.Pending, d.Currency)</data>
+                    </li>
+                }
+                @if (Model.Documents.Count > 1)
+                {
+                    <li>
+                        <span class="bo-strong">@L["Invoices.Total"]</span>
+                        <data class="bo-money bo-strong" value="@Model.Total.ToString("0.00", CultureInfo.InvariantCulture)">@Ui.Money(Model.Total, Model.Currency)</data>
+                    </li>
+                }
+            </ul>
+        </section>
+
+        @if (Model.InFlight)
+        {
+            <div class="bo-alert" data-tone="info" role="status">
+                <p class="bo-alert__title">@L["Pay.InFlightTitle"]</p>
+                <p>@L["Pay.InFlight"]</p>
+            </div>
+        }
+        else
+        {
+            @if (Model.Credit > 0m)
+            {
+                <form method="post" asp-page-handler="Credit" class="bo-hero">
+                    @foreach (var d in Model.Documents)
+                    {
+                        <input type="hidden" name="factura" value="@d.Id">
+                    }
+                    <p>@L["Pay.Credit", Ui.Money(Model.Credit, Model.Currency)]</p>
+                    <button type="submit" class="bo-btn bo-btn--secondary">@L["Pay.UseCredit"]</button>
+                </form>
+            }
+            @foreach (var name in Model.WithoutRate)
+            {
+                <p class="notice">@L["Pay.NoRate", name]</p>
+            }
+            @if (Model.Choices.Count == 0)
+            {
+                <div class="bo-alert" data-tone="warn">
+                    <p class="bo-alert__title">@L["Pay.NoMethodsTitle"]</p>
+                    <p>@L["Pay.NoMethods"]</p>
+                </div>
+            }
+            else
+            {
+                <form method="post" class="bo-stack">
+                    @foreach (var d in Model.Documents)
+                    {
+                        <input type="hidden" name="factura" value="@d.Id">
+                    }
+                    <fieldset class="bo-stack bo-stack--sm">
+                        <legend><h2>@L["Pay.Choose"]</h2></legend>
+                        <div class="bo-choices">
+                            @for (var i = 0; i < Model.Choices.Count; i++)
+                            {
+                                var c = Model.Choices[i];
+                                <label class="bo-choice">
+                                    <input type="radio" name="method" value="@c.Value" checked="@(i == 0)" required>
+                                    <span class="bo-choice__text">
+                                        <span class="bo-choice__title">@c.Name</span>
+                                        <span class="bo-choice__desc">@(c.Value == PayModel.Transfer ? L["Pay.TransferHelp"] : L["Pay.GatewayHelp", c.Name])</span>
+                                        @if (c.Conversion is { } rate)
+                                        {
+                                            <span class="bo-choice__desc">@L["Pay.Rate", L["RateSource." + (rate.Rate.Source == "bna" ? "Bna" : "Manual")], Ui.Date(rate.Rate.Date), Ui.Money(rate.Rate.Rate, rate.Rate.Quote), rate.Rate.Currency.Code]</span>
+                                        }
+                                        @if (c.CanSave)
+                                        {
+                                            <span class="bo-choice__desc">@L["Pay.CanSave"]</span>
+                                        }
+                                    </span>
+                                    <span class="bo-choice__aside bo-money">@Ui.Money(c.Amount, c.Currency)</span>
+                                </label>
+                            }
+                        </div>
+                    </fieldset>
+                    @if (savers.Count > 0)
+                    {
+                        <div class="bo-field">
+                            <label class="bo-check">
+                                <input type="checkbox" name="save" value="true" aria-describedby="guardar-ayuda">
+                                <span>@Model.ConsentText</span>
+                            </label>
+                            <p id="guardar-ayuda" class="bo-help">@L["Pay.SaveHelp", string.Join(", ", savers)] <a href="/debito-automatico">@L["Pay.Conditions"]</a></p>
+                        </div>
+                    }
+                    <button type="submit" class="bo-btn bo-btn--lg bo-btn--block">@L["Pay.Submit", Ui.Money(Model.Total, Model.Currency)]</button>
+                    <p class="bo-small bo-muted">@L["Pay.NoCardData"]</p>
+                </form>
+            }
+        }
+    }
+</div>

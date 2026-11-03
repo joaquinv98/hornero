@@ -1,0 +1,24 @@
+@page "/recuperar"
+@model ForgotModel
+@{
+    ViewData["Title"] = L["Forgot.Title"];
+}
+<h1>@L["Forgot.Title"]</h1>
+@if (Model.Sent)
+{
+    <p class="notice" role="status">@L["Forgot.Sent"]</p>
+}
+else
+{
+    @if (Model.Error is not null)
+    {
+        <p class="alert" role="alert">@S[Model.Error]</p>
+    }
+    <p>@L["Forgot.Help"]</p>
+    <form method="post" class="stack narrow">
+        <label for="email">@L["Field.Email"]</label>
+        <input id="email" name="Email" type="email" autocomplete="username" required value="@Model.Email">
+        <partial name="_Challenge" model="Model.AntiBot" />
+        <button type="submit">@L["Forgot.Submit"]</button>
+    </form>
+}

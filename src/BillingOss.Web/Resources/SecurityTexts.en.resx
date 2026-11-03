@@ -1,0 +1,984 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="Access.IpBlocked" xml:space="preserve">
+    <value>Signing in from your network is not possible right now. If you think this is a mistake, contact us through the support channel.</value>
+  </data>
+  <data name="Access.LockedOut" xml:space="preserve">
+    <value>Access is blocked because of failed attempts. Try again in {0} minutes.</value>
+  </data>
+  <data name="Admin.SecurityNav" xml:space="preserve">
+    <value>System security</value>
+  </data>
+  <data name="Admin.SecurityTitle" xml:space="preserve">
+    <value>Security</value>
+  </data>
+  <data name="Block.Add" xml:space="preserve">
+    <value>Add to the list</value>
+  </data>
+  <data name="Block.BadHours" xml:space="preserve">
+    <value>The expiry goes from 1 to 8760 hours, or empty to make it permanent.</value>
+  </data>
+  <data name="Block.Empty" xml:space="preserve">
+    <value>There are no entries in the lists.</value>
+  </data>
+  <data name="Block.Entries" xml:space="preserve">
+    <value>Entries</value>
+  </data>
+  <data name="Block.Expired" xml:space="preserve">
+    <value>Expired</value>
+  </data>
+  <data name="Block.Expires" xml:space="preserve">
+    <value>Expires</value>
+  </data>
+  <data name="Block.Help" xml:space="preserve">
+    <value>A blocked IP or network cannot sign in to the portal or the admin, and its orders go to review. A blocked email or domain does not get the password reset link, and its orders go to review. The cancellation and withdrawal buttons are never blocked.</value>
+  </data>
+  <data name="Block.Hours" xml:space="preserve">
+    <value>Expires in (hours)</value>
+  </data>
+  <data name="Block.HoursHelp" xml:space="preserve">
+    <value>Empty means permanent.</value>
+  </data>
+  <data name="Block.InvalidDomain" xml:space="preserve">
+    <value>Type a domain, for example example.com.</value>
+  </data>
+  <data name="Block.InvalidEmail" xml:space="preserve">
+    <value>Type a full email address, for example someone@example.com.</value>
+  </data>
+  <data name="Block.InvalidIp" xml:space="preserve">
+    <value>Type an IP address or a network, for example 203.0.113.7 or 203.0.113.0/24.</value>
+  </data>
+  <data name="Block.Kind" xml:space="preserve">
+    <value>Type</value>
+  </data>
+  <data name="Block.NeedsReason" xml:space="preserve">
+    <value>Type the reason, up to 300 characters.</value>
+  </data>
+  <data name="Block.OwnIp" xml:space="preserve">
+    <value>You cannot block a network that includes your own IP: you would lose access to the panel.</value>
+  </data>
+  <data name="Block.Permanent" xml:space="preserve">
+    <value>Permanent</value>
+  </data>
+  <data name="Block.Reason" xml:space="preserve">
+    <value>Reason</value>
+  </data>
+  <data name="Block.Remove" xml:space="preserve">
+    <value>Remove</value>
+  </data>
+  <data name="Block.Source" xml:space="preserve">
+    <value>Source</value>
+  </data>
+  <data name="Block.Submit" xml:space="preserve">
+    <value>Block</value>
+  </data>
+  <data name="Block.Title" xml:space="preserve">
+    <value>Blocklists</value>
+  </data>
+  <data name="Block.Value" xml:space="preserve">
+    <value>Value</value>
+  </data>
+  <data name="Block.ValueHelp" xml:space="preserve">
+    <value>An IP address (203.0.113.7), a network (203.0.113.0/24), an email address or a domain.</value>
+  </data>
+  <data name="BlockKind.Domain" xml:space="preserve">
+    <value>Domain</value>
+  </data>
+  <data name="BlockKind.Email" xml:space="preserve">
+    <value>Email</value>
+  </data>
+  <data name="BlockKind.Ip" xml:space="preserve">
+    <value>IP or network</value>
+  </data>
+  <data name="BlockSource.Api" xml:space="preserve">
+    <value>API</value>
+  </data>
+  <data name="BlockSource.Automatic" xml:space="preserve">
+    <value>Automatic by attempts</value>
+  </data>
+  <data name="BlockSource.Staff" xml:space="preserve">
+    <value>Staff</value>
+  </data>
+  <data name="Challenge.Failed" xml:space="preserve">
+    <value>We could not check that you are not a robot. Try again.</value>
+  </data>
+  <data name="Challenge.Form.contact" xml:space="preserve">
+    <value>Contact</value>
+  </data>
+  <data name="Challenge.Form.forgot" xml:space="preserve">
+    <value>Password recovery</value>
+  </data>
+  <data name="Challenge.Form.login" xml:space="preserve">
+    <value>Sign in</value>
+  </data>
+  <data name="Challenge.Form.register" xml:space="preserve">
+    <value>Sign up</value>
+  </data>
+  <data name="Challenge.Form.ticket" xml:space="preserve">
+    <value>Ticket without an account</value>
+  </data>
+  <data name="Challenge.Provider.none" xml:space="preserve">
+    <value>None</value>
+  </data>
+  <data name="Challenge.Provider.pow" xml:space="preserve">
+    <value>Own proof of work, invisible</value>
+  </data>
+  <data name="Challenge.Provider.turnstile" xml:space="preserve">
+    <value>Cloudflare Turnstile, invisible or one click</value>
+  </data>
+  <data name="Customer.FraudChecks" xml:space="preserve">
+    <value>Fraud checks of its orders</value>
+  </data>
+  <data name="Customer.LastLogin" xml:space="preserve">
+    <value>Last sign-in</value>
+  </data>
+  <data name="Customer.NoChecks" xml:space="preserve">
+    <value>No order of this account went through the fraud check.</value>
+  </data>
+  <data name="Customer.Require" xml:space="preserve">
+    <value>Require two-factor</value>
+  </data>
+  <data name="Customer.Required" xml:space="preserve">
+    <value>Required</value>
+  </data>
+  <data name="Customer.RequiredOff" xml:space="preserve">
+    <value>Two-factor is no longer required for this user. If their role asks for it, it is still mandatory.</value>
+  </data>
+  <data name="Customer.RequiredOn" xml:space="preserve">
+    <value>Two-factor is now required: until it is turned on, the user only sees the portal security page.</value>
+  </data>
+  <data name="Customer.ResetHelp" xml:space="preserve">
+    <value>Removing two-factor authentication helps someone who lost their phone and recovery codes. It ends their sessions and is audited. If it is mandatory for them, they set it up again when signing in.</value>
+  </data>
+  <data name="Customer.ResetTwoFactor" xml:space="preserve">
+    <value>Remove two-factor</value>
+  </data>
+  <data name="Customer.Role" xml:space="preserve">
+    <value>Role</value>
+  </data>
+  <data name="Customer.SecurityLink" xml:space="preserve">
+    <value>User security and fraud checks</value>
+  </data>
+  <data name="Customer.SecurityTitle" xml:space="preserve">
+    <value>Security of {0}</value>
+  </data>
+  <data name="Customer.StopRequiring" xml:space="preserve">
+    <value>Stop requiring it</value>
+  </data>
+  <data name="Customer.TwoFactorReset" xml:space="preserve">
+    <value>Done: two-factor authentication was removed and their sessions ended.</value>
+  </data>
+  <data name="External.AlreadyLinked" xml:space="preserve">
+    <value>That {0} account was already linked to your user.</value>
+  </data>
+  <data name="External.BadAuthority" xml:space="preserve">
+    <value>The provider address must use HTTPS and have no parameters, for example https://login.example.com/application/o/billing.</value>
+  </data>
+  <data name="External.BadKey" xml:space="preserve">
+    <value>The key uses lowercase letters, digits and hyphens, from 2 to 32 characters. Google uses google.</value>
+  </data>
+  <data name="External.BadName" xml:space="preserve">
+    <value>The name is missing. It can have up to 100 characters.</value>
+  </data>
+  <data name="External.Cancel" xml:space="preserve">
+    <value>Cancel</value>
+  </data>
+  <data name="External.Cancelled" xml:space="preserve">
+    <value>You cancelled signing in with the provider.</value>
+  </data>
+  <data name="External.ConfirmExisting" xml:space="preserve">
+    <value>You already have a user with the email {1}. To sign in with {0} from now on, confirm it is yours with your password or with a link sent to that email. You only do this once.</value>
+  </data>
+  <data name="External.ConfirmHelp" xml:space="preserve">
+    <value>Confirm that you want to sign in to your user with {0}.</value>
+  </data>
+  <data name="External.ConfirmLink" xml:space="preserve">
+    <value>To link your {0} account to your user, confirm it is you.</value>
+  </data>
+  <data name="External.ConfirmSubmit" xml:space="preserve">
+    <value>Confirm the link</value>
+  </data>
+  <data name="External.ConfirmTitle" xml:space="preserve">
+    <value>Confirm the link</value>
+  </data>
+  <data name="External.ConfirmWithPassword" xml:space="preserve">
+    <value>Confirm with my password</value>
+  </data>
+  <data name="External.Conflict" xml:space="preserve">
+    <value>Someone else changed this provider while you were editing it. Open it again.</value>
+  </data>
+  <data name="External.ContinueWith" xml:space="preserve">
+    <value>Continue with {0}</value>
+  </data>
+  <data name="External.Disabled" xml:space="preserve">
+    <value>That user is disabled. Contact us through the support channel.</value>
+  </data>
+  <data name="External.EmailNotVerified" xml:space="preserve">
+    <value>The provider did not confirm that the email is yours, so it cannot be used to link it or to create an account. Sign in or sign up with your email and a password.</value>
+  </data>
+  <data name="External.Expired" xml:space="preserve">
+    <value>Signing in with the provider expired or started in another browser. Start again.</value>
+  </data>
+  <data name="External.Failed" xml:space="preserve">
+    <value>Signing in with the provider could not be completed. Try again in a while.</value>
+  </data>
+  <data name="External.Incomplete" xml:space="preserve">
+    <value>It needs the client ID and the secret to be turned on.</value>
+  </data>
+  <data name="External.LastMethod" xml:space="preserve">
+    <value>You cannot remove the only linked provider without a password. Choose one with the password recovery link and then remove it.</value>
+  </data>
+  <data name="External.LinkDone" xml:space="preserve">
+    <value>Done. The provider is now linked to your user.</value>
+  </data>
+  <data name="External.LinkWith" xml:space="preserve">
+    <value>Link {0}</value>
+  </data>
+  <data name="External.Linked" xml:space="preserve">
+    <value>Done. You can now sign in with {0}.</value>
+  </data>
+  <data name="External.LinkedAt" xml:space="preserve">
+    <value>Linked</value>
+  </data>
+  <data name="External.LinkedElsewhere" xml:space="preserve">
+    <value>That provider account is already linked to another user.</value>
+  </data>
+  <data name="External.MailLinkInvalid" xml:space="preserve">
+    <value>The link is not valid or it expired. Sign in with the provider again to request another one.</value>
+  </data>
+  <data name="External.MailSent" xml:space="preserve">
+    <value>We sent a link to your email. Open it within the next hour to confirm the link and then sign in with {0}.</value>
+  </data>
+  <data name="External.NoLinks" xml:space="preserve">
+    <value>You have no linked accounts from other providers.</value>
+  </data>
+  <data name="External.NoPassword" xml:space="preserve">
+    <value>You sign in with an external provider and have no password. If you want one, request the link to choose it.</value>
+  </data>
+  <data name="External.NoUser" xml:space="preserve">
+    <value>There is no user with that email and new sign ups are closed. Contact us through the support channel.</value>
+  </data>
+  <data name="External.OrMail" xml:space="preserve">
+    <value>If you do not remember your password, we can send a link to that email.</value>
+  </data>
+  <data name="External.OrPassword" xml:space="preserve">
+    <value>Or sign in with your email and password.</value>
+  </data>
+  <data name="External.Provider" xml:space="preserve">
+    <value>Provider</value>
+  </data>
+  <data name="External.RegisterHelp" xml:space="preserve">
+    <value>There is no account with the email {1}. Fill in these details to create it and sign in with {0}.</value>
+  </data>
+  <data name="External.RegisterWith" xml:space="preserve">
+    <value>Sign up with {0}</value>
+  </data>
+  <data name="External.SecretAgain" xml:space="preserve">
+    <value>You changed the provider address. Enter the secret again, since it is bound to it.</value>
+  </data>
+  <data name="External.Section" xml:space="preserve">
+    <value>Sign in with other accounts</value>
+  </data>
+  <data name="External.SendMail" xml:space="preserve">
+    <value>Send me the link by email</value>
+  </data>
+  <data name="External.TestBadClient" xml:space="preserve">
+    <value>The provider rejected the client ID or the secret.</value>
+  </data>
+  <data name="External.TestIncomplete" xml:space="preserve">
+    <value>The client ID or the secret is missing.</value>
+  </data>
+  <data name="External.TestNoConfig" xml:space="preserve">
+    <value>The provider configuration could not be read. Check the address and the internet access of this node.</value>
+  </data>
+  <data name="External.TestOk" xml:space="preserve">
+    <value>The provider accepted the client ID and the secret.</value>
+  </data>
+  <data name="External.TestUnknown" xml:space="preserve">
+    <value>The provider answered something unexpected. Check the client ID, the secret and the redirect address.</value>
+  </data>
+  <data name="External.Title" xml:space="preserve">
+    <value>Sign in with {0}</value>
+  </data>
+  <data name="External.TooLong" xml:space="preserve">
+    <value>The client ID has up to 200 characters and the secret up to 500.</value>
+  </data>
+  <data name="External.Unavailable" xml:space="preserve">
+    <value>Signing in with that provider is not available right now. Try your email and password.</value>
+  </data>
+  <data name="External.Unlink" xml:space="preserve">
+    <value>Remove</value>
+  </data>
+  <data name="External.Unlinked" xml:space="preserve">
+    <value>The link was removed.</value>
+  </data>
+  <data name="External.WrongPassword" xml:space="preserve">
+    <value>The password is not correct.</value>
+  </data>
+  <data name="History.Device" xml:space="preserve">
+    <value>Browser</value>
+  </data>
+  <data name="History.Empty" xml:space="preserve">
+    <value>There are no sign-ins yet.</value>
+  </data>
+  <data name="History.Ip" xml:space="preserve">
+    <value>IP</value>
+  </data>
+  <data name="History.NewLocation" xml:space="preserve">
+    <value>New place</value>
+  </data>
+  <data name="History.Result" xml:space="preserve">
+    <value>Result</value>
+  </data>
+  <data name="History.Title" xml:space="preserve">
+    <value>Recent sign-ins</value>
+  </data>
+  <data name="History.When" xml:space="preserve">
+    <value>When</value>
+  </data>
+  <data name="LoginMethod.External" xml:space="preserve">
+    <value>External provider</value>
+  </data>
+  <data name="LoginMethod.Password" xml:space="preserve">
+    <value>Password</value>
+  </data>
+  <data name="LoginMethod.RecoveryCode" xml:space="preserve">
+    <value>Recovery code</value>
+  </data>
+  <data name="LoginMethod.Totp" xml:space="preserve">
+    <value>Authenticator app</value>
+  </data>
+  <data name="LoginResult.BadCode" xml:space="preserve">
+    <value>Wrong code</value>
+  </data>
+  <data name="LoginResult.BadPassword" xml:space="preserve">
+    <value>Wrong password</value>
+  </data>
+  <data name="LoginResult.BlockedIp" xml:space="preserve">
+    <value>Blocked IP</value>
+  </data>
+  <data name="LoginResult.Disabled" xml:space="preserve">
+    <value>Disabled user</value>
+  </data>
+  <data name="LoginResult.Locked" xml:space="preserve">
+    <value>Locked by attempts</value>
+  </data>
+  <data name="LoginResult.Success" xml:space="preserve">
+    <value>Signed in</value>
+  </data>
+  <data name="LoginResult.UnknownUser" xml:space="preserve">
+    <value>Email without user</value>
+  </data>
+  <data name="Logins.All" xml:space="preserve">
+    <value>All</value>
+  </data>
+  <data name="Logins.Failed" xml:space="preserve">
+    <value>Failed</value>
+  </data>
+  <data name="Logins.Filter" xml:space="preserve">
+    <value>Filter</value>
+  </data>
+  <data name="Logins.IpHelp" xml:space="preserve">
+    <value>The IP can be a single address or its /24 network. The latest {0} are shown.</value>
+  </data>
+  <data name="Logins.Portal" xml:space="preserve">
+    <value>Portal</value>
+  </data>
+  <data name="Logins.Side" xml:space="preserve">
+    <value>Where</value>
+  </data>
+  <data name="Logins.Staff" xml:space="preserve">
+    <value>Admin</value>
+  </data>
+  <data name="Logins.Success" xml:space="preserve">
+    <value>Successful</value>
+  </data>
+  <data name="Logins.Title" xml:space="preserve">
+    <value>Sign-in history</value>
+  </data>
+  <data name="Mail.IsVerified" xml:space="preserve">
+    <value>Verified</value>
+  </data>
+  <data name="Mail.NoPublicUrl" xml:space="preserve">
+    <value>The public URL of the system is missing: the link cannot be built. Tell your provider.</value>
+  </data>
+  <data name="Mail.NotVerified" xml:space="preserve">
+    <value>Not verified</value>
+  </data>
+  <data name="Mail.Send" xml:space="preserve">
+    <value>Send me the verification link</value>
+  </data>
+  <data name="Mail.Sent" xml:space="preserve">
+    <value>We sent you the link. It expires in 24 hours.</value>
+  </data>
+  <data name="Mail.Title" xml:space="preserve">
+    <value>Email</value>
+  </data>
+  <data name="Mail.Verified" xml:space="preserve">
+    <value>Done, your email is verified.</value>
+  </data>
+  <data name="Mail.VerifyFailed" xml:space="preserve">
+    <value>The link is not valid or has expired. Ask for a new one from the security page of your account.</value>
+  </data>
+  <data name="Mail.VerifyHelp" xml:space="preserve">
+    <value>Confirm that this email address is yours.</value>
+  </data>
+  <data name="Mail.VerifySubmit" xml:space="preserve">
+    <value>Verify my email</value>
+  </data>
+  <data name="Mail.VerifyTitle" xml:space="preserve">
+    <value>Verify your email</value>
+  </data>
+  <data name="Oidc.Configured" xml:space="preserve">
+    <value>Configured</value>
+  </data>
+  <data name="Oidc.Help" xml:space="preserve">
+    <value>It is set up with Staff:Oidc and the user is linked with the staff oidc command. After the provider, the app code is always asked.</value>
+  </data>
+  <data name="Oidc.Linked" xml:space="preserve">
+    <value>Your user is linked</value>
+  </data>
+  <data name="Oidc.NotConfigured" xml:space="preserve">
+    <value>Not configured</value>
+  </data>
+  <data name="Oidc.NotLinked" xml:space="preserve">
+    <value>Your user is not linked</value>
+  </data>
+  <data name="Oidc.Title" xml:space="preserve">
+    <value>Sign in with the identity provider</value>
+  </data>
+  <data name="Providers.Add" xml:space="preserve">
+    <value>Another OpenID Connect provider</value>
+  </data>
+  <data name="Providers.AddHelp" xml:space="preserve">
+    <value>For a provider other than Google: the issuer address, the client ID and the secret. The key goes in the redirect address and cannot be changed later.</value>
+  </data>
+  <data name="Providers.Authority" xml:space="preserve">
+    <value>Provider address (OpenID Connect issuer)</value>
+  </data>
+  <data name="Providers.ClientId" xml:space="preserve">
+    <value>Client ID</value>
+  </data>
+  <data name="Providers.ClientSecret" xml:space="preserve">
+    <value>Client secret</value>
+  </data>
+  <data name="Providers.Enabled" xml:space="preserve">
+    <value>On: shows the button on the sign in and sign up pages</value>
+  </data>
+  <data name="Providers.Help" xml:space="preserve">
+    <value>Customers sign in to the portal with their Google account or another OpenID Connect provider. Enter the client ID and secret given by the provider, and register there the redirect address of each one.</value>
+  </data>
+  <data name="Providers.Key" xml:space="preserve">
+    <value>Key</value>
+  </data>
+  <data name="Providers.KeyHelp" xml:space="preserve">
+    <value>Lowercase letters, digits and hyphens, for example my-provider.</value>
+  </data>
+  <data name="Providers.Links" xml:space="preserve">
+    <value>Linked users</value>
+  </data>
+  <data name="Providers.Name" xml:space="preserve">
+    <value>Name on the button</value>
+  </data>
+  <data name="Providers.NoKeys" xml:space="preserve">
+    <value>This node has no secrets key (Secrets:KeyFile). Without it the secret cannot be saved or read.</value>
+  </data>
+  <data name="Providers.NoPublicUrl" xml:space="preserve">
+    <value>Billing:PublicUrl is missing. Without it the redirect address cannot be built.</value>
+  </data>
+  <data name="Providers.Off" xml:space="preserve">
+    <value>Off</value>
+  </data>
+  <data name="Providers.On" xml:space="preserve">
+    <value>On</value>
+  </data>
+  <data name="Providers.RedirectUri" xml:space="preserve">
+    <value>Redirect address to register at the provider</value>
+  </data>
+  <data name="Providers.Save" xml:space="preserve">
+    <value>Save</value>
+  </data>
+  <data name="Providers.Saved" xml:space="preserve">
+    <value>The provider was saved.</value>
+  </data>
+  <data name="Providers.SecretMissing" xml:space="preserve">
+    <value>No secret has been entered yet.</value>
+  </data>
+  <data name="Providers.SecretStored" xml:space="preserve">
+    <value>A secret is stored encrypted. Leave the field empty to keep it.</value>
+  </data>
+  <data name="Providers.State" xml:space="preserve">
+    <value>Status</value>
+  </data>
+  <data name="Providers.Test" xml:space="preserve">
+    <value>Test the connection</value>
+  </data>
+  <data name="Providers.Title" xml:space="preserve">
+    <value>Sign in with external providers</value>
+  </data>
+  <data name="Pwd.Change" xml:space="preserve">
+    <value>Change the password</value>
+  </data>
+  <data name="Pwd.Changed" xml:space="preserve">
+    <value>Done, you changed your password. Sessions open on other devices were ended.</value>
+  </data>
+  <data name="Pwd.Current" xml:space="preserve">
+    <value>Current password</value>
+  </data>
+  <data name="Pwd.Hint" xml:space="preserve">
+    <value>Use at least {0} characters. A long phrase is safer and easier to remember than a word with symbols.</value>
+  </data>
+  <data name="Pwd.PasswordCommon" xml:space="preserve">
+    <value>It is a very common password or it contains your email or the site name.</value>
+  </data>
+  <data name="Pwd.PasswordRequiresDigit" xml:space="preserve">
+    <value>It must have at least one number.</value>
+  </data>
+  <data name="Pwd.PasswordRequiresLower" xml:space="preserve">
+    <value>It must have at least one lowercase letter.</value>
+  </data>
+  <data name="Pwd.PasswordRequiresNonAlphanumeric" xml:space="preserve">
+    <value>It must have at least one symbol, such as ! or #.</value>
+  </data>
+  <data name="Pwd.PasswordRequiresUniqueChars" xml:space="preserve">
+    <value>It must have more different characters.</value>
+  </data>
+  <data name="Pwd.PasswordRequiresUpper" xml:space="preserve">
+    <value>It must have at least one uppercase letter.</value>
+  </data>
+  <data name="Pwd.PasswordTooLong" xml:space="preserve">
+    <value>It can have up to 128 characters.</value>
+  </data>
+  <data name="Pwd.PasswordTooShort" xml:space="preserve">
+    <value>It is shorter than the minimum.</value>
+  </data>
+  <data name="Pwd.Rejected" xml:space="preserve">
+    <value>The new password cannot be used:</value>
+  </data>
+  <data name="Pwd.Title" xml:space="preserve">
+    <value>Password</value>
+  </data>
+  <data name="Pwd.WrongCurrent" xml:space="preserve">
+    <value>The current password is not correct.</value>
+  </data>
+  <data name="Register.BadCurrency" xml:space="preserve">
+    <value>Choose one of the currencies in the list.</value>
+  </data>
+  <data name="Register.BadEmail" xml:space="preserve">
+    <value>Enter a full email address, for example someone@example.com.</value>
+  </data>
+  <data name="Register.BadName" xml:space="preserve">
+    <value>The name is missing, or some field is too long.</value>
+  </data>
+  <data name="Register.Closed" xml:space="preserve">
+    <value>New sign ups are closed. If you need an account, contact us through the support channel.</value>
+  </data>
+  <data name="Register.Company" xml:space="preserve">
+    <value>Company (optional)</value>
+  </data>
+  <data name="Register.Currency" xml:space="preserve">
+    <value>Account currency</value>
+  </data>
+  <data name="Register.EmailBlocked" xml:space="preserve">
+    <value>An account cannot be created with that email. If you think this is a mistake, contact us through the support channel.</value>
+  </data>
+  <data name="Register.EmailTaken" xml:space="preserve">
+    <value>There is already an account with that email. Sign in or recover your password.</value>
+  </data>
+  <data name="Register.HaveAccount" xml:space="preserve">
+    <value>Already have an account?</value>
+  </data>
+  <data name="Register.IpBlocked" xml:space="preserve">
+    <value>An account cannot be created from your network right now. If you think this is a mistake, contact us through the support channel.</value>
+  </data>
+  <data name="Register.NoAccount" xml:space="preserve">
+    <value>No account yet?</value>
+  </data>
+  <data name="Register.OrEmail" xml:space="preserve">
+    <value>Or with your email and a password.</value>
+  </data>
+  <data name="Register.Phone" xml:space="preserve">
+    <value>Phone (optional)</value>
+  </data>
+  <data name="Register.Skip" xml:space="preserve">
+    <value>Continue</value>
+  </data>
+  <data name="Register.Submit" xml:space="preserve">
+    <value>Create the account</value>
+  </data>
+  <data name="Register.TaxDataStep" xml:space="preserve">
+    <value>Enter your tax details for the invoice, or continue and enter them later. Until then you are invoiced as a final consumer.</value>
+  </data>
+  <data name="Register.Title" xml:space="preserve">
+    <value>Sign up</value>
+  </data>
+  <data name="Register.TooMany" xml:space="preserve">
+    <value>Several accounts were created from your network recently. Try again later or contact us through the support channel.</value>
+  </data>
+  <data name="Register.VerifyHelp" xml:space="preserve">
+    <value>We will send you an email to verify the address.</value>
+  </data>
+  <data name="Register.Welcome" xml:space="preserve">
+    <value>Your account is ready. If you signed up with an email and password, we sent you a link to verify it.</value>
+  </data>
+  <data name="Review.Account" xml:space="preserve">
+    <value>Account</value>
+  </data>
+  <data name="Review.AlreadyDecided" xml:space="preserve">
+    <value>That order already has another decision.</value>
+  </data>
+  <data name="Review.Amount" xml:space="preserve">
+    <value>Amount</value>
+  </data>
+  <data name="Review.Approve" xml:space="preserve">
+    <value>Approve and provision</value>
+  </data>
+  <data name="Review.Decided" xml:space="preserve">
+    <value>Latest decisions</value>
+  </data>
+  <data name="Review.DecidedBy" xml:space="preserve">
+    <value>Who and note</value>
+  </data>
+  <data name="Review.Done.Approved" xml:space="preserve">
+    <value>Order {0} approved: what is already paid is being provisioned.</value>
+  </data>
+  <data name="Review.Done.Passed" xml:space="preserve">
+    <value>Order {0} released.</value>
+  </data>
+  <data name="Review.Done.Pending" xml:space="preserve">
+    <value>Order {0} pending.</value>
+  </data>
+  <data name="Review.Done.Rejected" xml:space="preserve">
+    <value>Order {0} rejected: the order and its services were cancelled.</value>
+  </data>
+  <data name="Review.Done.Review" xml:space="preserve">
+    <value>Order {0} in review.</value>
+  </data>
+  <data name="Review.Empty" xml:space="preserve">
+    <value>There are no orders on hold.</value>
+  </data>
+  <data name="Review.Help" xml:space="preserve">
+    <value>Orders on hold are not provisioned even if paid. Approving provisions what is already paid. Rejecting cancels the order and voids the invoice if it has no payments.</value>
+  </data>
+  <data name="Review.Holding" xml:space="preserve">
+    <value>On hold ({0})</value>
+  </data>
+  <data name="Review.MenuCount" xml:space="preserve">
+    <value>{0} held orders</value>
+  </data>
+  <data name="Review.NoInvoice" xml:space="preserve">
+    <value>No invoice</value>
+  </data>
+  <data name="Review.NoScore" xml:space="preserve">
+    <value>No score</value>
+  </data>
+  <data name="Review.Note" xml:space="preserve">
+    <value>Note for the record</value>
+  </data>
+  <data name="Review.Order" xml:space="preserve">
+    <value>Order {0}</value>
+  </data>
+  <data name="Review.OrderColumn" xml:space="preserve">
+    <value>Order</value>
+  </data>
+  <data name="Review.Paid" xml:space="preserve">
+    <value>Paid: {0}</value>
+  </data>
+  <data name="Review.PaidLeft" xml:space="preserve">
+    <value>The invoice had {0} paid and was left as is: refund it from the payment or leave it as customer credit.</value>
+  </data>
+  <data name="Review.Placed" xml:space="preserve">
+    <value>Date</value>
+  </data>
+  <data name="Review.Reasons" xml:space="preserve">
+    <value>Reasons</value>
+  </data>
+  <data name="Review.Reject" xml:space="preserve">
+    <value>Reject</value>
+  </data>
+  <data name="Review.Score" xml:space="preserve">
+    <value>Score</value>
+  </data>
+  <data name="Review.Title" xml:space="preserve">
+    <value>Order review</value>
+  </data>
+  <data name="Role.Billing" xml:space="preserve">
+    <value>Billing</value>
+  </data>
+  <data name="Role.Owner" xml:space="preserve">
+    <value>Owners</value>
+  </data>
+  <data name="Role.Technical" xml:space="preserve">
+    <value>Technical</value>
+  </data>
+  <data name="Screening.Approved" xml:space="preserve">
+    <value>Approved</value>
+  </data>
+  <data name="Screening.Passed" xml:space="preserve">
+    <value>Passed</value>
+  </data>
+  <data name="Screening.Pending" xml:space="preserve">
+    <value>Checking</value>
+  </data>
+  <data name="Screening.Rejected" xml:space="preserve">
+    <value>Rejected</value>
+  </data>
+  <data name="Screening.Review" xml:space="preserve">
+    <value>In review</value>
+  </data>
+  <data name="SecuritySettings.AccountAttempts" xml:space="preserve">
+    <value>Attempts per account go from 3 to 50.</value>
+  </data>
+  <data name="SecuritySettings.AccountMinutes" xml:space="preserve">
+    <value>Account lockout goes from 1 to 1440 minutes.</value>
+  </data>
+  <data name="SecuritySettings.ChallengeBits" xml:space="preserve">
+    <value>The proof of work threshold goes from 8 to 24 bits.</value>
+  </data>
+  <data name="SecuritySettings.ChallengeForms" xml:space="preserve">
+    <value>Choose forms from the list.</value>
+  </data>
+  <data name="SecuritySettings.ChallengeKeys" xml:space="preserve">
+    <value>Turnstile needs the site key and the secret key.</value>
+  </data>
+  <data name="SecuritySettings.ChallengeProvider" xml:space="preserve">
+    <value>Choose one of the challenges in the list.</value>
+  </data>
+  <data name="SecuritySettings.FraudInstanceId" xml:space="preserve">
+    <value>To check orders you have to choose the fraud module instance.</value>
+  </data>
+  <data name="SecuritySettings.FraudReviewScore" xml:space="preserve">
+    <value>The review score goes from 0 to 100, with up to two decimals.</value>
+  </data>
+  <data name="SecuritySettings.IpAttempts" xml:space="preserve">
+    <value>Attempts per IP go from 5 to 1000.</value>
+  </data>
+  <data name="SecuritySettings.IpMinutes" xml:space="preserve">
+    <value>IP lockout goes from 1 to 10080 minutes.</value>
+  </data>
+  <data name="SecuritySettings.IpWindowMinutes" xml:space="preserve">
+    <value>The IP attempts window goes from 1 to 1440 minutes.</value>
+  </data>
+  <data name="SecuritySettings.KeepLoginDays" xml:space="preserve">
+    <value>History is kept from 30 to 3650 days.</value>
+  </data>
+  <data name="SecuritySettings.MinLength" xml:space="preserve">
+    <value>The minimum length for customers goes from 8 to 128.</value>
+  </data>
+  <data name="SecuritySettings.RegistrationCurrency" xml:space="preserve">
+    <value>The currency uses its three-letter ISO code in uppercase, for example ARS.</value>
+  </data>
+  <data name="SecuritySettings.RegistrationIpHours" xml:space="preserve">
+    <value>The new accounts window goes from 1 to 720 hours.</value>
+  </data>
+  <data name="SecuritySettings.RegistrationIpLimit" xml:space="preserve">
+    <value>New accounts per IP go from 1 to 1000.</value>
+  </data>
+  <data name="SecuritySettings.StaffAccountAttempts" xml:space="preserve">
+    <value>Attempts per staff account go from 3 to 50.</value>
+  </data>
+  <data name="SecuritySettings.StaffAccountMinutes" xml:space="preserve">
+    <value>Staff account lockout goes from 1 to 1440 minutes.</value>
+  </data>
+  <data name="SecuritySettings.StaffMinLength" xml:space="preserve">
+    <value>The minimum length for staff goes from the customer one to 128.</value>
+  </data>
+  <data name="SecuritySettings.TrustedNetworks" xml:space="preserve">
+    <value>Trusted networks must be valid IPs or networks, up to 50.</value>
+  </data>
+  <data name="SecuritySettings.TwoFactorRoles" xml:space="preserve">
+    <value>There is a role that does not exist.</value>
+  </data>
+  <data name="Settings.AccountAttempts" xml:space="preserve">
+    <value>Consecutive failed attempts that lock an account</value>
+  </data>
+  <data name="Settings.AccountMinutes" xml:space="preserve">
+    <value>Account lockout minutes</value>
+  </data>
+  <data name="Settings.AlertNewLocation" xml:space="preserve">
+    <value>Email sign-ins from a new place</value>
+  </data>
+  <data name="Settings.Attempts" xml:space="preserve">
+    <value>Attempts and lockouts</value>
+  </data>
+  <data name="Settings.Challenge" xml:space="preserve">
+    <value>Anti-bot challenge</value>
+  </data>
+  <data name="Settings.ChallengeBits" xml:space="preserve">
+    <value>Proof of work threshold, in bits. Each bit doubles the browser work: 16 takes less than a second.</value>
+  </data>
+  <data name="Settings.ChallengeForms" xml:space="preserve">
+    <value>Forms that ask for it</value>
+  </data>
+  <data name="Settings.ChallengeHelp" xml:space="preserve">
+    <value>The cancellation and withdrawal buttons never ask for it. The proof of work does not use any outside service. Turnstile loads the Cloudflare script on those pages and checks on its server.</value>
+  </data>
+  <data name="Settings.ChallengeProvider" xml:space="preserve">
+    <value>Challenge</value>
+  </data>
+  <data name="Settings.ChallengeSecret" xml:space="preserve">
+    <value>Turnstile secret key</value>
+  </data>
+  <data name="Settings.ChallengeSiteKey" xml:space="preserve">
+    <value>Turnstile site key</value>
+  </data>
+  <data name="Settings.Conflict" xml:space="preserve">
+    <value>Someone else changed the settings while you were editing. Open them again.</value>
+  </data>
+  <data name="Settings.EmailAndLogins" xml:space="preserve">
+    <value>Email and sign-ins</value>
+  </data>
+  <data name="Settings.Fraud" xml:space="preserve">
+    <value>Order fraud</value>
+  </data>
+  <data name="Settings.FraudEnabled" xml:space="preserve">
+    <value>Check orders with the fraud module</value>
+  </data>
+  <data name="Settings.FraudInstance" xml:space="preserve">
+    <value>Fraud module instance</value>
+  </data>
+  <data name="Settings.FraudInstanceId" xml:space="preserve">
+    <value>Fraud module instance</value>
+  </data>
+  <data name="Settings.FraudReviewOnError" xml:space="preserve">
+    <value>If the module fails, send the order to review (off, the order passes)</value>
+  </data>
+  <data name="Settings.FraudReviewScore" xml:space="preserve">
+    <value>Score from which the order goes to review (0 to 100)</value>
+  </data>
+  <data name="Settings.FraudSkipExisting" xml:space="preserve">
+    <value>Do not send to the module the orders of accounts that already have an active service</value>
+  </data>
+  <data name="Settings.IpAttempts" xml:space="preserve">
+    <value>Failed attempts from an IP that block it</value>
+  </data>
+  <data name="Settings.IpMinutes" xml:space="preserve">
+    <value>IP lockout minutes</value>
+  </data>
+  <data name="Settings.IpWindowMinutes" xml:space="preserve">
+    <value>Window to count the attempts of an IP, in minutes</value>
+  </data>
+  <data name="Settings.KeepLoginDays" xml:space="preserve">
+    <value>Days the sign-in history is kept</value>
+  </data>
+  <data name="Settings.MinLength" xml:space="preserve">
+    <value>Minimum password length for customers</value>
+  </data>
+  <data name="Settings.NoInstance" xml:space="preserve">
+    <value>None</value>
+  </data>
+  <data name="Settings.NotFraudInstance" xml:space="preserve">
+    <value>The chosen instance is not from a fraud module.</value>
+  </data>
+  <data name="Settings.Passwords" xml:space="preserve">
+    <value>Passwords</value>
+  </data>
+  <data name="Settings.PasswordsHelp" xml:space="preserve">
+    <value>Composition rules are off because they make passwords easier to guess and harder to remember. Length and rejecting common ones protect more.</value>
+  </data>
+  <data name="Settings.Registration" xml:space="preserve">
+    <value>Customer sign up</value>
+  </data>
+  <data name="Settings.RegistrationCurrency" xml:space="preserve">
+    <value>Currency selected by default on sign up</value>
+  </data>
+  <data name="Settings.RegistrationEnabled" xml:space="preserve">
+    <value>Allow sign ups from the portal</value>
+  </data>
+  <data name="Settings.RegistrationHelp" xml:space="preserve">
+    <value>The IP, email and domain block lists also apply to sign ups. With IPv6 the limit counts the /64 network, and trusted networks have no limit.</value>
+  </data>
+  <data name="Settings.RegistrationIpHours" xml:space="preserve">
+    <value>Limit window, in hours</value>
+  </data>
+  <data name="Settings.RegistrationIpLimit" xml:space="preserve">
+    <value>New accounts per IP within the window</value>
+  </data>
+  <data name="Settings.RejectCommon" xml:space="preserve">
+    <value>Reject common passwords and those containing the email or the brand</value>
+  </data>
+  <data name="Settings.RequireDigit" xml:space="preserve">
+    <value>Require a number</value>
+  </data>
+  <data name="Settings.RequireLower" xml:space="preserve">
+    <value>Require a lowercase letter</value>
+  </data>
+  <data name="Settings.RequireSymbol" xml:space="preserve">
+    <value>Require a symbol</value>
+  </data>
+  <data name="Settings.RequireUpper" xml:space="preserve">
+    <value>Require an uppercase letter</value>
+  </data>
+  <data name="Settings.RequireVerifiedEmail" xml:space="preserve">
+    <value>Send to review the orders of those who did not verify their email</value>
+  </data>
+  <data name="Settings.Save" xml:space="preserve">
+    <value>Save the settings</value>
+  </data>
+  <data name="Settings.Saved" xml:space="preserve">
+    <value>Done, the settings are saved.</value>
+  </data>
+  <data name="Settings.StaffAccountAttempts" xml:space="preserve">
+    <value>Consecutive failed attempts that lock a staff account</value>
+  </data>
+  <data name="Settings.StaffAccountMinutes" xml:space="preserve">
+    <value>Lockout minutes for a staff account</value>
+  </data>
+  <data name="Settings.StaffMinLength" xml:space="preserve">
+    <value>Minimum password length for staff</value>
+  </data>
+  <data name="Settings.Title" xml:space="preserve">
+    <value>Security and fraud settings</value>
+  </data>
+  <data name="Settings.TrustedNetworks" xml:space="preserve">
+    <value>Trusted networks, never locked by the attempt limit (one per line)</value>
+  </data>
+  <data name="Settings.TrustedNetworksHelp" xml:space="preserve">
+    <value>For example the office or the staff VPN. Block lists still apply.</value>
+  </data>
+  <data name="Settings.TwoFactor" xml:space="preserve">
+    <value>Mandatory two-factor in the portal</value>
+  </data>
+  <data name="Settings.TwoFactorHelp" xml:space="preserve">
+    <value>Anyone with one of these roles in any account cannot use the portal until they turn it on. For staff it is always mandatory.</value>
+  </data>
+  <data name="Settings.TwoFactorRoles" xml:space="preserve">
+    <value>Roles with mandatory two-factor</value>
+  </data>
+  <data name="Totp.Qr" xml:space="preserve">
+    <value>QR code to scan with the authenticator app</value>
+  </data>
+  <data name="TwoFa.CannotDisable" xml:space="preserve">
+    <value>Your role requires two-factor authentication: it cannot be turned off.</value>
+  </data>
+  <data name="TwoFa.CodesLeft" xml:space="preserve">
+    <value>You have {0} recovery codes left.</value>
+  </data>
+  <data name="TwoFa.NewCodes" xml:space="preserve">
+    <value>Generate new recovery codes</value>
+  </data>
+  <data name="TwoFa.Off" xml:space="preserve">
+    <value>Off</value>
+  </data>
+  <data name="TwoFa.On" xml:space="preserve">
+    <value>On</value>
+  </data>
+  <data name="TwoFa.Required" xml:space="preserve">
+    <value>Your user requires two-factor authentication. Turn it on to keep using the portal.</value>
+  </data>
+  <data name="TwoFa.Title" xml:space="preserve">
+    <value>Two-factor authentication</value>
+  </data>
+</root>

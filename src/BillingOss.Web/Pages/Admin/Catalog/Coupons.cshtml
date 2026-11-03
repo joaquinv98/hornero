@@ -1,0 +1,39 @@
+@page "/admin/catalogo/cupones"
+@model BillingOss.Web.Pages.Admin.Catalog.CouponsModel
+@using BillingOss.Domain.Catalog
+@{
+    ViewData["Title"] = L["Nav.Promotions"];
+}
+<h1>@L["Nav.Promotions"]</h1>
+@if (Model.CanWrite)
+{
+    <p class="actions"><a class="button" href="/admin/catalogo/cupones/nuevo">@L["Catalog.NewCoupon"]</a></p>
+}
+<section aria-label="@L["Catalog.Coupons"]">
+    @if (Model.Coupons.Count == 0)
+    {
+        <p>@L["Catalog.NoCoupons"]</p>
+    }
+    else
+    {
+        <div class="table">
+            <table>
+                <thead><tr><th scope="col">@L["Catalog.Code"]</th><th scope="col" class="num">@L["Catalog.Discount"]</th><th scope="col" class="num">@L["Catalog.Uses"]</th><th scope="col">@L["Catalog.StartsOn"]</th><th scope="col">@L["Catalog.ExpiresOn"]</th><th scope="col">@L["Field.Status"]</th></tr></thead>
+                <tbody>
+                    @foreach (var c in Model.Coupons)
+                    {
+                        var expired = c.ExpiresOn is { } end && end < Model.Today;
+                        <tr>
+                            <td><a href="/admin/catalogo/cupones/@c.Id"><code>@c.Code</code></a></td>
+                            <td class="num">@(c.Kind == DiscountKind.Percent ? L["Catalog.PercentValue", c.Value.ToString("0.##", System.Globalization.CultureInfo.CurrentCulture)].Value : c.Currency is { } currency ? Ui.Money(c.Value, currency) : c.Value.ToString("N2", System.Globalization.CultureInfo.CurrentCulture))</td>
+                            <td class="num">@(c.MaxUses is { } max ? L["Catalog.UsesOf", c.Uses, max].Value : c.Uses.ToString(System.Globalization.CultureInfo.CurrentCulture))</td>
+                            <td>@Ui.Date(c.StartsOn)</td>
+                            <td>@Ui.Date(c.ExpiresOn)</td>
+                            <td><span class="status @(c.Active && !expired ? "s-active" : "")">@(!c.Active ? L["Catalog.Inactive"] : expired ? L["Catalog.Expired"] : L["Catalog.Active"])</span></td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
+</section>

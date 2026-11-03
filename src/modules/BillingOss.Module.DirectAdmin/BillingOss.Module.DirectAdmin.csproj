@@ -1,0 +1,11 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+  <PropertyGroup>
+    <RootNamespace>BillingOss.Module.DirectAdmin</RootNamespace>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="../../BillingOss.Modules.Hosting/BillingOss.Modules.Hosting.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <InternalsVisibleTo Include="BillingOss.Module.DirectAdmin.Tests" />
+  </ItemGroup>
+</Project>

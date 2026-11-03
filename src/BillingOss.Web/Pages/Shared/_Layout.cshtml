@@ -1,0 +1,118 @@
+@inject Microsoft.Extensions.Configuration.IConfiguration Config
+@{
+    var brand = Config["Ui:Brand"] ?? "Hornero";
+    var path = Context.Request.Path + Context.Request.QueryString;
+    var signedIn = User.Identity?.IsAuthenticated == true && User.Identity.AuthenticationType == Schemes.Portal;
+    var acting = User.ActingAccount();
+    string? Current(string href) => string.Equals(Context.Request.Path.Value, href, StringComparison.OrdinalIgnoreCase) ? "page" : null;
+}
+<!doctype html>
+<html lang="@CultureInfo.CurrentUICulture.TwoLetterISOLanguageName">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>@ViewData["Title"] | @brand</title>
+    <link rel="stylesheet" href="~/css/site.css" asp-append-version="true">
+    <script src="~/js/menu.js" asp-append-version="true" defer></script>
+    @await RenderSectionAsync("Head", required: false)
+</head>
+<body>
+    <a class="skip" href="#main">@L["Layout.Skip"]</a>
+    @if (acting is { } accountId)
+    {
+        <div class="impersonation" role="status">
+            <p>@L["Layout.Impersonating", accountId, User.Identity!.Name!]</p>
+            <form method="post" action="/salir" asp-antiforgery="true"><button type="submit" class="secondary">@L["Layout.StopImpersonating"]</button></form>
+        </div>
+    }
+    <header class="top">
+        <div class="wrap top-row">
+            <a class="brand" href="/">@brand</a>
+            <nav class="consumer" aria-label="@L["Layout.ConsumerNav"]">
+                <a class="consumer-button" href="/arrepentimiento">@L["Consumer.WithdrawalButton"]</a>
+                <a class="consumer-button" href="/baja">@L["Consumer.CancellationButton"]</a>
+            </nav>
+        </div>
+        @* Menú clásico de la sección 10.3 de la decisión de interfaz: solo las áreas y los ítems que ya existen. *@
+        <nav class="wrap menu" aria-label="@L["Layout.MainNav"]">
+            @if (signedIn)
+            {
+                <a href="/" aria-current="@Current("/")">@L["Nav.Home"]</a>
+                <details class="bo-menu" name="menu">
+                    <summary>@L["Nav.Services"]</summary>
+                    <ul>
+                        <li><a href="/servicios" aria-current="@Current("/servicios")">@L["Nav.MyServices"]</a></li>
+                        <li><a href="/contratar" aria-current="@Current("/contratar")">@L["Shop.Title"]</a></li>
+                    </ul>
+                </details>
+                <details class="bo-menu" name="menu">
+                    <summary>@L["Nav.Domains"]</summary>
+                    <ul>
+                        <li><a href="/dominios" aria-current="@Current("/dominios")">@L["Nav.MyDomains"]</a></li>
+                        <li><a href="/dominios/nuevo" aria-current="@Current("/dominios/nuevo")">@L["Nav.RegisterDomain"]</a></li>
+                        <li><a href="/dominios/nuevo#transferir">@L["Nav.TransferDomain"]</a></li>
+                    </ul>
+                </details>
+                <details class="bo-menu" name="menu">
+                    <summary>@L["Nav.Billing"]</summary>
+                    <ul>
+                        <li><a href="/facturas" aria-current="@Current("/facturas")">@L["Nav.Invoices"]</a></li>
+                        <li><a href="/presupuestos" aria-current="@Current("/presupuestos")">@L["Billing.Quotes"]</a></li>
+                        <li><a href="/cuenta/medios-de-pago" aria-current="@Current("/cuenta/medios-de-pago")">@L["Nav.PaymentMethods"]</a></li>
+                        @if (Config.GetSection("Billing:TopUp").GetChildren().Any())
+                        {
+                            <li><a href="/cargar-saldo" aria-current="@Current("/cargar-saldo")">@L["TopUp.Title"]</a></li>
+                        }
+                    </ul>
+                </details>
+                <details class="bo-menu" name="menu">
+                    <summary>@L["Nav.Support"]</summary>
+                    <ul>
+                        <li><a href="/soporte" aria-current="@Current("/soporte")">@L["Menu.MyTickets"]</a></li>
+                        @if (acting is null)
+                        {
+                            <li><a href="/soporte/nuevo" aria-current="@Current("/soporte/nuevo")">@L["Menu.OpenTicket"]</a></li>
+                        }
+                    </ul>
+                </details>
+                @if (await AffiliateWeb.InPortalMenu(Context))
+                {
+                    <a href="/afiliados" aria-current="@Current("/afiliados")">@L["Nav.Affiliates"]</a>
+                }
+                <partial name="_ContentNav" />
+                @* Cuenta, a la derecha: los datos fiscales, la seguridad y la salida. *@
+                <details class="bo-menu bo-menu--end" name="menu">
+                    <summary>@L["Menu.Account"]</summary>
+                    <ul>
+                        <li><a href="/cuenta/datos-fiscales" aria-current="@Current("/cuenta/datos-fiscales")">@L["Nav.TaxData"]</a></li>
+                        @if (acting is null)
+                        {
+                            <li><a href="/cuenta/seguridad" aria-current="@Current("/cuenta/seguridad")">@L["Nav.Security"]</a></li>
+                        }
+                        <li><form method="post" action="/salir" asp-antiforgery="true"><button type="submit" class="link">@L["Nav.Logout"]</button></form></li>
+                    </ul>
+                </details>
+            }
+            else
+            {
+                <a href="/ingresar">@L["Nav.Login"]</a>
+                <partial name="_ContentNav" />
+            }
+        </nav>
+    </header>
+    <main id="main" class="wrap">
+        @RenderBody()
+    </main>
+    <footer class="wrap foot">
+        @if (Config["Ui:AttentionChannel"] is { Length: > 0 } channel)
+        {
+            <p>@L["Layout.Attention"] @channel</p>
+        }
+        <p>
+            @L["Layout.Language"]
+            <a href="/idioma/es-AR?volver=@Uri.EscapeDataString(path)" lang="es">Español</a>
+            <a href="/idioma/en?volver=@Uri.EscapeDataString(path)" lang="en">English</a>
+        </p>
+    </footer>
+</body>
+</html>
